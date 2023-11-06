@@ -1,6 +1,9 @@
 # Data Folder
 data/
 
+# results in examples
+examples/results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

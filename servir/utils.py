@@ -55,30 +55,30 @@ def processIMERG(local_filename,llx,lly,urx,ury):
   return NewGrid, nx, ny, gt, proj
 
 
-def init_IMERG_config_pysteps():
-    """Function to initialize Pysteps for IMERG data
-        This has been adapted from Pysteps' tutorial colab notebook
+# def init_IMERG_config_pysteps():
+#     """Function to initialize Pysteps for IMERG data
+#         This has been adapted from Pysteps' tutorial colab notebook
     
-    """
-    # If the configuration file is placed in one of the default locations
-    # (https://pysteps.readthedocs.io/en/latest/user_guide/set_pystepsrc.html#configuration-file-lookup)
-    # it will be loaded automatically when pysteps is imported.
-    config_file_path = create_default_pystepsrc("pysteps_data")
+#     """
+#     # If the configuration file is placed in one of the default locations
+#     # (https://pysteps.readthedocs.io/en/latest/user_guide/set_pystepsrc.html#configuration-file-lookup)
+#     # it will be loaded automatically when pysteps is imported.
+#     config_file_path = create_default_pystepsrc("pysteps_data")
 
 
 
-    # Import pysteps and load the new configuration file
-    import pysteps
+#     # Import pysteps and load the new configuration file
+#     import pysteps
 
-    _ = pysteps.load_config_file(config_file_path, verbose=True)
-    # The default parameters are stored in pysteps.rcparams.
+#     _ = pysteps.load_config_file(config_file_path, verbose=True)
+#     # The default parameters are stored in pysteps.rcparams.
 
-    # print(pysteps.rcparams.data_sources.keys())
-    pysteps.rcparams.data_sources['imerg'] = {'fn_ext': 'nc4',
-                                            'fn_pattern': 'PrecipRate_00.00_%Y%m%d-%H%M%S',
-                                            'importer': 'netcdf_pysteps',
-                                            'importer_kwargs': {},
-                                            'path_fmt': '%Y/%m/%d',
-                                            'root_path': '/content/IMERG/Flood_Ghana_032023/',
-                                            'timestep': 30}
-    print(pysteps.rcparams.data_sources['imerg'])
+#     # print(pysteps.rcparams.data_sources.keys())
+#     pysteps.rcparams.data_sources['imerg'] = {'fn_ext': 'nc4',
+#                                             'fn_pattern': 'PrecipRate_00.00_%Y%m%d-%H%M%S',
+#                                             'importer': 'netcdf_pysteps',
+#                                             'importer_kwargs': {},
+#                                             'path_fmt': '%Y/%m/%d',
+#                                             'root_path': '/content/IMERG/Flood_Ghana_032023/',
+#                                             'timestep': 30}
+#     print(pysteps.rcparams.data_sources['imerg'])

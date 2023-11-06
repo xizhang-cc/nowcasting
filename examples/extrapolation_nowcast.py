@@ -1,15 +1,14 @@
 import os
 import glob
 import time
-import json
 
 import pandas as pd
-from osgeo import gdal
-from servir.utils import 
-from servir.forecasts import lp_nowcast, linda_nowcast, steps_nowcast
-from servir.visualization import  create_precipitation_gif
 from matplotlib import pyplot as plt
 from pysteps import verification
+
+from servir.nowcast.extrapolation_methods import lp_nowcast, linda_nowcast, steps_nowcast
+from servir.visualization import  create_precipitation_gif
+
 
 
 gif_plot = False
@@ -18,9 +17,9 @@ timeLog = open("results/times.txt","a")
 
 
 methods_dict = {
-                # 'STEPS': {'func': steps_nowcast, 'kargs': {'n_ens_members': 20, 'n_cascade_levels': 6}}, \
+                'STEPS': {'func': steps_nowcast, 'kargs': {'n_ens_members': 20, 'n_cascade_levels': 6}}, \
                 'LINDA': {'func': linda_nowcast, 'kargs': {'max_num_features': 15, 'add_perturbations': False}}, \
-                # 'Lagrangian_Persistence': {'func': lp_nowcast, 'kargs': {}},\
+                'Lagrangian_Persistence': {'func': lp_nowcast, 'kargs': {}},\
                 }
 
 
@@ -60,6 +59,8 @@ metadata = {'accutime': 30.0,
     'ypixelsize': 0.04,
     'zerovalue': 0}
 
+
+batch_size,batch_num=8,0
 # FSS score
 # calculate FSS
 fss = verification.get_method("FSS")
