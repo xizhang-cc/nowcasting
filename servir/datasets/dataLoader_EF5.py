@@ -80,32 +80,7 @@ def save2h5py_with_metadata():
         meta_df.to_csv(os.path.join(dataPath, 'EF5_meta.csv'))  
     
 
-def get_EF5_geotiff_metadata(dataPath):
-    xmin = -21.4
-    xmax = 30.4
-    ymin = -2.9
-    ymax = 33.1
-
-    # choose a random raw event to get geo metadata 
-    # '3B-HHR-E.MS.MRG.3IMERG.20180618-S123000-E125959.0750.V06B.30min'
-    f_str = os.path.join(dataPath, "Côte d'Ivoire_18_06_2018/raw_imerg/3B-HHR-E.MS.MRG.3IMERG.20180618-S000000-E002959.0000.V06B.30min.tif")
-    # f_str = f'data/{event_name}/processed_imerg/imerg.{dt.strftime("%Y%m%d%H%M")}.30minAccum.tif'
-    _, nx, ny, gt, proj = processIMERG(f_str,xmin,ymin,xmax,ymax)
-
-    return nx, ny, gt, proj
-
-#===================================================================================================
-#==================The main return h5py files from original processed IMERG data====================
-#===================================================================================================
-if __name__=='__main__':
-    
-    EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
-    dataPath = "/home/cc/projects/nowcasting/data/EF5"
-
-    train_st_inds = np.arange(0, 8)
-    train_len = 10
-    prediction_steps = 8
-    
+def create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps):
     # To load meta data
     meta = pd.read_csv(os.path.join(dataPath, 'EF5_meta.csv'), index_col=0)
     meta['datetimes'] = meta['datetimes'].apply(lambda x: [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')\
@@ -156,5 +131,38 @@ if __name__=='__main__':
             dout = hf.create_dataset('OUT_Precipitations', data=out_event_samples)  
 
         meta_samples.to_csv(os.path.join(dataPath, 'EF5_samples_meta.csv'))
+
+
+
+def get_EF5_geotiff_metadata(dataPath):
+    xmin = -21.4
+    xmax = 30.4
+    ymin = -2.9
+    ymax = 33.1
+
+    # choose a random raw event to get geo metadata 
+    # '3B-HHR-E.MS.MRG.3IMERG.20180618-S123000-E125959.0750.V06B.30min'
+    f_str = os.path.join(dataPath, "Côte d'Ivoire_18_06_2018/raw_imerg/3B-HHR-E.MS.MRG.3IMERG.20180618-S000000-E002959.0000.V06B.30min.tif")
+    # f_str = f'data/{event_name}/processed_imerg/imerg.{dt.strftime("%Y%m%d%H%M")}.30minAccum.tif'
+    _, nx, ny, gt, proj = processIMERG(f_str,xmin,ymin,xmax,ymax)
+
+    return nx, ny, gt, proj
+
+#===================================================================================================
+#===================================================================================================
+#===================================================================================================
+if __name__=='__main__':
+    
+    EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
+    dataPath = "/home/cc/projects/nowcasting/data/EF5"
+
+    train_st_inds = np.arange(0, 8)
+    train_len = 10
+    prediction_steps = 8
+
+    # to create sample
+    create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
+    
+
 
         
