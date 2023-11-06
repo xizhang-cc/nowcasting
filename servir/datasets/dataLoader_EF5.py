@@ -1,12 +1,18 @@
+import os
+import sys
+sys.path.append("/home/cc/projects/nowcasting/")
 import glob
 import datetime
+import h5py
 
 
 import numpy as np
+import pandas as pd
 import osgeo.gdal as gdal
 from osgeo.gdalconst import GA_ReadOnly
 
 
+from servir.utils import processIMERG
 
 def load_EF5_data(fPath):
     """Function to load IMERG tiff data from the associate event folder
@@ -48,34 +54,8 @@ def load_EF5_data(fPath):
 
     return sorted_precipitation, sorted_timestamps
 
-def get_EF5_geotiff_metadata(dataPath):
-    # choose a random raw event to get geo metadata 
-    # '3B-HHR-E.MS.MRG.3IMERG.20180618-S123000-E125959.0750.V06B.30min'
-    f_str = os.path.join(dataPath, "Côte d'Ivoire_18_06_2018/raw_imerg/3B-HHR-E.MS.MRG.3IMERG.20180618-S000000-E002959.0000.V06B.30min.tif")
-    # f_str = f'data/{event_name}/processed_imerg/imerg.{dt.strftime("%Y%m%d%H%M")}.30minAccum.tif'
-    _, nx, ny, gt, proj = processIMERG(f_str,xmin,ymin,xmax,ymax)
+def save2h5py_with_metadata():
 
-    return nx, ny, gt, proj
-
-#===================================================================================================
-#==================The main return h5py files from original processed IMERG data====================
-#===================================================================================================
-if __name__=='__main__':
-    import os
-    import sys
-    sys.path.append("/home/cc/projects/nowcasting/")
-
-    import h5py
-    import pandas as pd
-    from servir.utils import processIMERG
-
-    xmin = -21.4
-    xmax = 30.4
-    ymin = -2.9
-    ymax = 33.1
-
-    EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
-    dataPath = "/home/cc/projects/nowcasting/data/EF5"
 
     with h5py.File(os.path.join(dataPath,'EF5.h5py'),'w') as hf:
         precipitations = []
@@ -98,12 +78,67 @@ if __name__=='__main__':
         
         dset = hf.create_dataset('precipitations', data=np.array(precipitations))
         meta_df.to_csv(os.path.join(dataPath, 'EF5_meta.csv'))  
-            
     
-    ## To load dataset
-    # with h5py.File(os.path.join(dataPath,'EF5.h5py'),'r') as hf:
-    #     data = hf['precipitations']
+    
 
-    ## To lad meta data
-    # meta = pd.read_csv(os.path.join(dataPath, 'EF5_meta.csv'), index_col=0)
 
+
+
+def get_EF5_geotiff_metadata(dataPath):
+    xmin = -21.4
+    xmax = 30.4
+    ymin = -2.9
+    ymax = 33.1
+
+    # choose a random raw event to get geo metadata 
+    # '3B-HHR-E.MS.MRG.3IMERG.20180618-S123000-E125959.0750.V06B.30min'
+    f_str = os.path.join(dataPath, "Côte d'Ivoire_18_06_2018/raw_imerg/3B-HHR-E.MS.MRG.3IMERG.20180618-S000000-E002959.0000.V06B.30min.tif")
+    # f_str = f'data/{event_name}/processed_imerg/imerg.{dt.strftime("%Y%m%d%H%M")}.30minAccum.tif'
+    _, nx, ny, gt, proj = processIMERG(f_str,xmin,ymin,xmax,ymax)
+
+    return nx, ny, gt, proj
+
+#===================================================================================================
+#==================The main return h5py files from original processed IMERG data====================
+#===================================================================================================
+if __name__=='__main__':
+    
+    EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
+    dataPath = "/home/cc/projects/nowcasting/data/EF5"
+
+    train_st_inds = np.arange(0, 8)
+    train_len = 10
+    prediction_steps = 8
+    
+    # To load meta data
+    meta = pd.read_csv(os.path.join(dataPath, 'EF5_meta.csv'), index_col=0)
+    meta['datetimes'] = meta['datetimes'].apply(lambda x: [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')\
+                                                           for dt_str in x.split(',')])
+
+    # To load dataset
+    with h5py.File(os.path.join(dataPath,'EF5.h5py'),'r') as hf:
+        data = hf['precipitations']
+
+        for event_idx in range(data.shape[0]):
+
+            event_data = data[event_idx, :, :, :]
+            event_meta = meta.iloc[event_idx]
+
+            event_samples = []
+            event_meta_samples = []
+            for train_st_ind in train_st_inds:
+
+                # create one sample of "complete" data
+                train_ed_ind = train_st_ind + train_len
+                training_ind = np.arange(train_st_ind, train_ed_ind)
+                pred_ind = np.arange(train_ed_ind, train_ed_ind+prediction_steps)   
+
+
+
+
+                print('stop for debugging') 
+
+
+
+   
+        print('stop for debugging')
