@@ -132,7 +132,33 @@ def create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
 
         meta_samples.to_csv(os.path.join(dataPath, 'EF5_samples_meta.csv'))
 
+import torch
+from torch.utils.data import Dataset
 
+class EF5Dataset(Dataset):
+    def __init__(self, fPath, metaPath):
+        self.fPath = fPath
+        # To load meta data
+        self.meta = pd.read_csv(metaPath, index_col=0)  
+
+    def __len__(self):
+        return self.meta.shape[0]
+
+    def __getitem__(self, idx):
+        # To load dataset
+        with h5py.File(self.fPath,'r') as hf:
+        # hf = h5py.File(self.fPath,'r')
+            X = hf['IN_Precipitations'][idx, :, :, :]
+            Y = hf['OUT_Precipitations'][idx, :, :, :]
+        
+        X_dt_str = self.meta.iloc[idx]['in_datetimes'].split(',')
+        X_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in X_dt_str]
+
+        Y_dt_str = self.meta.iloc[idx]['out_datetimes'].split(',')  
+        Y_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in Y_dt_str] 
+            
+        return X, Y, X_dt, Y_dt
+    
 
 def get_EF5_geotiff_metadata(dataPath):
     xmin = -21.4
@@ -160,8 +186,8 @@ if __name__=='__main__':
     train_len = 10
     prediction_steps = 8
 
-    # to create sample
-    create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
+
+    print('stop for debugging') 
     
 
 

@@ -42,3 +42,32 @@ bs,be=batch_size*batch_num,batch_size*(batch_num+1)
 X,Y,meta = X_train[bs:be],Y_train[bs:be],training_meta.iloc[bs:be]
 
 print('stop for debugging')
+
+
+import torch
+from torch.utils.data import Dataset
+
+
+class ServirDataset(Dataset):
+    def __init__(self, X, Y, normalize=False):
+        super(ServirDataset, self).__init__()
+        self.X = X
+        self.Y = Y
+        self.mean = None
+        self.std = None
+
+        if normalize:
+            # get the mean/std values along the channel dimension
+            mean = data.mean(axis=(0, 1, 2, 3)).reshape(1, 1, -1, 1, 1)
+            std = data.std(axis=(0, 1, 2, 3)).reshape(1, 1, -1, 1, 1)
+            data = (data - mean) / std
+            self.mean = mean
+            self.std = std
+
+    def __len__(self):
+        return self.X.shape[0]
+
+    def __getitem__(self, index):
+        data = torch.tensor(self.X[index]).float()
+        labels = torch.tensor(self.Y[index]).float()
+        return data, labels
