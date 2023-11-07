@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-def NaivePersistence(in_precip, observed_precip):
+def naive_persistence(in_precip, observed_precip):
   start = time.time()
   persistence_forecast = np.empty_like(observed_precip)
   for precipitation_index in range(len(observed_precip)):
