@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 import osgeo.gdal as gdal
 from osgeo.gdalconst import GA_ReadOnly
+import torch
+from torch.utils.data import Dataset
 
 
 from servir.utils import processIMERG
@@ -88,52 +90,50 @@ def create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
 
     # To load dataset
     with h5py.File(os.path.join(dataPath,'EF5.h5py'),'r') as hf:
-        data = hf['precipitations']
+        data = hf['precipitations'][:]
 
-        in_event_samples, out_event_samples, meta_samples = [], [], []
+    in_event_samples, out_event_samples, meta_samples = [], [], []
+
+    for event_idx in range(data.shape[0]):
+
+        event_data = data[event_idx, :, :, :]
+        event_meta = meta.iloc[event_idx]
+
+        for train_st_ind in train_st_inds:
+
+            # create one sample of "complete" data
+            train_ed_ind = train_st_ind + train_len
+            training_ind = np.arange(train_st_ind, train_ed_ind)
+            pred_ind = np.arange(train_ed_ind, train_ed_ind+prediction_steps)   
+
+            # inputs
+            in_event_samples.append(event_data[:, :, training_ind])
+
+            # in_meta_samples.append(pd.Series({'event_name':event_meta['event_name'], 'datetimes':','.join(in_datatimes_str) }))
+
+            # observed outputs
+            out_event_samples.append(event_data[:, :, pred_ind])
+
+            # metadata
+            in_datatimes_str = [event_meta['datetimes'][ind].strftime('%Y-%m-%d %H:%M:%S') for ind in training_ind]    
+            out_datatimes_str = [event_meta['datetimes'][ind].strftime('%Y-%m-%d %H:%M:%S') for ind in pred_ind]    
+            
+            meta_samples.append(pd.Series({'event_name':event_meta['event_name'],\
+                                            'in_datetimes' : ','.join(in_datatimes_str), \
+                                            'out_datetimes' : ','.join(out_datatimes_str) }))
+
+    in_event_samples = np.array(in_event_samples)
+    out_event_samples= np.array(out_event_samples)  
+
+    meta_samples = pd.DataFrame(meta_samples)   
+
+    with h5py.File(os.path.join(dataPath,'EF5_samples.h5py'),'w') as hf:
+        din = hf.create_dataset('IN_Precipitations', data=in_event_samples)
+        dout = hf.create_dataset('OUT_Precipitations', data=out_event_samples)  
+
+    meta_samples.to_csv(os.path.join(dataPath, 'EF5_samples_meta.csv'))
 
 
-        for event_idx in range(data.shape[0]):
-
-            event_data = data[event_idx, :, :, :]
-            event_meta = meta.iloc[event_idx]
-
-            for train_st_ind in train_st_inds:
-
-                # create one sample of "complete" data
-                train_ed_ind = train_st_ind + train_len
-                training_ind = np.arange(train_st_ind, train_ed_ind)
-                pred_ind = np.arange(train_ed_ind, train_ed_ind+prediction_steps)   
-
-                # inputs
-                in_event_samples.append(event_data[:, :, training_ind])
-
-                # in_meta_samples.append(pd.Series({'event_name':event_meta['event_name'], 'datetimes':','.join(in_datatimes_str) }))
-
-                # observed outputs
-                out_event_samples.append(event_data[:, :, pred_ind])
-
-                # metadata
-                in_datatimes_str = [event_meta['datetimes'][ind].strftime('%Y-%m-%d %H:%M:%S') for ind in training_ind]    
-                out_datatimes_str = [event_meta['datetimes'][ind].strftime('%Y-%m-%d %H:%M:%S') for ind in pred_ind]    
-                
-                meta_samples.append(pd.Series({'event_name':event_meta['event_name'],\
-                                               'in_datetimes' : ','.join(in_datatimes_str), \
-                                               'out_datetimes' : ','.join(out_datatimes_str) }))
-
-        in_event_samples = np.array(in_event_samples)
-        out_event_samples= np.array(out_event_samples)  
-
-        meta_samples = pd.DataFrame(meta_samples)   
-
-        with h5py.File(os.path.join(dataPath,'EF5_samples.h5py'),'w') as hf:
-            din = hf.create_dataset('IN_Precipitations', data=in_event_samples)
-            dout = hf.create_dataset('OUT_Precipitations', data=out_event_samples)  
-
-        meta_samples.to_csv(os.path.join(dataPath, 'EF5_samples_meta.csv'))
-
-import torch
-from torch.utils.data import Dataset
 
 class EF5Dataset(Dataset):
     def __init__(self, fPath, metaPath):
@@ -186,6 +186,11 @@ if __name__=='__main__':
     train_len = 10
     prediction_steps = 8
 
+    # create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
+
+    ef5 = EF5Dataset(os.path.join(dataPath,'EF5_samples.h5py'), os.path.join(dataPath, 'EF5_samples_meta.csv'))
+
+    X, Y, X_dt, Y_dt = ef5.__getitem__(0)
 
     print('stop for debugging') 
     
