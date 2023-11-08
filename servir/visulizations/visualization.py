@@ -5,6 +5,24 @@ import shutil
 import imageio
 from pysteps.visualization.animations import animate
 
+metadata = {'accutime': 30.0,
+    'cartesian_unit': 'degrees',
+    'institution': 'NOAA National Severe Storms Laboratory',
+    'projection': '+proj=longlat  +ellps=IAU76',
+    'threshold': 0.0125,
+    'timestamps': None,
+    'transform': None,
+    'unit': 'mm/h',
+    'x1': -21.4,
+    'x2': 30.4,
+    'xpixelsize': 0.04,
+    'y1': -2.9,
+    'y2': 33.1,
+    'yorigin': 'upper',
+    'ypixelsize': 0.04,
+    'zerovalue': 0}
+
+
 
 def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, geodata, path_outputs, title, gif_dur = 1000):
 

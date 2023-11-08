@@ -150,14 +150,18 @@ class EF5Dataset(Dataset):
         # hf = h5py.File(self.fPath,'r')
             X = hf['IN_Precipitations'][idx, :, :, :]
             Y = hf['OUT_Precipitations'][idx, :, :, :]
-        
-        X_dt_str = self.meta.iloc[idx]['in_datetimes'].split(',')
+
+        X_dt = self.meta.iloc[idx]['in_datetimes']
+        # X_dt_str = self.meta.iloc[idx]['in_datetimes'].split(',')
         # X_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in X_dt_str]
 
-        Y_dt_str = self.meta.iloc[idx]['out_datetimes'].split(',')  
+        Y_dt = self.meta.iloc[idx]['out_datetimes'] 
+        # Y_dt_str = self.meta.iloc[idx]['out_datetimes'].split(',')  
         # Y_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in Y_dt_str] 
+
+        event_name = self.meta.iloc[idx]['event_name']
             
-        return (X, Y, X_dt_str, Y_dt_str)
+        return (X, Y, X_dt, Y_dt, event_name)
     
 
 def get_EF5_geotiff_metadata(dataPath):

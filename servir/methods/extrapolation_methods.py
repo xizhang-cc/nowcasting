@@ -2,7 +2,6 @@ import time
 
 import numpy as np
 from pysteps.utils import transformation
-from pysteps.nowcasts import linda
 from pysteps import nowcasts
 from pysteps import motion
 from pysteps.motion.lucaskanade import dense_lucaskanade
@@ -11,9 +10,9 @@ def linda(in_precip,timesteps, max_num_features = 15, add_perturbations=False):
 
     # Estimate the motion field
     V = dense_lucaskanade(in_precip)
-
+    nowcast_method = nowcasts.get_method("linda")
     # The linda nowcast
-    forcast = linda.forecast(in_precip, V, timesteps, max_num_features=max_num_features, add_perturbations=add_perturbations)
+    forcast = nowcast_method(in_precip, V, timesteps, max_num_features=max_num_features, add_perturbations=add_perturbations)
 
     return forcast
 
@@ -59,6 +58,7 @@ def langragian_persistance(in_precip, timesteps):
     R_f = transformation.dB_transform(R_f, threshold=-10.0, inverse=True)[0]
 
     return R_f
+
 
 
 
