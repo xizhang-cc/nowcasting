@@ -22,7 +22,7 @@ def extrapolation_model_setup(model_config):
 
 
 
-def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath):
+def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath, save=True):
     ## forcasts and save results
     pfunc, kargs = extrapolation_model_setup(model_config)
 
@@ -50,8 +50,11 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath)
     forcasts = np.array(forcasts)
     forcasts_meta = pd.DataFrame(forcasts_meta) 
 
-    with h5py.File(output_fPath,'w') as hf:
-        preds = hf.create_dataset('forcasts', data=forcasts)
+    if save==True:
+        with h5py.File(output_fPath,'w') as hf:
+            preds = hf.create_dataset('forcasts', data=forcasts)
 
-    forcasts_meta.to_csv(output_meta_fPath)
+        forcasts_meta.to_csv(output_meta_fPath)
+
+    return forcasts, forcasts_meta
 

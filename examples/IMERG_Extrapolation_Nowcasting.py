@@ -2,13 +2,14 @@ import os
 import sys
 sys.path.append("/home/cc/projects/nowcasting/")
 import h5py
+import datetime
 
 import numpy as np
 import pandas as pd
 import torch
 from pysteps import verification
 
-from servir.datasets.dataLoader_EF5 import EF5Dataset
+from servir.datasets.dataLoader_EF5 import EF5Dataset, write_forcasts_to_geotiff
 from servir.extrapolation_run import forcasts_and_save
 
 # where to load data
@@ -33,11 +34,16 @@ model_config = {
     'add_perturbations': False
 }
 
-forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath)
+write2geotiff = True
+
+forcasts, forcasts_meta = forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath)
 
 
-    
-    
+# write into giotiff files
+if write2geotiff:
+    write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, model_config)
+
+
 
 # FSS score
 # calculate FSS

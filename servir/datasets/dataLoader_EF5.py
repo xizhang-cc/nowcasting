@@ -10,11 +10,10 @@ import numpy as np
 import pandas as pd
 import osgeo.gdal as gdal
 from osgeo.gdalconst import GA_ReadOnly
-import torch
+
 from torch.utils.data import Dataset
 
 
-from servir.utils import processIMERG
 
 def load_EF5_data(fPath):
     """Function to load IMERG tiff data from the associate event folder
@@ -83,6 +82,11 @@ def save2h5py_with_metadata():
     
 
 def create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps):
+    # if train_st_inds is scalar, then make it a size 1 list
+    if isinstance(train_st_inds, int):
+        train_st_inds = [train_st_inds]
+
+
     # To load meta data
     meta = pd.read_csv(os.path.join(dataPath, 'EF5_meta.csv'), index_col=0)
     meta['datetimes'] = meta['datetimes'].apply(lambda x: [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')\
@@ -164,7 +168,58 @@ class EF5Dataset(Dataset):
         return (X, Y, X_dt, Y_dt, event_name)
     
 
-def get_EF5_geotiff_metadata(dataPath):
+
+#===============================================================================
+#===========================Load GeoTiff format data============================
+# =============================================================================== 
+def ReadandWarp(gridFile,xmin,ymin,xmax,ymax):
+    #Read grid and warp to domain grid
+    #Assumes no reprojection is necessary, and EPSG:4326
+    rawGridIn = gdal.Open(gridFile, GA_ReadOnly)
+    # Adjust grid
+    pre_ds = gdal.Translate('OutTemp.tif', rawGridIn, options="-co COMPRESS=Deflate -a_nodata 29999 -a_ullr -180.0 90.0 180.0 -90.0")
+
+    gt = pre_ds.GetGeoTransform()
+    proj = pre_ds.GetProjection()
+    nx = pre_ds.GetRasterBand(1).XSize
+    ny = pre_ds.GetRasterBand(1).YSize
+    NoData = 29999
+    pixel_size = gt[1]
+
+    #Warp to model resolution and domain extents
+    ds = gdal.Warp('', pre_ds, srcNodata=NoData, srcSRS='EPSG:4326', dstSRS='EPSG:4326', dstNodata='-9999', format='VRT', xRes=pixel_size, yRes=-pixel_size, outputBounds=(xmin,ymin,xmax,ymax))
+
+    WarpedGrid = ds.ReadAsArray()
+    new_gt = ds.GetGeoTransform()
+    new_proj = ds.GetProjection()
+    new_nx = ds.GetRasterBand(1).XSize
+    new_ny = ds.GetRasterBand(1).YSize
+
+    return WarpedGrid, new_nx, new_ny, new_gt, new_proj
+
+def WriteGrid(gridOutName, dataOut, nx, ny, gt, proj):
+    #Writes out a GeoTIFF based on georeference information in RefInfo
+    driver = gdal.GetDriverByName('GTiff')
+    dst_ds = driver.Create(gridOutName, nx, ny, 1, gdal.GDT_Float32, ['COMPRESS=DEFLATE'])
+    dst_ds.SetGeoTransform(gt)
+    dst_ds.SetProjection(proj)
+    dataOut.shape = (-1, nx)
+    dst_ds.GetRasterBand(1).WriteArray(dataOut, 0, 0)
+    dst_ds.GetRasterBand(1).SetNoDataValue(-9999.0)
+    dst_ds = None
+
+def processIMERG(local_filename,llx,lly,urx,ury):
+  # Process grid
+  # Read and subset grid
+  NewGrid, nx, ny, gt, proj = ReadandWarp(local_filename,llx,lly,urx,ury)
+
+  # Scale value
+  NewGrid = NewGrid*0.1
+
+  return NewGrid, nx, ny, gt, proj
+
+
+def get_EF5_geotiff_metadata():
     xmin = -21.4
     xmax = 30.4
     ymin = -2.9
@@ -172,31 +227,60 @@ def get_EF5_geotiff_metadata(dataPath):
 
     # choose a random raw event to get geo metadata 
     # '3B-HHR-E.MS.MRG.3IMERG.20180618-S123000-E125959.0750.V06B.30min'
+    dataPath = "/home/cc/projects/nowcasting/data/EF5"
     f_str = os.path.join(dataPath, "Côte d'Ivoire_18_06_2018/raw_imerg/3B-HHR-E.MS.MRG.3IMERG.20180618-S000000-E002959.0000.V06B.30min.tif")
     # f_str = f'data/{event_name}/processed_imerg/imerg.{dt.strftime("%Y%m%d%H%M")}.30minAccum.tif'
     _, nx, ny, gt, proj = processIMERG(f_str,xmin,ymin,xmax,ymax)
 
     return nx, ny, gt, proj
 
+def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, model_config):
+    nx, ny, gt, proj = get_EF5_geotiff_metadata()
+
+    output_meta = pd.read_csv(output_meta_fPath)    
+    with h5py.File(output_fPath,'r') as hf:
+        output = hf['forcasts'][:]
+
+
+    for i in range(output.shape[0]):
+        i_meta = output_meta.iloc[i]
+        event_name = i_meta['event_name']
+        out_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in i_meta['out_dt'].split(',')]
+
+
+        event_results_path = os.path.join(resultsPath, event_name)
+        if not os.path.exists(event_results_path):
+            os.mkdir(os.path.join(resultsPath, event_name))
+        
+        precipitations = output[i, :, :, :] 
+        for t in range(precipitations.shape[2]):
+            precip_t = precipitations[:, :, t]
+            gridOutName = os.path.join(event_results_path, f"{model_config['method']}_forcast_{out_dt[t].strftime('%Y%m%d%H%M')}.30minAccum.tif")
+            WriteGrid(gridOutName, precip_t, nx, ny, gt, proj)
+
+
+
+
 #===================================================================================================
 #===================================================================================================
 #===================================================================================================
 if __name__=='__main__':
     
+
+
     EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
     dataPath = "/home/cc/projects/nowcasting/data/EF5"
 
-    train_st_inds = np.arange(0, 8)
+
+    save2h5py_with_metadata()
+    train_st_inds = 0
     train_len = 10
     prediction_steps = 8
 
-    # create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
+    create_sample_datasets(dataPath, train_st_inds, train_len, prediction_steps)
 
-    ef5 = EF5Dataset(os.path.join(dataPath,'EF5_samples.h5py'), os.path.join(dataPath, 'EF5_samples_meta.csv'))
 
-    X, Y, X_dt, Y_dt = ef5.__getitem__(0)
 
-    print('stop for debugging') 
     
 
 
