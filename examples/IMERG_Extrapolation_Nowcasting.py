@@ -25,7 +25,7 @@ output_meta_fPath = os.path.join(resultsPath,'EF5_forcasts_meta.csv')
 
 ## Load data using Pytorch DataLoader
 ef5_samples = EF5Dataset(input_fPath, input_meta_fPath)
-dataloader = torch.utils.data.DataLoader(ef5_samples, batch_size=1, shuffle=False, pin_memory=True)
+dataloader = torch.utils.data.DataLoader(ef5_samples, batch_size=1, shuffle=True, pin_memory=True)
 
 # model config
 model_config = {
@@ -34,7 +34,7 @@ model_config = {
     'add_perturbations': False
 }
 
-write2geotiff = True
+write2geotiff = False
 
 forcasts, forcasts_meta = forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath)
 
@@ -44,15 +44,13 @@ if write2geotiff:
     write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, model_config)
 
 
+# with h5py.File(output_fPath,'r') as hf:
+#     forcasts = hf['forcasts'][:]
 
-# FSS score
-# calculate FSS
-fss = verification.get_method("FSS")
-
-thr=1.0
-scale=2
+forcasts_meta = pd.read_csv(output_meta_fPath, index_col=0)
 
 
+print("stop for debugging") 
 
             
     

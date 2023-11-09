@@ -27,6 +27,7 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath,
     pfunc, kargs = extrapolation_model_setup(model_config)
 
     forcasts = []
+    observations = []
     forcasts_meta = []  
     for in_imgs, out_imgs, in_dt, out_dt, event_name  in dataloader:
 
@@ -36,6 +37,9 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath,
 
         out_imgs = out_imgs.numpy()
         out_imgs = np.squeeze(out_imgs, axis=0)
+        # copy for save the observation images
+        obs_images = out_imgs.copy()
+
         out_imgs = np.transpose(out_imgs, (2, 0, 1))
 
         forcast_precip = pfunc(in_imgs, out_imgs.shape[0], **kargs)
@@ -43,16 +47,20 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath,
         forcast_precip = np.transpose(forcast_precip, (1, 2, 0))
 
         forcasts.append(forcast_precip) 
+        observations.append(obs_images)
+
         forcasts_meta.append(pd.Series({'event_name':event_name[0], 'in_dt':in_dt[0], 'out_dt':out_dt[0]}))
 
         print("stop for debugging")
 
     forcasts = np.array(forcasts)
+    observations = np.array(observations)   
     forcasts_meta = pd.DataFrame(forcasts_meta) 
 
     if save==True:
         with h5py.File(output_fPath,'w') as hf:
             preds = hf.create_dataset('forcasts', data=forcasts)
+            obs = hf.create_dataset('observations', data=observations)
 
         forcasts_meta.to_csv(output_meta_fPath)
 
