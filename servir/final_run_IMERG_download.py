@@ -145,14 +145,14 @@ def processIMERG(local_filename,llx,lly,urx,ury):
   # Scale value
   NewGrid = NewGrid*0.1
 
-  # import os.path
-  # import json
+  import os.path
+  import json
 
-  # meta = {'nx': nx, 'ny': ny, 'gt': gt, 'proj': proj} 
-  # fPath = 'imerg_giotiff_meta.json'
-  # if not os.path.isfile(fPath):
-  #   with open(fPath, "w") as outfile:
-  #     json.dump(meta, outfile)
+  meta = {'nx': nx, 'ny': ny, 'gt': gt, 'proj': proj} 
+  fPath = 'imerg_giotiff_meta.json'
+  if not os.path.isfile(fPath):
+    with open(fPath, "w") as outfile:
+      json.dump(meta, outfile)
 
 
   return nx, ny, gt, proj

@@ -18,6 +18,10 @@ def extrapolation_model_setup(model_config):
         pfunc = steps
         kargs = {'n_ens_members': model_config['n_ens_members'], 'n_cascade_levels': model_config['n_cascade_levels']}
 
+    elif model_config['method'] == 'Lagrangian_Persistence':
+        from servir.methods.extrapolation_methods import langragian_persistance
+        pfunc = langragian_persistance
+        kargs = {}
     return pfunc, kargs
 
 
@@ -51,7 +55,6 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath,
 
         forcasts_meta.append(pd.Series({'event_name':event_name[0], 'in_dt':in_dt[0], 'out_dt':out_dt[0]}))
 
-        print("stop for debugging")
 
     forcasts = np.array(forcasts)
     observations = np.array(observations)   
