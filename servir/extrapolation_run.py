@@ -53,7 +53,13 @@ def forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath,
         forcasts.append(forcast_precip) 
         observations.append(obs_images)
 
-        forcasts_meta.append(pd.Series({'event_name':event_name[0], 'in_dt':in_dt[0], 'out_dt':out_dt[0]}))
+        forcasts_meta.append(pd.Series({'event_name':event_name[0], 'in_datetimes':in_dt[0], 'out_datetimes':out_dt[0]}))
+
+        if (save ==True) and (len(forcasts) % 10 == 0):
+            forcasts_save = np.array(forcasts)
+
+            with h5py.File(output_fPath,'w') as hf:
+                preds = hf.create_dataset('forcasts', data=forcasts_save)
 
 
     forcasts = np.array(forcasts)

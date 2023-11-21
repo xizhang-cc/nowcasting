@@ -1,13 +1,10 @@
 import os
 import sys
 sys.path.append("/home/cc/projects/nowcasting/")
-import h5py
-import datetime
 
-import numpy as np
+
 import pandas as pd
 import torch
-from pysteps import verification
 
 from servir.datasets.dataLoader_EF5 import create_sample_datasets, EF5Dataset, write_forcasts_to_geotiff
 from servir.extrapolation_run import forcasts_and_save
@@ -29,12 +26,12 @@ train_st_datetimes = [list(pd.date_range(start='2018-06-18 13:00', end='2018-06-
 train_len = 12
 prediction_steps = 12
 
-# create_sample_datasets(dataPath, EF5_events, train_st_datetimes, train_len, prediction_steps)
+if not os.path.exists(os.path.join(dataPath,'EF5_samples.h5py')):
+    create_sample_datasets(dataPath, EF5_events, train_st_datetimes, train_len, prediction_steps)
 
 
 input_fPath = os.path.join(dataPath,'EF5_samples.h5py')
 input_meta_fPath = os.path.join(dataPath,'EF5_samples_meta.csv')    
-
 
 
 ## Load data using Pytorch DataLoader
@@ -42,22 +39,21 @@ ef5_samples = EF5Dataset(input_fPath, input_meta_fPath)
 dataloader = torch.utils.data.DataLoader(ef5_samples, batch_size=1, shuffle=False, pin_memory=True)
 
 
-model_config = {
-    'method': 'LINDA',
-    'max_num_features': 15,
-    'add_perturbations': False
-}
-
 # model_config = {
-#     'method': 'STEPS',
-#     'n_ens_members': 20,
-#     'n_cascade_levels': 6
+#     'method': 'LINDA',
+#     'max_num_features': 15,
+#     'add_perturbations': False
 # }
+
+model_config = {
+    'method': 'STEPS',
+    'n_ens_members': 20,
+    'n_cascade_levels': 6
+}
 
 # model_config = {        
 #     'method': 'Lagrangian_Persistence',
 # }
-
 
 
 write2geotiff = True
@@ -68,7 +64,7 @@ method = model_config['method']
 output_fPath = os.path.join(resultsPath,f'{method}_EF5_forcasts.h5py')
 output_meta_fPath = os.path.join(resultsPath,f'{method}_EF5_forcasts_meta.csv')
 
-forcasts, forcasts_meta = forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath)
+forcasts, forcasts_meta = forcasts_and_save(dataloader, model_config, output_fPath, output_meta_fPath, save=True)
 
 
 # write into giotiff files
@@ -78,6 +74,11 @@ if write2geotiff:
 
 # with h5py.File(output_fPath,'r') as hf:
 #     forcasts = hf['forcasts'][:]
+
+
+
+# forcasts.shape
+print('stop for debugging')
 
 # forcasts_meta = pd.read_csv(output_meta_fPath, index_col=0)
 

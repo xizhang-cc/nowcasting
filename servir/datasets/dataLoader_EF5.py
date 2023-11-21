@@ -108,19 +108,23 @@ def create_sample_datasets(dataPath, EF5_events, train_st_dts, train_len, predic
 class EF5Dataset(Dataset):
     def __init__(self, fPath, metaPath):
         self.fPath = fPath
+        # To load dataset
+        with h5py.File(self.fPath,'r') as hf:
+            self.Xall = hf['IN_Precipitations'][:, :, :, :]
+            self.Yall = hf['OUT_Precipitations'][:, :, :, :]
+
         # To load meta data
-        self.meta = pd.read_csv(metaPath, index_col=0)  
+        self.meta = pd.read_csv(metaPath, index_col=0)
 
     def __len__(self):
         return self.meta.shape[0]
 
     def __getitem__(self, idx):
         print(idx)
-        # To load dataset
-        with h5py.File(self.fPath,'r') as hf:
-        # hf = h5py.File(self.fPath,'r')
-            X = hf['IN_Precipitations'][idx, :, :, :]
-            Y = hf['OUT_Precipitations'][idx, :, :, :]
+
+
+        X = self.Xall[idx, :, :, :]
+        Y = self.Yall[idx, :, :, :]
 
         X_dt = self.meta.iloc[idx]['in_datetimes']
         # X_dt_str = self.meta.iloc[idx]['in_datetimes'].split(',')
@@ -174,7 +178,7 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
     for i in range(output.shape[0]):
         i_meta = output_meta.iloc[i]
         # event_name = i_meta['event_name']
-        out_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in i_meta['out_dt'].split(',')]
+        out_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in i_meta['out_datetimes'].split(',')]
 
         method_path = os.path.join(resultsPath, f"{model_config['method']}")
         if not os.path.exists(method_path):
