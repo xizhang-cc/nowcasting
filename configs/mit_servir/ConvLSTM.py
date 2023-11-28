@@ -16,9 +16,30 @@ stride = 1
 patch_size = 4
 layer_norm = 0
 # training
+max_epochs = 100
+early_stop_epoch= -1
+no_display_method_info= False
 lr = 5e-4
+# train optimizer
+opt = 'adam'
+sched = 'onecycle'
+opt_eps= None
+opt_betas= None
+momentum= 0.9
+weight_decay = 0
+clip_grad= None
+clip_mode= 'norm'
+# dataset
 batch_size = 10
 val_batch_size = 10
-sched = 'onecycle'
-max_epochs = 100
-early_stop = -1
+data_root = './data'
+dataname = 'mit_servir'
+channels = 1
+in_seq_length = 13
+out_seq_length = 12 
+img_height = 384
+img_width = 384
+# system
+use_gpu = True
+distributed = False
+num_workers = 4

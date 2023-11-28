@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 
 from servir.datasets.dataLoader_EF5 import create_sample_datasets, EF5Dataset, write_forcasts_to_geotiff
-from servir.extrapolation_run import forcasts_and_save
+from servir.extrapolation_exp import forcasts_and_save
 
 # where to load data
 dataPath = "/home/cc/projects/nowcasting/data/EF5"
@@ -74,7 +74,6 @@ if write2geotiff:
 
 # with h5py.File(output_fPath,'r') as hf:
 #     forcasts = hf['forcasts'][:]
-
 
 
 # forcasts.shape
