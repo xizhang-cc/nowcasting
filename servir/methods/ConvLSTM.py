@@ -71,25 +71,25 @@ class ConvLSTM_Model(nn.Module):
 
     """
 
-    def __init__(self, num_layers, num_hidden, configs, **kwargs):
+    def __init__(self, num_layers, num_hidden, config, **kwargs):
         super(ConvLSTM_Model, self).__init__()
-        C, H, W = configs['channels'], configs['img_height'], configs['img_width']
+        C, H, W = config['channels'], config['img_height'], config['img_width']
 
-        self.configs = configs
-        self.frame_channel = configs['patch_size'] * configs['patch_size'] * C
+        self.config = config
+        self.frame_channel = config['patch_size'] * config['patch_size'] * C
         self.num_layers = num_layers
         self.num_hidden = num_hidden
         cell_list = []
 
-        height = H // configs['patch_size']
-        width = W // configs['patch_size']
+        height = H // config['patch_size']
+        width = W // config['patch_size']
         self.MSE_criterion = nn.MSELoss()
 
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]
             cell_list.append(
-                ConvLSTMCell(in_channel, num_hidden[i], height, width, configs.filter_size,
-                                       configs['stride'], configs['layer_norm'])
+                ConvLSTMCell(in_channel, num_hidden[i], height, width, config['filter_size'],
+                                       config['stride'], config['layer_norm'])
             )
         self.cell_list = nn.ModuleList(cell_list)
         self.conv_last = nn.Conv2d(num_hidden[num_layers - 1], self.frame_channel,
@@ -109,23 +109,23 @@ class ConvLSTM_Model(nn.Module):
         c_t = []
 
         for i in range(self.num_layers):
-            zeros = torch.zeros([batch, self.num_hidden[i], height, width]).to(self.configs.device)
+            zeros = torch.zeros([batch, self.num_hidden[i], height, width]).to(self.config.device)
             h_t.append(zeros)
             c_t.append(zeros)
 
-        for t in range(self.configs.pre_seq_length + self.configs.aft_seq_length - 1):
+        for t in range(self.config.pre_seq_length + self.config.aft_seq_length - 1):
             # reverse schedule sampling
-            if self.configs.reverse_scheduled_sampling == 1:
+            if self.config.reverse_scheduled_sampling == 1:
                 if t == 0:
                     net = frames[:, t]
                 else:
                     net = mask_true[:, t - 1] * frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
             else:
-                if t < self.configs.pre_seq_length:
+                if t < self.config.pre_seq_length:
                     net = frames[:, t]
                 else:
-                    net = mask_true[:, t - self.configs.pre_seq_length] * frames[:, t] + \
-                          (1 - mask_true[:, t - self.configs.pre_seq_length]) * x_gen
+                    net = mask_true[:, t - self.config.pre_seq_length] * frames[:, t] + \
+                          (1 - mask_true[:, t - self.config.pre_seq_length]) * x_gen
 
             h_t[0], c_t[0] = self.cell_list[0](net, h_t[0], c_t[0])
 
@@ -161,12 +161,12 @@ class ConvLSTM():
         self.steps_per_epoch = steps_per_epoch
 
 
-        self.model = self._build_model(config)
+        self.model = self._build_model()
 
-        self.model_optim, self.scheduler, self.by_epoch = self._init_optimizer(steps_per_epoch)
+        self.model_optim, self.scheduler, self.by_epoch = self._init_optimizer()
         self.criterion = nn.MSELoss()
 
-        self.criterion = None
+
         self.scheduler = None
 
         self.clip_value = config['clip_grad']
@@ -185,4 +185,5 @@ class ConvLSTM():
         return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.device)
     
     def _init_optimizer(self):
-        return get_optim_scheduler(self.config, self.args.epoch, self.model, self.steps_per_epoch)
+        epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
+        return get_optim_scheduler(self.config, self.model, epochs, self.steps_per_epoch)

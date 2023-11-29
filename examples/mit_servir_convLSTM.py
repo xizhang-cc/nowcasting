@@ -2,8 +2,8 @@ import os
 import sys
 sys.path.append("/home/cc/projects/nowcasting/")
 import h5py
-
-
+import logging 
+import time
 import numpy as np
 import pandas as pd
 import torch
@@ -19,6 +19,17 @@ dataname = 'mit_servir'
 
 use_gpu = True
 distributed = False
+
+# Results and Logging
+base_results_path = f'./results/{dataname}'
+
+timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+logging.basicConfig(level=logging.INFO,
+                    filename=os.path.join(base_results_path, f'{method}_{timestamp}.log'),
+                    filemode='a', format='%(asctime)s - %(message)s')
+
+
+logging.info('Method: ' + str(method))
 
 write2geotiff = True
 
@@ -43,12 +54,12 @@ dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batc
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
 #
-max_iters =  config['max_epochs'] * len(dataloader_train)
+max_iters =  config['max_epoch'] * len(dataloader_train)
 steps_per_epoch = len(dataloader_train)
 
 
-if config['early_stop_epoch'] <= config['max_epochs'] // 5:
-     config['early_stop_epoch'] = config['max_epochs'] * 2
+if config['early_stop_epoch'] <= config['max_epoch'] // 5:
+     config['early_stop_epoch'] = config['max_epoch'] * 2
 
 
 

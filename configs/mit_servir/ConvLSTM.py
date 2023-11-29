@@ -16,12 +16,12 @@ stride = 1
 patch_size = 4
 layer_norm = 0
 # training
-max_epochs = 100
+max_epoch = 100
 early_stop_epoch= -1
 no_display_method_info= False
-lr = 5e-4
 # train optimizer
 opt = 'adam'
+lr = 5e-4
 sched = 'onecycle'
 opt_eps= None
 opt_betas= None

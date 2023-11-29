@@ -2,7 +2,7 @@
 data/
 
 # results in examples
-examples/results/
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
