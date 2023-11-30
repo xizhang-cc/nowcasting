@@ -156,6 +156,9 @@ class ConvLSTM():
 
     def __init__(self, config, device, steps_per_epoch):
         
+        if config['early_stop_epoch'] <= config['max_epoch'] // 5:
+            config['early_stop_epoch'] = config['max_epoch'] * 2
+
         self.config = config
         self.device = device
         self.steps_per_epoch = steps_per_epoch
