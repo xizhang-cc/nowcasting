@@ -7,9 +7,9 @@ from collections import defaultdict
 
 import torch
 import torchvision
-# from fvcore.nn import FlopCountAnalysis, flop_count_table
+from fvcore.nn import FlopCountAnalysis, flop_count_table
 
-def collect_env():
+def collect_env_info():
 
     """Collect the information of the running environments."""
     env_info = {}
@@ -52,10 +52,10 @@ def collect_env():
     return env_info
 
 
-def display_method_info(config, device, method):
+def collect_method_info(config, method, device):
     """Plot the basic infomation of supported methods"""
     T, C, H, W = config['in_seq_length'], config['channels'], config['img_height'], config['img_width']
-    if config['method'] in ['convlstm']:
+    if config['method'].lower() in ['convlstm']:
         Hp, Wp = H // config['patch_size'], W // config['patch_size']
         Cp = config['patch_size'] ** 2 * C
 
@@ -65,13 +65,9 @@ def display_method_info(config, device, method):
     else:
         raise ValueError(f"Invalid method name {config['method']}")
 
-    # dash_line = '-' * 80 + '\n'
-    # info = method.model.__repr__()
-    # flops = FlopCountAnalysis(method.model, input_dummy)
-    # flops = flop_count_table(flops)
-    # if self.args.fps:
-    #     fps = measure_throughput(self.method.model, input_dummy)
-    #     fps = 'Throughputs of {}: {:.3f}\n'.format(self.args.method, fps)
-    # else:
-    #     fps = ''
-    # print_log('Model info:\n' + info+'\n' + flops+'\n' + fps + dash_line)
+    info = method.model.__repr__()
+    flops = FlopCountAnalysis(method.model, input_dummy)
+    flops = flop_count_table(flops)
+
+    return info, flops
+

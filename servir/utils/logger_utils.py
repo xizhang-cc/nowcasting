@@ -2,10 +2,11 @@ import os
 import time
 import logging
 
-# from servir.utils.main_utils import collect_env
-from .main_utils import collect_env
 
-def logging_setup(log_path, fname='log.log', log_env_info=True):
+from servir.utils.main_utils import collect_env_info, collect_method_info 
+
+
+def logging_setup(log_path, fname='log.log'):
     """Set up logger to save the running log.
     Args:
         log_path_path (str): Path to save the log.
@@ -18,14 +19,15 @@ def logging_setup(log_path, fname='log.log', log_env_info=True):
                         filename=os.path.join(log_path, fname_wt),
                         filemode='a', format='%(asctime)s - %(message)s')
 
+
+def logging_env_info():
     # log env info
     dash_line = '-' * 60 + '\n'
 
-    if log_env_info:
-        env_info_dict = collect_env()
-        env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
-    
-        logging.info('Environment info:\n' + dash_line + env_info + '\n' + dash_line)
+    env_info_dict = collect_env_info()
+    env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
+
+    logging.info('Environment info:\n' + dash_line + env_info + '\n' + dash_line)
 
 
 def logging_config_info(config):
@@ -35,5 +37,10 @@ def logging_config_info(config):
         config_info = '\n'.join([(f'{k}: {v}') for k, v in config.items()])
         logging.info('Config Info:\n' + dash_line + config_info + '\n' + dash_line)
 
-def logging_method_info(method, device):
-    pass
+def logging_method_info(config, method, device):
+
+    info, flops = collect_method_info(config, method, device)
+    """log the basic infomation of supported methods"""
+    dash_line = '-' * 80 + '\n'
+
+    logging.info('Model info:\n' + info+'\n' + flops+'\n' + dash_line)

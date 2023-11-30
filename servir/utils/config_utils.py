@@ -16,6 +16,7 @@ def load_config(filename:str = None):
     try:
         configfile = Config(filename=filename)
         config = configfile._cfg_dict
+
     except (FileNotFoundError, IOError):
         config = dict()
         print('warning: fail to load the config!')

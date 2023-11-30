@@ -109,23 +109,23 @@ class ConvLSTM_Model(nn.Module):
         c_t = []
 
         for i in range(self.num_layers):
-            zeros = torch.zeros([batch, self.num_hidden[i], height, width]).to(self.config.device)
+            zeros = torch.zeros([batch, self.num_hidden[i], height, width]).to(self.config['device'])
             h_t.append(zeros)
             c_t.append(zeros)
 
-        for t in range(self.config.pre_seq_length + self.config.aft_seq_length - 1):
+        for t in range(self.config['in_seq_length'] + self.config['out_seq_length'] - 1):
             # reverse schedule sampling
-            if self.config.reverse_scheduled_sampling == 1:
+            if self.config['reverse_scheduled_sampling'] == 1:
                 if t == 0:
                     net = frames[:, t]
                 else:
                     net = mask_true[:, t - 1] * frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
             else:
-                if t < self.config.pre_seq_length:
+                if t < self.config['in_seq_length']:
                     net = frames[:, t]
                 else:
-                    net = mask_true[:, t - self.config.pre_seq_length] * frames[:, t] + \
-                          (1 - mask_true[:, t - self.config.pre_seq_length]) * x_gen
+                    net = mask_true[:, t - self.config['in_seq_length']] * frames[:, t] + \
+                          (1 - mask_true[:, t - self.config['in_seq_length']]) * x_gen
 
             h_t[0], c_t[0] = self.cell_list[0](net, h_t[0], c_t[0])
 
@@ -154,13 +154,14 @@ class ConvLSTM():
     Notice: ConvLSTM requires `find_unused_parameters=True` for DDP training.
     """
 
-    def __init__(self, config, device, steps_per_epoch):
-        
+    def __init__(self, config, steps_per_epoch, device):
+
+        # update config
         if config['early_stop_epoch'] <= config['max_epoch'] // 5:
             config['early_stop_epoch'] = config['max_epoch'] * 2
+        config['device'] = device
 
         self.config = config
-        self.device = device
         self.steps_per_epoch = steps_per_epoch
 
 
@@ -185,7 +186,7 @@ class ConvLSTM():
     def _build_model(self):
         num_hidden = [int(x) for x in self.config['num_hidden'].split(',')]
         num_layers = len(num_hidden)
-        return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.device)
+        return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.config['device'])
     
     def _init_optimizer(self):
         epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])

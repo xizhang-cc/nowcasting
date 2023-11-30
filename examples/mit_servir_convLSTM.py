@@ -10,7 +10,7 @@ import torch
 
 from servir.datasets.dataloader_servirMIT import load_mit_servir_data, ServirDataset
 from servir.utils.config_utils import load_config
-from servir.utils.logger_utils import logging_setup, logging_config_info, logging_method_info
+from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
 from servir.methods.ConvLSTM import ConvLSTM
 
@@ -22,7 +22,10 @@ write2geotiff = True
 
 # Results and Logging
 base_results_path = f'./results/{dataname}'
-logging_setup(base_results_path, fname=f'{method}.log', log_env_info=True)   
+logging_setup(base_results_path, fname=f'{method}.log')   
+
+# log env info
+logging_env_info()
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -60,10 +63,10 @@ else:
 
 # setup method
 steps_per_epoch = len(dataloader_train)
-method = ConvLSTM(config, device, steps_per_epoch)
+method = ConvLSTM(config, steps_per_epoch, device)
 
 # log method info
-logging_method_info(method, device)
+logging_method_info(config, method, device)
 ##===================================================##
 
 ##==================Training=========================##
