@@ -9,6 +9,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# vscode related
+.vscode/
+
 # C extensions
 *.so
 

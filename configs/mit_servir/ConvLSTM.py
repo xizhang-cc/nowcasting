@@ -13,7 +13,7 @@ sampling_changing_rate = 0.00002
 num_hidden = '128,128,128,128'
 filter_size = 5
 stride = 1
-patch_size = 4
+patch_size = 6
 layer_norm = 0
 # training
 max_epoch = 100
@@ -40,6 +40,6 @@ out_seq_length = 12
 img_height = 384
 img_width = 384
 # system
-use_gpu = True
+use_gpu = False
 distributed = False
 num_workers = 4
