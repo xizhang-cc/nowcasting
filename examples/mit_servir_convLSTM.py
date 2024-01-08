@@ -43,7 +43,7 @@ X_train, Y_train, X_val, Y_val, X_test, Y_test, training_meta, val_meta, testing
 load_mit_servir_data(dataPath, TRAIN_VAL_FRAC=0.8, N_TRAIN=100, N_TEST=20)
 
 # Load data using Pytorch DataLoader
-trainSet = ServirDataset(X_train, X_train)
+trainSet = ServirDataset(X_train, Y_train)
 valSet = ServirDataset(X_val, Y_val)
 testSet = ServirDataset(X_test, Y_test)
 
