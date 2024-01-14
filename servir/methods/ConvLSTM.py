@@ -1,9 +1,19 @@
+import time
+
+from tqdm import tqdm
+from typing import Dict, List, Union
+ 
+
 import torch
 import torch.nn as nn
-
-# from timm.utils import AverageMeter
+from timm.utils.agc import adaptive_clip_grad
+from timm.utils import AverageMeter
 from contextlib import suppress
+
 from servir.core.optimizor import get_optim_scheduler
+from servir.utils.convLSTM_utils import reshape_patch, schedule_sampling, reserve_schedule_sampling_exp
+
+
 
 
 class ConvLSTMCell(nn.Module):
@@ -155,15 +165,15 @@ class ConvLSTM():
     Notice: ConvLSTM requires `find_unused_parameters=True` for DDP training.
     """
 
-    def __init__(self, config, steps_per_epoch, device):
+    def __init__(self, config, device):
 
         # update config
         if config['early_stop_epoch'] <= config['max_epoch'] // 5:
             config['early_stop_epoch'] = config['max_epoch'] * 2
+            
         config['device'] = device
 
         self.config = config
-        self.steps_per_epoch = steps_per_epoch
 
 
         self.model = self._build_model()
@@ -172,16 +182,14 @@ class ConvLSTM():
         self.criterion = nn.MSELoss()
 
 
-        self.scheduler = None
+        # self.clip_value = config['clip_grad']
+        # self.clip_mode = config['clip_mode'] if self.clip_value is not None else None
+        # # setup automatic mixed-precision (AMP) loss scaling and op casting
+        # self.amp_autocast = suppress  # do nothing
+        # self.loss_scaler = None
+        # # setup metrics
 
-        self.clip_value = config['clip_grad']
-        self.clip_mode = config['clip_mode'] if self.clip_value is not None else None
-        # setup automatic mixed-precision (AMP) loss scaling and op casting
-        self.amp_autocast = suppress  # do nothing
-        self.loss_scaler = None
-        # setup metrics
-
-        self.metric_list = ['mse', 'mae']
+        # self.metric_list = ['mse', 'mae']
 
 
     def _build_model(self):
@@ -191,36 +199,36 @@ class ConvLSTM():
     
     def _init_optimizer(self):
         epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
-        return get_optim_scheduler(self.config, self.model, epochs, self.steps_per_epoch)
+        return get_optim_scheduler(self.config, self.model, epochs)
     
-    def train_one_epoch(self, runner, train_loader, epoch, num_updates, eta=None, **kwargs):
+    
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, **kwargs):
 
         """Train the model with train_loader."""
         data_time_m = AverageMeter()
         losses_m = AverageMeter()
+        # training mode
         self.model.train()
         if self.by_epoch:
             self.scheduler.step(epoch)
-        train_pbar = tqdm(train_loader) if self.rank == 0 else train_loader
+        train_pbar = tqdm(train_loader) if self.config['rank'] == 0 else train_loader
 
         end = time.time()
         for batch_x, batch_y in train_pbar:
             data_time_m.update(time.time() - end)
             self.model_optim.zero_grad()
-
-            if not self.args.use_prefetcher:
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-            runner.call_hook('before_train_iter')
+            # send data to gpu
+            batch_x, batch_y = batch_x.to(self.config['device']), batch_y.to(self.config['device'])
 
             # preprocess
             ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
-            ims = reshape_patch(ims, self.args.patch_size)
-            if self.args.reverse_scheduled_sampling == 1:
+            ims = reshape_patch(ims, self.config['patch_size'])
+            if self.config['reverse_scheduled_sampling'] == 1:
                 real_input_flag = reserve_schedule_sampling_exp(
-                    num_updates, ims.shape[0], self.args)
+                    num_updates, ims.shape[0], self.config)
             else:
                 eta, real_input_flag = schedule_sampling(
-                    eta, num_updates, ims.shape[0], self.args)
+                    eta, num_updates, ims.shape[0], self.config)
 
             with self.amp_autocast():
                 img_gen, loss = self.model(ims, real_input_flag)
@@ -248,7 +256,6 @@ class ConvLSTM():
 
             if not self.by_epoch:
                 self.scheduler.step()
-            runner.call_hook('after_train_iter')
             runner._iter += 1
 
             if self.rank == 0:
@@ -263,3 +270,87 @@ class ConvLSTM():
 
         return num_updates, losses_m, eta
 
+
+    def vali_one_epoch(self, runner, vali_loader, **kwargs):
+        """Evaluate the model with val_loader.
+
+        Args:
+            runner: the trainer of methods.
+            val_loader: dataloader of validation.
+
+        Returns:
+            list(tensor, ...): The list of predictions and losses.
+            eval_log(str): The string of metrics.
+        """
+        self.model.eval()
+        if self.dist and self.world_size > 1:
+            results = self._dist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
+        else:
+            results = self._nondist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
+
+        eval_log = ""
+        for k, v in results.items():
+            v = v.mean()
+            if k != "loss":
+                eval_str = f"{k}:{v.mean()}" if len(eval_log) == 0 else f", {k}:{v.mean()}"
+                eval_log += eval_str
+
+        return results, eval_log
+
+    def test_one_epoch(self, test_loader):
+        """Evaluate the model with test_loader.
+
+        Args:
+            runner: the trainer of methods.
+            test_loader: dataloader of testing.
+
+        Returns:
+            list(tensor, ...): The list of inputs and predictions.
+        """
+        self.model.eval()
+        if self.dist and self.world_size > 1:
+            results = self._dist_forward_collect(test_loader, gather_data=True)
+        else:
+            results = self._nondist_forward_collect(test_loader, gather_data=True)
+
+        return results
+
+    def current_lr(self) -> Union[List[float], Dict[str, List[float]]]:
+        """Get current learning rates.
+
+        Returns:
+            list[float] | dict[str, list[float]]: Current learning rates of all
+            param groups. If the runner has a dict of optimizers, this method
+            will return a dict.
+        """
+        lr: Union[List[float], Dict[str, List[float]]]
+        if isinstance(self.model_optim, torch.optim.Optimizer):
+            lr = [group['lr'] for group in self.model_optim.param_groups]
+        elif isinstance(self.model_optim, dict):
+            lr = dict()
+            for name, optim in self.model_optim.items():
+                lr[name] = [group['lr'] for group in optim.param_groups]
+        else:
+            raise RuntimeError(
+                'lr is not applicable because optimizer does not exist.')
+        return lr
+
+    def clip_grads(self, params, norm_type: float = 2.0):
+        """ Dispatch to gradient clipping method
+
+        Args:
+            parameters (Iterable): model parameters to clip
+            value (float): clipping value/factor/norm, mode dependant
+            mode (str): clipping mode, one of 'norm', 'value', 'agc'
+            norm_type (float): p-norm, default 2.0
+        """
+        if self.clip_mode is None:
+            return
+        if self.clip_mode == 'norm':
+            torch.nn.utils.clip_grad_norm_(params, self.clip_value, norm_type=norm_type)
+        elif self.clip_mode == 'value':
+            torch.nn.utils.clip_grad_value_(params, self.clip_value)
+        elif self.clip_mode == 'agc':
+            adaptive_clip_grad(params, self.clip_value, norm_type=norm_type)
+        else:
+            assert False, f"Unknown clip mode ({self.clip_mode})."

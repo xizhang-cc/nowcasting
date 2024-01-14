@@ -5,7 +5,7 @@ optim_parameters = {
 }
 
 
-def get_optim_scheduler(config, model, epochs, steps_per_epoch):
+def get_optim_scheduler(config, model, epochs):
     parameters = model.parameters()
     
     opt_lower = config['opt'].lower()
@@ -24,7 +24,7 @@ def get_optim_scheduler(config, model, epochs, steps_per_epoch):
         assert False and "Invalid optimizer"
 
     sched_lower = config['sched'].lower()
-    total_steps = epochs * steps_per_epoch
+    total_steps = epochs * config['steps_per_epoch']
     by_epoch = True
     if sched_lower == 'onecycle':
         lr_scheduler = optim.lr_scheduler.OneCycleLR(

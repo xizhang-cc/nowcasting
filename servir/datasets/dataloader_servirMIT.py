@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset
 
 
+
 def load_mit_servir_data(data_path, TRAIN_VAL_FRAC=0.8, N_TRAIN=-1, N_TEST=-1):
 
     # Target locations of sample training & testing data
@@ -56,5 +57,13 @@ class ServirDataset(Dataset):
     def __getitem__(self, index):
         img_in = self.X[index]
         img_out = self.Y[index]
+
+        # reshape to [T, C, H, W]
+        # T: time steps
+        # C: channels, 1 if grayscale, 3 if RGB
+        # H: height
+        # W: width  
+        img_in = np.transpose(np.expand_dims(img_in, axis=0), (3, 0, 1, 2)) 
+        img_out = np.transpose(np.expand_dims(img_out, axis=0), (3, 0, 1, 2))
 
         return img_in, img_out

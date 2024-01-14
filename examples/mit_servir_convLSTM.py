@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import torch
 
+from servir.core.distribution import get_dist_info
+from servir.core.trainer import train
 from servir.datasets.dataloader_servirMIT import load_mit_servir_data, ServirDataset
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
@@ -51,9 +53,7 @@ dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batc
 dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True) 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
-##===================================================##
-
-
+config['steps_per_epoch'] = len(dataloader_train)
 ##==================Setup Method=====================##
 # get device
 if config['use_gpu']:  
@@ -62,15 +62,19 @@ else:
     device = torch.device('cpu')
 
 # setup method
-steps_per_epoch = len(dataloader_train)
-method = ConvLSTM(config, steps_per_epoch, device)
+method = ConvLSTM(config, device)
 
 # log method info
 logging_method_info(config, method, device)
-##===================================================##
+
+##==============Distribution=========================##
+
+# setup distribution
+config['rank'], config['world_size'] = get_dist_info()
+
 
 ##==================Training=========================##
-
+train(dataloader_train, dataloader_val, method, config)
 
 
 print("stop for debugging") 

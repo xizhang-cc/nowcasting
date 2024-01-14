@@ -71,3 +71,5 @@ def collect_method_info(config, method, device):
 
     return info, flops
 
+
+

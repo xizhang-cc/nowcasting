@@ -18,6 +18,7 @@ layer_norm = 0
 # training
 max_epoch = 100
 early_stop_epoch= -1
+max_iter = 0
 no_display_method_info= False
 # train optimizer
 opt = 'adam'
