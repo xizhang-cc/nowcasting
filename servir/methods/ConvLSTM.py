@@ -12,6 +12,8 @@ from contextlib import suppress
 
 from servir.core.optimizor import get_optim_scheduler
 from servir.utils.convLSTM_utils import reshape_patch, schedule_sampling, reserve_schedule_sampling_exp
+from servir.utils.distributed_utils import reduce_tensor
+from servir.utils.progress_bar import ProgressBar
 
 
 
@@ -165,13 +167,15 @@ class ConvLSTM():
     Notice: ConvLSTM requires `find_unused_parameters=True` for DDP training.
     """
 
-    def __init__(self, config, device):
+    def __init__(self, config):
 
         # update config
         if config['early_stop_epoch'] <= config['max_epoch'] // 5:
             config['early_stop_epoch'] = config['max_epoch'] * 2
             
-        config['device'] = device
+        self.device = config['device']
+        
+        self.dist = config['distributed']
 
         self.config = config
 
@@ -182,11 +186,13 @@ class ConvLSTM():
         self.criterion = nn.MSELoss()
 
 
-        # self.clip_value = config['clip_grad']
-        # self.clip_mode = config['clip_mode'] if self.clip_value is not None else None
+        self.clip_value = self.config['clip_grad']
+        self.clip_mode = config['clip_mode'] if self.clip_value is not None else None
+
         # # setup automatic mixed-precision (AMP) loss scaling and op casting
-        # self.amp_autocast = suppress  # do nothing
-        # self.loss_scaler = None
+        self.amp_autocast = suppress  # do nothing
+
+        self.loss_scaler = None
         # # setup metrics
 
         # self.metric_list = ['mse', 'mae']
@@ -195,126 +201,109 @@ class ConvLSTM():
     def _build_model(self):
         num_hidden = [int(x) for x in self.config['num_hidden'].split(',')]
         num_layers = len(num_hidden)
-        return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.config['device'])
+        return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.device)
     
     def _init_optimizer(self):
         epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
         return get_optim_scheduler(self.config, self.model, epochs)
+
     
-    
-    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, **kwargs):
+    def _dist_forward_collect(self, data_loader, length=None, gather_data=False):
+        """Forward and collect predictios in a distributed manner.
 
-        """Train the model with train_loader."""
-        data_time_m = AverageMeter()
-        losses_m = AverageMeter()
-        # training mode
-        self.model.train()
-        if self.by_epoch:
-            self.scheduler.step(epoch)
-        train_pbar = tqdm(train_loader) if self.config['rank'] == 0 else train_loader
+        Args:
+            data_loader: dataloader of evaluation.
+            length (int): Expected length of output arrays.
+            gather_data (bool): Whether to gather raw predictions and inputs.
 
-        end = time.time()
-        for batch_x, batch_y in train_pbar:
-            data_time_m.update(time.time() - end)
-            self.model_optim.zero_grad()
-            # send data to gpu
-            batch_x, batch_y = batch_x.to(self.config['device']), batch_y.to(self.config['device'])
+        Returns:
+            results_all (dict(np.ndarray)): The concatenated outputs.
+        """
+        # preparation
+        results = []
+        length = len(data_loader.dataset) if length is None else length
+        if self.rank == 0:
+            prog_bar = ProgressBar(len(data_loader))
 
-            # preprocess
-            ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
-            ims = reshape_patch(ims, self.config['patch_size'])
-            if self.config['reverse_scheduled_sampling'] == 1:
-                real_input_flag = reserve_schedule_sampling_exp(
-                    num_updates, ims.shape[0], self.config)
-            else:
-                eta, real_input_flag = schedule_sampling(
-                    eta, num_updates, ims.shape[0], self.config)
+        # loop
+        for idx, (batch_x, batch_y) in enumerate(data_loader):
+            if idx == 0:
+                part_size = batch_x.shape[0]
+            with torch.no_grad():
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                pred_y = self._predict(batch_x, batch_y)
 
-            with self.amp_autocast():
-                img_gen, loss = self.model(ims, real_input_flag)
+            if gather_data:  # return raw datas
+                results.append(dict(zip(['inputs', 'preds', 'trues'],
+                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
+            else:  # return metrics
+                eval_res, _ = metric(pred_y.cpu().numpy(), batch_y.cpu().numpy(),
+                                     data_loader.dataset.mean, data_loader.dataset.std,
+                                     metrics=self.metric_list, spatial_norm=self.spatial_norm, return_log=False)
+                eval_res['loss'] = self.criterion(pred_y, batch_y).cpu().numpy()
+                for k in eval_res.keys():
+                    eval_res[k] = eval_res[k].reshape(1)
+                results.append(eval_res)
 
-            if not self.dist:
-                losses_m.update(loss.item(), batch_x.size(0))
-
-            if self.loss_scaler is not None:
-                if torch.any(torch.isnan(loss)) or torch.any(torch.isinf(loss)):
-                    raise ValueError("Inf or nan loss value. Please use fp32 training!")
-                self.loss_scaler(
-                    loss, self.model_optim,
-                    clip_grad=self.args.clip_grad, clip_mode=self.args.clip_mode,
-                    parameters=self.model.parameters())
-            else:
-                loss.backward()
-                self.clip_grads(self.model.parameters())
-                self.model_optim.step()
-
-            torch.cuda.synchronize()
-            num_updates += 1
-
-            if self.dist:
-                losses_m.update(reduce_tensor(loss), batch_x.size(0))
-
-            if not self.by_epoch:
-                self.scheduler.step()
-            runner._iter += 1
-
+            if self.args.empty_cache:
+                torch.cuda.empty_cache()
             if self.rank == 0:
-                log_buffer = 'train loss: {:.4f}'.format(loss.item())
-                log_buffer += ' | data time: {:.4f}'.format(data_time_m.avg)
-                train_pbar.set_description(log_buffer)
+                prog_bar.update()
 
-            end = time.time()  # end for
+        # post gather tensors
+        results_all = {}
+        for k in results[0].keys():
+            results_cat = np.concatenate([batch[k] for batch in results], axis=0)
+            # gether tensors by GPU (it's no need to empty cache)
+            results_gathered = gather_tensors_batch(results_cat, part_size=min(part_size*8, 16))
+            results_strip = np.concatenate(results_gathered, axis=0)[:length]
+            results_all[k] = results_strip
+        return results_all
 
-        if hasattr(self.model_optim, 'sync_lookahead'):
-            self.model_optim.sync_lookahead()
-
-        return num_updates, losses_m, eta
-
-
-    def vali_one_epoch(self, runner, vali_loader, **kwargs):
-        """Evaluate the model with val_loader.
-
-        Args:
-            runner: the trainer of methods.
-            val_loader: dataloader of validation.
-
-        Returns:
-            list(tensor, ...): The list of predictions and losses.
-            eval_log(str): The string of metrics.
-        """
-        self.model.eval()
-        if self.dist and self.world_size > 1:
-            results = self._dist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
-        else:
-            results = self._nondist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
-
-        eval_log = ""
-        for k, v in results.items():
-            v = v.mean()
-            if k != "loss":
-                eval_str = f"{k}:{v.mean()}" if len(eval_log) == 0 else f", {k}:{v.mean()}"
-                eval_log += eval_str
-
-        return results, eval_log
-
-    def test_one_epoch(self, test_loader):
-        """Evaluate the model with test_loader.
+    def _nondist_forward_collect(self, data_loader, length=None, gather_data=False):
+        """Forward and collect predictios.
 
         Args:
-            runner: the trainer of methods.
-            test_loader: dataloader of testing.
+            data_loader: dataloader of evaluation.
+            length (int): Expected length of output arrays.
+            gather_data (bool): Whether to gather raw predictions and inputs.
 
         Returns:
-            list(tensor, ...): The list of inputs and predictions.
+            results_all (dict(np.ndarray)): The concatenated outputs.
         """
-        self.model.eval()
-        if self.dist and self.world_size > 1:
-            results = self._dist_forward_collect(test_loader, gather_data=True)
-        else:
-            results = self._nondist_forward_collect(test_loader, gather_data=True)
+        # preparation
+        results = []
+        prog_bar = ProgressBar(len(data_loader))
+        length = len(data_loader.dataset) if length is None else length
 
-        return results
+        # loop
+        for idx, (batch_x, batch_y) in enumerate(data_loader):
+            with torch.no_grad():
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                pred_y = self._predict(batch_x, batch_y)
 
+            if gather_data:  # return raw datas
+                results.append(dict(zip(['inputs', 'preds', 'trues'],
+                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
+            else:  # return metrics
+                eval_res, _ = metric(pred_y.cpu().numpy(), batch_y.cpu().numpy(),
+                                     data_loader.dataset.mean, data_loader.dataset.std,
+                                     metrics=self.metric_list, spatial_norm=self.spatial_norm, return_log=False)
+                eval_res['loss'] = self.criterion(pred_y, batch_y).cpu().numpy()
+                for k in eval_res.keys():
+                    eval_res[k] = eval_res[k].reshape(1)
+                results.append(eval_res)
+
+            prog_bar.update()
+            if self.args.empty_cache:
+                torch.cuda.empty_cache()
+
+        # post gather tensors
+        results_all = {}
+        for k in results[0].keys():
+            results_all[k] = np.concatenate([batch[k] for batch in results], axis=0)
+        return results_all
+    
     def current_lr(self) -> Union[List[float], Dict[str, List[float]]]:
         """Get current learning rates.
 
@@ -354,3 +343,118 @@ class ConvLSTM():
             adaptive_clip_grad(params, self.clip_value, norm_type=norm_type)
         else:
             assert False, f"Unknown clip mode ({self.clip_mode})."
+
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, **kwargs):
+
+        """Train the model with train_loader."""
+        data_time_m = AverageMeter()
+        losses_m = AverageMeter()
+        # training mode
+        self.model.train()
+        if self.by_epoch:
+            self.scheduler.step(epoch)
+        train_pbar = tqdm(train_loader) if self.config['rank'] == 0 else train_loader
+
+        end = time.time()
+        for batch_x, batch_y in train_pbar:
+            data_time_m.update(time.time() - end)
+            self.model_optim.zero_grad()
+            # send data to gpu
+            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+
+            # preprocess
+            ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
+            ims = reshape_patch(ims, self.config['patch_size'])
+            if self.config['reverse_scheduled_sampling'] == 1:
+                real_input_flag = reserve_schedule_sampling_exp(
+                    num_updates, ims.shape[0], self.config)
+            else:
+                eta, real_input_flag = schedule_sampling(
+                    eta, num_updates, ims.shape[0], self.config)
+
+            with self.amp_autocast():
+                img_gen, loss = self.model(ims, real_input_flag)
+
+            if not self.dist:
+                losses_m.update(loss.item(), batch_x.size(0))
+
+            if self.loss_scaler is not None:
+                if torch.any(torch.isnan(loss)) or torch.any(torch.isinf(loss)):
+                    raise ValueError("Inf or nan loss value. Please use fp32 training!")
+                self.loss_scaler(
+                    loss, self.model_optim,
+                    clip_grad=self.args.clip_grad, clip_mode=self.args.clip_mode,
+                    parameters=self.model.parameters())
+            else:
+                loss.backward()
+                self.clip_grads(self.model.parameters())
+                self.model_optim.step()
+
+            torch.cuda.synchronize()
+            num_updates += 1
+
+            if self.dist:
+                losses_m.update(reduce_tensor(loss), batch_x.size(0))
+
+            if not self.by_epoch:
+                self.scheduler.step()
+
+
+            if self.config['rank'] == 0:
+                log_buffer = 'train loss: {:.4f}'.format(loss.item())
+                log_buffer += ' | data time: {:.4f}'.format(data_time_m.avg)
+                train_pbar.set_description(log_buffer)
+
+            end = time.time()  # end for
+
+        if hasattr(self.model_optim, 'sync_lookahead'):
+            self.model_optim.sync_lookahead()
+
+        return num_updates, losses_m, eta
+
+
+    def vali_one_epoch(self, vali_loader):
+        """Evaluate the model with val_loader.
+
+        Args:
+            runner: the trainer of methods.
+            val_loader: dataloader of validation.
+
+        Returns:
+            list(tensor, ...): The list of predictions and losses.
+            eval_log(str): The string of metrics.
+        """
+        self.model.eval()
+        if self.dist and self.config['world_size'] > 1:
+            results = self._dist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
+        else:
+            results = self._nondist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
+
+        eval_log = ""
+        for k, v in results.items():
+            v = v.mean()
+            if k != "loss":
+                eval_str = f"{k}:{v.mean()}" if len(eval_log) == 0 else f", {k}:{v.mean()}"
+                eval_log += eval_str
+
+        return results, eval_log
+
+    def test_one_epoch(self, test_loader):
+        """Evaluate the model with test_loader.
+
+        Args:
+            runner: the trainer of methods.
+            test_loader: dataloader of testing.
+
+        Returns:
+            list(tensor, ...): The list of inputs and predictions.
+        """
+        self.model.eval()
+        if self.dist and self.world_size > 1:
+            results = self._dist_forward_collect(test_loader, gather_data=True)
+        else:
+            results = self._nondist_forward_collect(test_loader, gather_data=True)
+
+        return results
+
+

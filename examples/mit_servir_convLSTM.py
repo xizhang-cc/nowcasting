@@ -42,7 +42,7 @@ logging_config_info(config)
 dataPath = f"{config['data_root']}/{dataname}"
 
 X_train, Y_train, X_val, Y_val, X_test, Y_test, training_meta, val_meta, testing_meta = \
-load_mit_servir_data(dataPath, TRAIN_VAL_FRAC=0.8, N_TRAIN=100, N_TEST=20)
+load_mit_servir_data(dataPath, TRAIN_VAL_FRAC=0.8, N_TRAIN=10, N_TEST=10)
 
 # Load data using Pytorch DataLoader
 trainSet = ServirDataset(X_train, Y_train)
@@ -61,17 +61,18 @@ if config['use_gpu']:
 else:
     device = torch.device('cpu')
 
+config['device'] = device
+
 # setup method
-method = ConvLSTM(config, device)
+method = ConvLSTM(config)
 
 # log method info
-logging_method_info(config, method, device)
+# logging_method_info(config, method, device)
 
 ##==============Distribution=========================##
 
 # setup distribution
 config['rank'], config['world_size'] = get_dist_info()
-
 
 ##==================Training=========================##
 train(dataloader_train, dataloader_val, method, config)

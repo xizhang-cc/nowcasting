@@ -4,7 +4,10 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
+import torchvision.transforms as transforms
+
 from torch.utils.data import Dataset
+
 
 
 
@@ -45,25 +48,41 @@ def load_mit_servir_data(data_path, TRAIN_VAL_FRAC=0.8, N_TRAIN=-1, N_TEST=-1):
 
 
 class ServirDataset(Dataset):
-    def __init__(self, X, Y):
+    def __init__(self, X, Y, normalize=False):
         super(ServirDataset, self).__init__()
+        # reshape to [S, T, C, H, W]
+        # S: samples
+        # T: time steps
+        # C: channels, 1 if grayscale, 3 if RGB
+        # H: height
+        # W: width 
+        self.X = np.transpose(np.expand_dims(X, axis=1), (0, 4, 1, 2, 3))
+        self.Y = np.transpose(np.expand_dims(Y, axis=1), (0, 4, 1, 2, 3))
+        self.mean = None
+        self.std = None
 
-        self.X = X
-        self.Y = Y
+        if normalize:
+            data = np.concatenate([self.X, self.Y], axis=1)
+            # get the mean/std values along the channel dimension
+            mean = data.mean(axis=(0, 1, 3, 4)).reshape(1, 1, -1, 1, 1)
+            std = data.std(axis=(0, 1, 3, 4)).reshape(1, 1, -1, 1, 1)
+            data = (data - mean) / std
+            self.mean = mean
+            self.std = std
+
+            self.X = data[:, :self.X.shape[1]]
+            self.Y = data[:, self.X.shape[1]:]  
+        else:
+            self.X = self.X / 255.0
+            self.Y = self.Y / 255.0 
+
 
     def __len__(self):
         return self.X.shape[0]
 
     def __getitem__(self, index):
-        img_in = self.X[index]
-        img_out = self.Y[index]
 
-        # reshape to [T, C, H, W]
-        # T: time steps
-        # C: channels, 1 if grayscale, 3 if RGB
-        # H: height
-        # W: width  
-        img_in = np.transpose(np.expand_dims(img_in, axis=0), (3, 0, 1, 2)) 
-        img_out = np.transpose(np.expand_dims(img_out, axis=0), (3, 0, 1, 2))
+        img_in = torch.tensor(self.X[index]).float()
+        img_out = torch.tensor(self.Y[index]).float()
 
         return img_in, img_out

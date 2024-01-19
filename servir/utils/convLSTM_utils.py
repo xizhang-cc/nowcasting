@@ -61,6 +61,7 @@ def reserve_schedule_sampling_exp(itr, batch_size, args):
 
 def schedule_sampling(eta, itr, batch_size, config):
     img_channel, img_height, img_width = config['channels'], config['img_height'], config['img_width']
+    patch_size = config['patch_size']
     zeros = np.zeros((batch_size,
                       config['out_seq_length'] - 1,
                       img_height // config['patch_size'],
@@ -76,15 +77,15 @@ def schedule_sampling(eta, itr, batch_size, config):
     random_flip = np.random.random_sample(
         (batch_size, config['out_seq_length'] - 1))
     true_token = (random_flip < eta)
-    ones = np.ones((img_height // args.patch_size,
-                    img_width // args.patch_size,
-                    args.patch_size ** 2 * img_channel))
-    zeros = np.zeros((img_height // args.patch_size,
-                      img_width // args.patch_size,
-                      args.patch_size ** 2 * img_channel))
+    ones = np.ones((img_height // patch_size,
+                    img_width // patch_size,
+                    patch_size ** 2 * img_channel))
+    zeros = np.zeros((img_height // patch_size,
+                      img_width // patch_size,
+                      patch_size ** 2 * img_channel))
     real_input_flag = []
     for i in range(batch_size):
-        for j in range(args.aft_seq_length - 1):
+        for j in range(config['out_seq_length'] - 1):
             if true_token[i, j]:
                 real_input_flag.append(ones)
             else:
@@ -92,11 +93,11 @@ def schedule_sampling(eta, itr, batch_size, config):
     real_input_flag = np.array(real_input_flag)
     real_input_flag = np.reshape(real_input_flag,
                                  (batch_size,
-                                  args.aft_seq_length - 1,
-                                  img_height // args.patch_size,
-                                  img_width // args.patch_size,
-                                  args.patch_size ** 2 * img_channel))
-    return eta, torch.FloatTensor(real_input_flag).to(args.device)
+                                  config['out_seq_length'] - 1,
+                                  img_height // patch_size,
+                                  img_width // patch_size,
+                                  patch_size ** 2 * img_channel))
+    return eta, torch.FloatTensor(real_input_flag).to(config['device'])
 
 
 def reshape_patch(img_tensor, patch_size):
