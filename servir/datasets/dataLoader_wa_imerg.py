@@ -15,8 +15,11 @@ from osgeo.gdalconst import GA_ReadOnly
 from torch.utils.data import Dataset
 
 
+# 'imerg.2020 0701 0000.30minAccum.tiff'
+# 'imerg.2020 0731 2330.30minAccum.tiff' 
 
-def load_EF5_data(fPath):
+
+def load_wa_imerg_data(fPath, start_date, end_date):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -28,7 +31,8 @@ def load_EF5_data(fPath):
     """
     precipitation = []
     times = []
-    files = glob.glob(fPath+'/*.tif')
+    files = glob.glob(fPath+'/july2020_raw/imerg.202007*.tif')
+
     if len(files)>0:
         for file in files:
             tiff_data = gdal.Open(file, GA_ReadOnly)
@@ -40,15 +44,18 @@ def load_EF5_data(fPath):
             hour = date_str[8:10]
             minute = date_str[10:12]
             dt = datetime.datetime.strptime(year + '-'+ month + '-' + day + ' '+ hour + ':' + minute, '%Y-%m-%d %H:%M')
-            times.append(dt)
-            precipitation.append(imageArray)
+
+            if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
+                times.append(dt)
+                precipitation.append(imageArray)
 
         times = np.array(times)
-        precipitation = np.dstack(precipitation)
+        # images in tensor [T, H, W]
+        precipitation = np.transpose(np.dstack(precipitation), (2, 0, 1))
 
         sorted_index_array = np.argsort(times)
         sorted_timestamps = times[sorted_index_array]
-        sorted_precipitation = precipitation[:, :, sorted_index_array]
+        sorted_precipitation = precipitation[sorted_index_array]
 
     else:
         sorted_precipitation = None
@@ -56,85 +63,62 @@ def load_EF5_data(fPath):
 
     return sorted_precipitation, sorted_timestamps
 
-def create_sample_datasets(dataPath, EF5_events, train_st_dts, train_len, prediction_steps):
 
-    # # if train_st_inds is scalar, then make it a size 1 list
-    # if isinstance(train_st_inds, int):
-    #     train_st_inds = [train_st_inds]
+class waImergDataset(Dataset):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, 
+                max_rainfall_intensity = 52, normalize=False):
 
-    in_event_samples, out_event_samples, meta_samples = [], [], []
+        self.precipitations, self.datetimes = load_wa_imerg_data(fPath, start_date= start_date, end_date=end_date)
+        # pixel value range (0, 1)
+        self.precipitations =  self.precipitations / max_rainfall_intensity
+    
+        self.in_seq_length = in_seq_length
+        self.out_seq_length = out_seq_length    
 
-    for event_ind, event_name in enumerate(EF5_events):
-
-        precipitations, datetimes = load_EF5_data(os.path.join(dataPath, event_name))
-
-
-        for train_st_dt in train_st_dts[event_ind]:
-
-            train_st_ind = list(datetimes).index(train_st_dt)
-            # create one sample of "complete" data
-            train_ed_ind = train_st_ind + train_len
-            training_ind = np.arange(train_st_ind, train_ed_ind)
-            pred_ind = np.arange(train_ed_ind, train_ed_ind+prediction_steps)   
-
-            # inputs
-            in_event_samples.append(precipitations[:, :, training_ind])
-
-            # observed outputs
-            out_event_samples.append(precipitations[:, :, pred_ind])
-
-            # metadata
-            in_datatimes_str = [datetimes[ind].strftime('%Y-%m-%d %H:%M:%S') for ind in training_ind]    
-            out_datatimes_str = [datetimes[ind].strftime('%Y-%m-%d %H:%M:%S') for ind in pred_ind]    
-            
-            meta_samples.append(pd.Series({'event_name': event_name,\
-                                            'in_datetimes' : ','.join(in_datatimes_str), \
-                                            'out_datetimes' : ','.join(out_datatimes_str) }))
-            
-
-    in_event_samples = np.array(in_event_samples)
-    out_event_samples= np.array(out_event_samples)  
-
-    meta_samples = pd.DataFrame(meta_samples)   
-
-    with h5py.File(os.path.join(dataPath,'EF5_samples.h5py'),'w') as hf:
-        din = hf.create_dataset('IN_Precipitations', data=in_event_samples)
-        dout = hf.create_dataset('OUT_Precipitations', data=out_event_samples)  
-
-    meta_samples.to_csv(os.path.join(dataPath, 'EF5_samples_meta.csv'))
-
-
-
-class EF5Dataset(Dataset):
-    def __init__(self, fPath, metaPath):
-        self.fPath = fPath
-        # To load dataset
-        with h5py.File(self.fPath,'r') as hf:
-            self.Xall = hf['IN_Precipitations'][:, :, :, :]
-            self.Yall = hf['OUT_Precipitations'][:, :, :, :]
-
-        # To load meta data
-        self.meta = pd.read_csv(metaPath, index_col=0)
+  
+        if normalize:
+            self.mean = np.mean(self.precipitations, axis=(0, 1, 2))
+            self.std = np.std(self.precipitations, axis=(0, 1, 2))
+            self.precipitations = (self.precipitations - self.mean)/self.std
 
     def __len__(self):
-        return self.meta.shape[0]
+        return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length
 
     def __getitem__(self, idx):
-
-        X = self.Xall[idx, :, :, :]
-        Y = self.Yall[idx, :, :, :]
-
-        X_dt = self.meta.iloc[idx]['in_datetimes']
-        # X_dt_str = self.meta.iloc[idx]['in_datetimes'].split(',')
-        # X_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in X_dt_str]
-
-        Y_dt = self.meta.iloc[idx]['out_datetimes'] 
-        # Y_dt_str = self.meta.iloc[idx]['out_datetimes'].split(',')  
-        # Y_dt = [datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S') for dt_str in Y_dt_str] 
-
-        event_name = self.meta.iloc[idx]['event_name']
+        # desire to [T, C, H, W]
             
-        return (X, Y, X_dt, Y_dt, event_name)
+            # T: time steps
+            # C: channels, 1 if grayscale, 3 if RGB
+            # H: height
+            # W: width 
+
+        in_ind = range(idx, idx+self.in_seq_length)
+        out_ind = range(idx+self.in_seq_length, idx+self.in_seq_length+self.out_seq_length)
+
+
+        # input and output images for a sample
+        # current shape: [T, H, W]
+        in_imgs = self.precipitations[in_ind]
+        out_imgs = self.precipitations[out_ind]
+
+        # desired shape: [T, C, H, W]
+        X = np.expand_dims(in_imgs, axis=(1))
+        Y = np.expand_dims(out_imgs, axis=(1))
+
+        # metadata for a sample
+        X_dt = self.datetimes[in_ind]
+        X_str = [x.strftime('%Y-%m-%d %H:%M:%S') for x in X_dt] 
+        X_dt_str = ','.join(X_str)
+
+
+        Y_dt = self.datetimes[out_ind]
+        Y_dt_str = [y.strftime('%Y-%m-%d %H:%M:%S') for y in Y_dt]
+        Y_dt_str = ','.join(Y_dt_str)
+
+        return (X, Y, X_dt_str, Y_dt_str)
+ 
+            
+        
     
 
 
@@ -202,9 +186,14 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 if __name__=='__main__':
     
 
+    dataPath = "/home/cc/projects/nowcasting/data/IMERG_WA/"
 
-    EF5_events = ["Côte d'Ivoire_18_06_2018", "Cote d'Ivoire_25_06_2020", 'Ghana _10_10_2020', 'Ghana _07_03_2023', 'Nigeria_18_06_2020']
-    dataPath = "/home/cc/projects/nowcasting/data/EF5"
+    a = waImergDataset(dataPath, in_seq_length=12, out_seq_length=12)
+    b= a.__len__()
+    c = a.__getitem__(1)
+
+    # load_wa_imerg_data(dataPath)
+    # precipitation, timestamps = create_sample_datasets(dataPath)
 
 
 

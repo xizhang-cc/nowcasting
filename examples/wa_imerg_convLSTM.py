@@ -7,7 +7,7 @@ import torch
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-from servir.datasets.dataloader_mit_servir import load_mit_servir_data, ServirDataset
+from servir.datasets.dataLoader_wa_imerg import waImergDataset
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
@@ -15,7 +15,7 @@ from servir.methods.ConvLSTM import ConvLSTM
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'mit_servir'
+dataset_name = 'wa_imerg'
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -48,18 +48,23 @@ config['work_dir'] = work_dir
 # where to load data
 dataPath = f"{config['data_root']}/{dataset_name}"
 
-X_train, Y_train, X_val, Y_val, X_test, Y_test, training_meta, val_meta, testing_meta = \
-load_mit_servir_data(dataPath, TRAIN_VAL_FRAC=0.8, N_TRAIN=20, N_TEST=10)
 
-# Load data using Pytorch DataLoader
-trainSet = ServirDataset(X_train, Y_train)
-valSet = ServirDataset(X_val, Y_val)
-testSet = ServirDataset(X_test, Y_test)
+# training data from 2020-07-01 to 2020-07-21
+trainSet = waImergDataset(dataPath, start_date = '2020-07-01', end_date = '2020-07-22',
+                           in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
+# validation data from 2020-07-22 to 2020-07-28
+valSet = waImergDataset(dataPath, start_date = '2020-07-22', end_date = '2020-07-29',
+                           in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
+# testing data from 2020-07-29 to 2020-07-31
+testSet = waImergDataset(dataPath, start_date = '2020-07-29', end_date = '2020-07-31',
+                           in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
 
-dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batch_size'], shuffle=True, pin_memory=True)
+
+dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batch_size'], shuffle=False, pin_memory=True)
 dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True) 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
+# update config
 config['steps_per_epoch'] = len(dataloader_train)
 ##==================Setup Method=====================##
 # get device
