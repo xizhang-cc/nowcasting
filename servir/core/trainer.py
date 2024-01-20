@@ -28,10 +28,10 @@ def train(train_loader, vali_loader, method, config, log_step = 1):
             cur_lr = sum(cur_lr) / len(cur_lr)
             with torch.no_grad():
                 #===A validation loop during training==
-                vali_loss = method.vali_one_epoch(vali_loader)
+                vali_loss, _ = method.vali(vali_loader, gather_pred=False)
                 #=======================================
             if config['rank'] == 0:
-                print_log('Epoch: {0}, Steps: {1} | Lr: {2:.7f} | Train Loss: {3:.7f} | Vali Loss: {4:.7f}\n'.format(
+                print_log('Epoch: {0}, Steps: {1} | Lr: {2:.7f} | Train Loss: {3:.7f} | Vali Loss: {4:.7f}'.format(
                     epoch + 1, len(train_loader), cur_lr, train_loss, vali_loss))
                 
                 # update and save best model as the one with lowest validation loss

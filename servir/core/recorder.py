@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import torch
-from servir.utils.main_utils import  weights_to_cpu
+from servir.utils.main_utils import  weights_to_cpu, print_log
 
 
 class Recorder:
@@ -18,7 +18,7 @@ class Recorder:
         if (self.best_score is None) or (score >= self.best_score - self.delta):
 
             if self.verbose:
-                print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+                print_log(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}). best model updated.\n')
 
             # update best score and minimum validation loss
             self.best_score = score
@@ -26,6 +26,9 @@ class Recorder:
 
             # save checkpoint   
             self.save_checkpoint(method, epoch, path)
+        else:
+            if self.verbose:
+                print_log('Validation loss did not decrease, best model not updated.\n')
 
     def save_checkpoint(self, method, epoch, path):
 

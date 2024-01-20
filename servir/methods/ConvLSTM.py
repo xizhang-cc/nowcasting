@@ -236,6 +236,52 @@ class ConvLSTM():
         pred_y = img_gen[:, -self.config['out_seq_length']:].permute(0, 1, 4, 2, 3).contiguous()
 
         return pred_y
+
+    def _collect_evaluate_predictions(self, data_loader, gather_pred=False, setName='val'):
+        """Evaluate the model with val_loader.
+
+        Args:
+            data_loader: dataloader of vali/test/train set.
+
+        Returns:
+            list(tensor, ...): The list of predictions and losses.
+            eval_log(str): The string of metrics.
+        """
+        self.model.eval()
+
+        data_loss = AverageMeter()
+        data_time_m = AverageMeter()
+        pbar = tqdm(data_loader)
+
+        # loop
+        pred_results = []
+        for batch_x, batch_y in pbar:
+            st = time.time()
+            with torch.no_grad():
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                pred_y = self._predict(batch_x, batch_y)
+
+                if gather_pred:  # return raw datas
+                    pred_results.append(dict(zip(['inputs', 'preds', 'trues'],
+                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
+
+                loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                data_loss.update(loss, batch_x.size(0)) 
+
+                data_time_m.update(time.time() - st)
+
+                if self.config['rank'] == 0:
+                    log_buffer = '{} loss: {:.4f}'.format(setName,loss)
+                    log_buffer += ' | avg {} time: {:.4f}'.format(setName, data_time_m.avg)
+                    pbar.set_description(log_buffer)
+
+        # post gather tensors
+        results = dict()
+        if len(pred_results) > 0:
+            for k in pred_results[0].keys():
+                results[k] = np.concatenate([batch[k] for batch in pred_results], axis=0)
+
+        return data_loss.avg, results
     
     def current_lr(self) -> Union[List[float], Dict[str, List[float]]]:
         """Get current learning rates.
@@ -344,64 +390,36 @@ class ConvLSTM():
                 train_pbar.set_description(log_buffer)
 
 
-
         if hasattr(self.model_optim, 'sync_lookahead'):
             self.model_optim.sync_lookahead()
 
         return num_updates, losses_m.avg, eta
 
-
-    def vali_one_epoch(self, vali_loader):
-        """Evaluate the model with val_loader.
-
-        Args:
-            runner: the trainer of methods.
-            val_loader: dataloader of validation.
-
-        Returns:
-            list(tensor, ...): The list of predictions and losses.
-            eval_log(str): The string of metrics.
-        """
-        self.model.eval()
-
-        vali_loss = AverageMeter()
-        data_time_m = AverageMeter()
-        vali_pbar = tqdm(vali_loader) if self.config['rank'] == 0 else vali_loader
-
-        # loop
-        for batch_x, batch_y in vali_pbar:
-            st = time.time()
-            with torch.no_grad():
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                pred_y = self._predict(batch_x, batch_y)
-                loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
-                vali_loss.update(loss, batch_x.size(0)) 
-
-                data_time_m.update(time.time() - st)
-
-                if self.config['rank'] == 0:
-                    log_buffer = 'vali loss: {:.4f}'.format(loss)
-                    log_buffer += ' | avg vali time: {:.4f}'.format(data_time_m.avg)
-                    vali_pbar.set_description(log_buffer)
-
-        return vali_loss.avg
-
-    def test_one_epoch(self, test_loader):
+    def vali(self, data_loader, gather_pred=False):
         """Evaluate the model with test_loader.
 
         Args:
-            runner: the trainer of methods.
             test_loader: dataloader of testing.
 
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        self.model.eval()
-        if self.dist and self.world_size > 1:
-            results = self._dist_forward_collect(test_loader, gather_data=True)
-        else:
-            results = self._nondist_forward_collect(test_loader, gather_data=True)
+        vali_loss, vali_results = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='vali')
 
-        return results
+        return vali_loss, vali_results  
+
+
+    def test(self, data_loader, gather_pred=False):
+        """Evaluate the model with test_loader.
+
+        Args:
+            test_loader: dataloader of testing.
+
+        Returns:
+            list(tensor, ...): The list of inputs and predictions.
+        """
+        test_loss, test_results = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test')
+
+        return test_loss, test_results  
 
 

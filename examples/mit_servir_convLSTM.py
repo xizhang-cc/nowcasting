@@ -1,11 +1,8 @@
 import os
 import sys
 sys.path.append("/home/cc/projects/nowcasting/")
+
 import h5py
-import logging 
-import time
-import numpy as np
-import pandas as pd
 import torch
 
 from servir.core.distribution import get_dist_info
@@ -17,22 +14,25 @@ from servir.utils.logger_utils import logging_setup, logging_env_info, logging_c
 from servir.methods.ConvLSTM import ConvLSTM
 
 
-method = 'ConvLSTM'
-dataname = 'mit_servir'
+method_name = 'ConvLSTM'
+dataset_name = 'mit_servir'
 
 ##=============Read In Configurations================##
 # Load configuration file
-config_path = os.path.join(f'./configs/{dataname}', f'{method}.py') 
+config_path = os.path.join(f'./configs/{dataset_name}', f'{method_name}.py') 
+
 config = load_config(config_path)
 # log config
 logging_config_info(config)
 
 ##==================Setup============================##
 # Results base path for logging, working dirs, etc. 
-base_results_path = f'./results/{dataname}'
+base_results_path = f'./results/{dataset_name}'
+if not os.path.exists(base_results_path):
+    os.makedirs(base_results_path)
 
 # logging setup
-logging_setup(base_results_path, fname=f'{method}.log')   
+logging_setup(base_results_path, fname=f'{method_name}.log')   
 # log env info
 logging_env_info()
 
@@ -46,7 +46,7 @@ config['work_dir'] = work_dir
 
 ##==================Data Loading=====================##
 # where to load data
-dataPath = f"{config['data_root']}/{dataname}"
+dataPath = f"{config['data_root']}/{dataset_name}"
 
 X_train, Y_train, X_val, Y_val, X_test, Y_test, training_meta, val_meta, testing_meta = \
 load_mit_servir_data(dataPath, TRAIN_VAL_FRAC=0.8, N_TRAIN=20, N_TEST=10)
@@ -88,9 +88,17 @@ best_model_path = train(dataloader_train, dataloader_val, method, config)
 # load best model
 method.model.load_state_dict(torch.load(best_model_path))
 
-test_loss = method.test_one_epoch(dataloader_test)
+test_loss, test_pred = method.test(dataloader_val, gather_pred = True)
 
-print("stop for debugging") 
+## save test results to h5 file
+
+with h5py.File(os.path.join(base_results_path, f'{dataset_name}_{method_name}_predictions.h5py'),'w') as hf:
+    for k in test_pred.keys():
+        hf.create_dataset(k,data=test_pred[k])
+
+
+
+# print("stop for debugging") 
 
             
     
