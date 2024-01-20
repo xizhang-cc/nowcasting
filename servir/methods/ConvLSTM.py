@@ -3,7 +3,7 @@ import time
 from tqdm import tqdm
 from typing import Dict, List, Union
  
-
+import numpy as np
 import torch
 import torch.nn as nn
 from timm.utils.agc import adaptive_clip_grad
@@ -11,9 +11,8 @@ from timm.utils import AverageMeter
 from contextlib import suppress
 
 from servir.core.optimizor import get_optim_scheduler
-from servir.utils.convLSTM_utils import reshape_patch, schedule_sampling, reserve_schedule_sampling_exp
+from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, schedule_sampling, reserve_schedule_sampling_exp
 from servir.utils.distributed_utils import reduce_tensor
-from servir.utils.progress_bar import ProgressBar
 
 
 
@@ -174,9 +173,7 @@ class ConvLSTM():
             config['early_stop_epoch'] = config['max_epoch'] * 2
             
         self.device = config['device']
-        
         self.dist = config['distributed']
-
         self.config = config
 
 
@@ -208,101 +205,37 @@ class ConvLSTM():
         return get_optim_scheduler(self.config, self.model, epochs)
 
     
-    def _dist_forward_collect(self, data_loader, length=None, gather_data=False):
-        """Forward and collect predictios in a distributed manner.
+    def _predict(self, batch_x, batch_y, **kwargs):
+        """Forward the model"""
+        # reverse schedule sampling
+        if self.config['reverse_scheduled_sampling'] == 1:
+            mask_input = 1
+        else:
+            mask_input = self.config['out_seq_length']
 
-        Args:
-            data_loader: dataloader of evaluation.
-            length (int): Expected length of output arrays.
-            gather_data (bool): Whether to gather raw predictions and inputs.
+        img_channel, img_height, img_width = self.config['channels'], self.config['img_height'], self.config['img_width']
 
-        Returns:
-            results_all (dict(np.ndarray)): The concatenated outputs.
-        """
-        # preparation
-        results = []
-        length = len(data_loader.dataset) if length is None else length
-        if self.rank == 0:
-            prog_bar = ProgressBar(len(data_loader))
+        # preprocess
+        #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
+        test_ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
+        #=== img reshpe [S, T, H, W, C] --> [S, T, H//patch_size, W//patch_size, patch_size**2*C]
+        test_dat = reshape_patch(test_ims, self.config['patch_size'])
 
-        # loop
-        for idx, (batch_x, batch_y) in enumerate(data_loader):
-            if idx == 0:
-                part_size = batch_x.shape[0]
-            with torch.no_grad():
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                pred_y = self._predict(batch_x, batch_y)
+        real_input_flag = torch.zeros(
+            (batch_x.shape[0],
+            test_dat.shape[1] - mask_input - 1,
+            img_height // self.config['patch_size'],
+            img_width // self.config['patch_size'],
+            self.config['patch_size'] ** 2 * img_channel)).to(self.device)
+            
+        if self.config['reverse_scheduled_sampling'] == 1:
+            real_input_flag[:, :self.config['out_seq_length'] - 1, :, :] = 1.0
 
-            if gather_data:  # return raw datas
-                results.append(dict(zip(['inputs', 'preds', 'trues'],
-                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
-            else:  # return metrics
-                eval_res, _ = metric(pred_y.cpu().numpy(), batch_y.cpu().numpy(),
-                                     data_loader.dataset.mean, data_loader.dataset.std,
-                                     metrics=self.metric_list, spatial_norm=self.spatial_norm, return_log=False)
-                eval_res['loss'] = self.criterion(pred_y, batch_y).cpu().numpy()
-                for k in eval_res.keys():
-                    eval_res[k] = eval_res[k].reshape(1)
-                results.append(eval_res)
+        img_gen, _ = self.model(test_dat, real_input_flag, return_loss=False)
+        img_gen = reshape_patch_back(img_gen, self.config['patch_size'])
+        pred_y = img_gen[:, -self.config['out_seq_length']:].permute(0, 1, 4, 2, 3).contiguous()
 
-            if self.args.empty_cache:
-                torch.cuda.empty_cache()
-            if self.rank == 0:
-                prog_bar.update()
-
-        # post gather tensors
-        results_all = {}
-        for k in results[0].keys():
-            results_cat = np.concatenate([batch[k] for batch in results], axis=0)
-            # gether tensors by GPU (it's no need to empty cache)
-            results_gathered = gather_tensors_batch(results_cat, part_size=min(part_size*8, 16))
-            results_strip = np.concatenate(results_gathered, axis=0)[:length]
-            results_all[k] = results_strip
-        return results_all
-
-    def _nondist_forward_collect(self, data_loader, length=None, gather_data=False):
-        """Forward and collect predictios.
-
-        Args:
-            data_loader: dataloader of evaluation.
-            length (int): Expected length of output arrays.
-            gather_data (bool): Whether to gather raw predictions and inputs.
-
-        Returns:
-            results_all (dict(np.ndarray)): The concatenated outputs.
-        """
-        # preparation
-        results = []
-        prog_bar = ProgressBar(len(data_loader))
-        length = len(data_loader.dataset) if length is None else length
-
-        # loop
-        for idx, (batch_x, batch_y) in enumerate(data_loader):
-            with torch.no_grad():
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                pred_y = self._predict(batch_x, batch_y)
-
-            if gather_data:  # return raw datas
-                results.append(dict(zip(['inputs', 'preds', 'trues'],
-                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
-            else:  # return metrics
-                eval_res, _ = metric(pred_y.cpu().numpy(), batch_y.cpu().numpy(),
-                                     data_loader.dataset.mean, data_loader.dataset.std,
-                                     metrics=self.metric_list, spatial_norm=self.spatial_norm, return_log=False)
-                eval_res['loss'] = self.criterion(pred_y, batch_y).cpu().numpy()
-                for k in eval_res.keys():
-                    eval_res[k] = eval_res[k].reshape(1)
-                results.append(eval_res)
-
-            prog_bar.update()
-            if self.args.empty_cache:
-                torch.cuda.empty_cache()
-
-        # post gather tensors
-        results_all = {}
-        for k in results[0].keys():
-            results_all[k] = np.concatenate([batch[k] for batch in results], axis=0)
-        return results_all
+        return pred_y
     
     def current_lr(self) -> Union[List[float], Dict[str, List[float]]]:
         """Get current learning rates.
@@ -355,16 +288,20 @@ class ConvLSTM():
             self.scheduler.step(epoch)
         train_pbar = tqdm(train_loader) if self.config['rank'] == 0 else train_loader
 
-        end = time.time()
+        
         for batch_x, batch_y in train_pbar:
-            data_time_m.update(time.time() - end)
+            st = time.time()    
+            
             self.model_optim.zero_grad()
             # send data to gpu
             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
 
             # preprocess
+            #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
             ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
+            #=== img reshpe [S, T, H, W, C] --> [S, T, H//patch_size, W//patch_size, patch_size**2*C]
             ims = reshape_patch(ims, self.config['patch_size'])
+            
             if self.config['reverse_scheduled_sampling'] == 1:
                 real_input_flag = reserve_schedule_sampling_exp(
                     num_updates, ims.shape[0], self.config)
@@ -373,7 +310,7 @@ class ConvLSTM():
                     eta, num_updates, ims.shape[0], self.config)
 
             with self.amp_autocast():
-                img_gen, loss = self.model(ims, real_input_flag)
+                _, loss = self.model(ims, real_input_flag)
 
             if not self.dist:
                 losses_m.update(loss.item(), batch_x.size(0))
@@ -383,7 +320,7 @@ class ConvLSTM():
                     raise ValueError("Inf or nan loss value. Please use fp32 training!")
                 self.loss_scaler(
                     loss, self.model_optim,
-                    clip_grad=self.args.clip_grad, clip_mode=self.args.clip_mode,
+                    clip_grad=self.config['clip_grad'], clip_mode=self.config['clip_mode'],
                     parameters=self.model.parameters())
             else:
                 loss.backward()
@@ -398,19 +335,20 @@ class ConvLSTM():
 
             if not self.by_epoch:
                 self.scheduler.step()
-
+            
+            data_time_m.update(time.time() - st)
 
             if self.config['rank'] == 0:
                 log_buffer = 'train loss: {:.4f}'.format(loss.item())
-                log_buffer += ' | data time: {:.4f}'.format(data_time_m.avg)
+                log_buffer += ' | avg train time: {:.4f}'.format(data_time_m.avg)
                 train_pbar.set_description(log_buffer)
 
-            end = time.time()  # end for
+
 
         if hasattr(self.model_optim, 'sync_lookahead'):
             self.model_optim.sync_lookahead()
 
-        return num_updates, losses_m, eta
+        return num_updates, losses_m.avg, eta
 
 
     def vali_one_epoch(self, vali_loader):
@@ -425,19 +363,28 @@ class ConvLSTM():
             eval_log(str): The string of metrics.
         """
         self.model.eval()
-        if self.dist and self.config['world_size'] > 1:
-            results = self._dist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
-        else:
-            results = self._nondist_forward_collect(vali_loader, len(vali_loader.dataset), gather_data=False)
 
-        eval_log = ""
-        for k, v in results.items():
-            v = v.mean()
-            if k != "loss":
-                eval_str = f"{k}:{v.mean()}" if len(eval_log) == 0 else f", {k}:{v.mean()}"
-                eval_log += eval_str
+        vali_loss = AverageMeter()
+        data_time_m = AverageMeter()
+        vali_pbar = tqdm(vali_loader) if self.config['rank'] == 0 else vali_loader
 
-        return results, eval_log
+        # loop
+        for batch_x, batch_y in vali_pbar:
+            st = time.time()
+            with torch.no_grad():
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                pred_y = self._predict(batch_x, batch_y)
+                loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                vali_loss.update(loss, batch_x.size(0)) 
+
+                data_time_m.update(time.time() - st)
+
+                if self.config['rank'] == 0:
+                    log_buffer = 'vali loss: {:.4f}'.format(loss)
+                    log_buffer += ' | avg vali time: {:.4f}'.format(data_time_m.avg)
+                    vali_pbar.set_description(log_buffer)
+
+        return vali_loss.avg
 
     def test_one_epoch(self, test_loader):
         """Evaluate the model with test_loader.

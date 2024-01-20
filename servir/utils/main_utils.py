@@ -1,9 +1,9 @@
 import os
 import sys
-
 import cv2
 import subprocess
-from collections import defaultdict
+import logging
+from collections import defaultdict, OrderedDict
 
 import torch
 import torchvision
@@ -71,5 +71,25 @@ def collect_method_info(config, method, device):
 
     return info, flops
 
+def print_log(message):
+    print(message)
+    logging.info(message)
 
 
+
+def weights_to_cpu(state_dict: OrderedDict) -> OrderedDict:
+    """Copy a model state_dict to cpu.
+
+    Args:
+        state_dict (OrderedDict): Model weights on GPU.
+
+    Returns:
+        OrderedDict: Model weights on GPU.
+    """
+    state_dict_cpu = OrderedDict()
+    for key, val in state_dict.items():
+        state_dict_cpu[key] = val.cpu()
+    # Keep metadata in state_dict
+    state_dict_cpu._metadata = getattr(  # type: ignore
+        state_dict, '_metadata', OrderedDict())
+    return state_dict_cpu
