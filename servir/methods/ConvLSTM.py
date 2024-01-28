@@ -237,11 +237,14 @@ class ConvLSTM():
 
         return pred_y
 
-    def _collect_evaluate_predictions(self, data_loader, gather_pred=False, setName='val'):
+    def _collect_evaluate_predictions(self, data_loader, setName, gather_pred, withMeta):
         """Evaluate the model with val_loader.
 
         Args:
             data_loader: dataloader of vali/test/train set.
+            setName: name of the set. validation or test set
+            gather_pred: whether to gather predictions. 
+            withMeta: whether to return meta data. 
 
         Returns:
             list(tensor, ...): The list of predictions and losses.
@@ -255,19 +258,22 @@ class ConvLSTM():
 
         # loop
         pred_results = []
-        for batch_x, batch_y in pbar:
+        pred_meta = []
+        for batch in pbar:
+
+            if withMeta:
+                batch_x, batch_y, batch_x_dt, batch_y_dt = batch
+            else:
+                batch_x, batch_y = batch
+
             st = time.time()
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
                 pred_y = self._predict(batch_x, batch_y)
 
-                if gather_pred:  # return raw datas
-                    pred_results.append(dict(zip(['inputs', 'preds', 'trues'],
-                                        [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
-
                 loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
-                data_loss.update(loss, batch_x.size(0)) 
 
+                data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
 
                 if self.config['rank'] == 0:
@@ -275,13 +281,39 @@ class ConvLSTM():
                     log_buffer += ' | avg {} time: {:.4f}'.format(setName, data_time_m.avg)
                     pbar.set_description(log_buffer)
 
-        # post gather tensors
-        results = dict()
-        if len(pred_results) > 0:
-            for k in pred_results[0].keys():
-                results[k] = np.concatenate([batch[k] for batch in pred_results], axis=0)
+                # if gather_pred==True:
+                #     inputs = batch_x.cpu().numpy()
+                #     preds = pred_y.cpu().numpy()
+                #     trues = batch_y.cpu().numpy()   
 
-        return data_loss.avg, results
+                #     if inputs.shape[2] == 1: # if grayscale, remove the channel dimension. [S, T, 1, H, W] --> [S, T, H, W]
+                #         inputs = np.squeeze(inputs, axis=2) 
+                #         preds = np.squeeze(preds, axis=2)
+                #         trues = np.squeeze(trues, axis=2)
+
+                #     if not withMeta: # gather predicted images only
+                #         for i in range(inputs.shape[0]):
+                #             pred_results.append(dict(zip(['inputs', 'preds', 'trues'],
+                #                             [inputs[i], preds[i], trues[i]])))
+                #     else: # gather predicted images and corresponding datetimes.
+                #         for i in range(inputs.shape[0]):
+                #             pred_results.append(dict(zip(['inputs', 'preds', 'trues', 'inputs_dt', 'outputs_dt'],
+                #                             [inputs[i], preds[i], trues[i], batch_x_dt[i], batch_y_dt[i]])))
+                
+                if gather_pred==True:
+                    preds = pred_y.cpu().numpy()
+
+                    if preds.shape[2] == 1: # if grayscale, remove the channel dimension. [S, T, 1, H, W] --> [S, T, H, W]
+                        preds = np.squeeze(preds, axis=2)
+
+                    pred_results.append(preds)
+
+                    if withMeta:
+                        pred_meta = pred_meta + [dt for dt in batch_y_dt]
+
+        pred_results = np.concatenate(pred_results, axis=0)
+
+        return data_loss.avg, pred_results, pred_meta
     
     def current_lr(self) -> Union[List[float], Dict[str, List[float]]]:
         """Get current learning rates.
@@ -323,7 +355,7 @@ class ConvLSTM():
         else:
             assert False, f"Unknown clip mode ({self.clip_mode})."
 
-    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, **kwargs):
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None):
 
         """Train the model with train_loader."""
         data_time_m = AverageMeter()
@@ -404,12 +436,12 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        vali_loss, vali_results = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='vali')
+        vali_loss, vali_results, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='vali', withMeta=False)
 
         return vali_loss, vali_results  
 
 
-    def test(self, data_loader, gather_pred=False):
+    def test(self, data_loader, gather_pred=True):
         """Evaluate the model with test_loader.
 
         Args:
@@ -418,8 +450,8 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        test_loss, test_results = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test')
+        test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test', withMeta=True)
 
-        return test_loss, test_results  
+        return test_loss, test_results, test_meta 
 
 

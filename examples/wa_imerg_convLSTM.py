@@ -4,10 +4,11 @@ sys.path.append("/home/cc/projects/nowcasting/")
 
 import h5py
 import torch
+import pandas as pd
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-from servir.datasets.dataLoader_wa_imerg import waImergDataset
+from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
@@ -46,23 +47,25 @@ config['work_dir'] = work_dir
 
 ##==================Data Loading=====================##
 # where to load data
-dataPath = f"{config['data_root']}/{dataset_name}"
+dataPath = os.path.join('./data', dataset_name)
+fname = os.path.join(dataPath, 'imerg_2020_july.h5py')
 
-
-# training data from 2020-07-01 to 2020-07-21
-trainSet = waImergDataset(dataPath, start_date = '2020-07-01', end_date = '2020-07-22',
+# training data from 2020-07-01 to 2020-07-21 
+trainSet = waImergDataset(fname, start_date = '2020-07-01', end_date = '2020-07-08',
                            in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
 # validation data from 2020-07-22 to 2020-07-28
-valSet = waImergDataset(dataPath, start_date = '2020-07-22', end_date = '2020-07-29',
-                           in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
-# testing data from 2020-07-29 to 2020-07-31
-testSet = waImergDataset(dataPath, start_date = '2020-07-29', end_date = '2020-07-31',
+valSet = waImergDataset(fname, start_date = '2020-07-08', end_date = '2020-07-10',
                            in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
 
+# testing data from 2020-07-29 to 2020-07-31, meta data is included for saving results
+testSet = waImergDataset_withMeta(fname, start_date = '2020-07-10', end_date = '2020-07-12',
+                                in_seq_length = config['in_seq_length'], out_seq_length=config['in_seq_length'])
 
-dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batch_size'], shuffle=False, pin_memory=True)
-dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True) 
+
+dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batch_size'], shuffle=True, pin_memory=True)
+dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batch_size'], shuffle=True, pin_memory=True) 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
+
 
 # update config
 config['steps_per_epoch'] = len(dataloader_train)
@@ -79,7 +82,7 @@ config['device'] = device
 method = ConvLSTM(config)
 
 # log method info
-# logging_method_info(config, method, device)
+logging_method_info(config, method, device)
 
 ##==============Distribution=========================##
 
@@ -87,23 +90,30 @@ method = ConvLSTM(config)
 config['rank'], config['world_size'] = get_dist_info()
 
 ##==================Training=========================##
-best_model_path = train(dataloader_train, dataloader_val, method, config)
+# path and name of best model
+para_dict_fpath = os.path.join(base_results_path, 'model_params.pth')
 
+if not os.path.exists(para_dict_fpath):
+    train(dataloader_train, dataloader_val, method, config, para_dict_fpath)    
 ##==================Testing==========================## 
-# load best model
-method.model.load_state_dict(torch.load(best_model_path))
 
-test_loss, test_pred = method.test(dataloader_val, gather_pred = True)
+# Loads best model’s parameter dictionary 
+method.model.load_state_dict(torch.load(para_dict_fpath))
 
-## save test results to h5 file
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
 
-with h5py.File(os.path.join(base_results_path, f'{dataset_name}_{method_name}_predictions.h5py'),'w') as hf:
-    for k in test_pred.keys():
-        hf.create_dataset(k,data=test_pred[k])
+# save results to h5py file
+with h5py.File(os.path.join(base_results_path, 'test_predictions.h5py'),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
+    hf.create_dataset('timestamps', data=test_meta)
+
+# # save meta data to csv file
+# test_meta_df = pd.DataFrame(test_meta, columns=['out_datetimes'])
+# test_meta_df.to_csv(os.path.join(base_results_path, 'test_meta.csv'), index=True)
 
 
+print("stop for debugging")
 
-# print("stop for debugging") 
 
             
     

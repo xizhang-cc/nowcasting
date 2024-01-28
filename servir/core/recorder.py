@@ -11,11 +11,15 @@ class Recorder:
         self.val_loss_min = np.Inf
         self.delta = delta
 
-    def __call__(self, val_loss, method, epoch, path):
+    def __call__(self, val_loss, method, epoch, work_dir):
+
+        update_model = False
 
         score = -val_loss
 
         if (self.best_score is None) or (score >= self.best_score - self.delta):
+
+            update_model = True
 
             if self.verbose:
                 print_log(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}). best model updated.\n')
@@ -25,12 +29,15 @@ class Recorder:
             self.val_loss_min = val_loss
 
             # save checkpoint   
-            self.save_checkpoint(method, epoch, path)
+            self.save_checkpoint(method, epoch, work_dir)
+        
         else:
             if self.verbose:
-                print_log('Validation loss did not decrease, best model not updated.\n')
+                print_log('Validation loss higher than current best model, best model not updated.\n')
 
-    def save_checkpoint(self, method, epoch, path):
+        return update_model
+
+    def save_checkpoint(self, method, epoch, work_dir):
 
         checkpoint = {
             'epoch': epoch + 1,
@@ -38,8 +45,8 @@ class Recorder:
             'state_dict': weights_to_cpu(method.model.state_dict()),
             'scheduler': method.scheduler.state_dict()}
         
-        torch.save(method.model.state_dict(), os.path.join(path, 'checkpoint.pth') )
-        torch.save(checkpoint, os.path.join(path, 'latest.pth'))
+        torch.save(checkpoint, os.path.join(work_dir, 'latest.pth'))
+
         
 
         
