@@ -4,6 +4,9 @@ data/
 # results in examples
 results/
 
+# run files returned from HPC system
+runs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

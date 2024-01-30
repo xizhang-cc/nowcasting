@@ -176,7 +176,6 @@ class ConvLSTM():
         self.dist = config['distributed']
         self.config = config
 
-
         self.model = self._build_model()
 
         self.model_optim, self.scheduler, self.by_epoch = self._init_optimizer()
@@ -198,7 +197,12 @@ class ConvLSTM():
     def _build_model(self):
         num_hidden = [int(x) for x in self.config['num_hidden'].split(',')]
         num_layers = len(num_hidden)
-        return ConvLSTM_Model(num_layers, num_hidden, self.config).to(self.device)
+        model = ConvLSTM_Model(num_layers, num_hidden, self.config)
+
+        if (torch.cuda.device_count() > 1) and self.config['DataParallel']:
+            model = nn.DataParallel(model)
+
+        return model.to(self.device)
     
     def _init_optimizer(self):
         epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
@@ -280,25 +284,6 @@ class ConvLSTM():
                     log_buffer = '{} loss: {:.4f}'.format(setName,loss)
                     log_buffer += ' | avg {} time: {:.4f}'.format(setName, data_time_m.avg)
                     pbar.set_description(log_buffer)
-
-                # if gather_pred==True:
-                #     inputs = batch_x.cpu().numpy()
-                #     preds = pred_y.cpu().numpy()
-                #     trues = batch_y.cpu().numpy()   
-
-                #     if inputs.shape[2] == 1: # if grayscale, remove the channel dimension. [S, T, 1, H, W] --> [S, T, H, W]
-                #         inputs = np.squeeze(inputs, axis=2) 
-                #         preds = np.squeeze(preds, axis=2)
-                #         trues = np.squeeze(trues, axis=2)
-
-                #     if not withMeta: # gather predicted images only
-                #         for i in range(inputs.shape[0]):
-                #             pred_results.append(dict(zip(['inputs', 'preds', 'trues'],
-                #                             [inputs[i], preds[i], trues[i]])))
-                #     else: # gather predicted images and corresponding datetimes.
-                #         for i in range(inputs.shape[0]):
-                #             pred_results.append(dict(zip(['inputs', 'preds', 'trues', 'inputs_dt', 'outputs_dt'],
-                #                             [inputs[i], preds[i], trues[i], batch_x_dt[i], batch_y_dt[i]])))
                 
                 if gather_pred==True:
                     preds = pred_y.cpu().numpy()
@@ -311,7 +296,8 @@ class ConvLSTM():
                     if withMeta:
                         pred_meta = pred_meta + [dt for dt in batch_y_dt]
 
-        pred_results = np.concatenate(pred_results, axis=0)
+        if len(pred_results)>0:
+            pred_results = np.concatenate(pred_results, axis=0)
 
         return data_loss.avg, pred_results, pred_meta
     

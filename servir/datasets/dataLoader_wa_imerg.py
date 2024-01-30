@@ -9,8 +9,8 @@ import json
 
 import numpy as np
 import pandas as pd
-import osgeo.gdal as gdal
-from osgeo.gdalconst import GA_ReadOnly
+# import osgeo.gdal as gdal
+# from osgeo.gdalconst import GA_ReadOnly
 
 from torch.utils.data import Dataset
 
@@ -19,55 +19,55 @@ from torch.utils.data import Dataset
 # 'imerg.2020 0731 2330.30minAccum.tiff' 
 
 
-def load_wa_imerg_data(fPath, start_date, end_date, save2h5=False, fname='raw_images.h5'):
-    """Function to load IMERG tiff data from the associate event folder
+# def load_wa_imerg_data(fPath, start_date, end_date, save2h5=False, fname='raw_images.h5'):
+#     """Function to load IMERG tiff data from the associate event folder
 
-    Args:
-        data_location (str): string path to the location of the event data
+#     Args:
+#         data_location (str): string path to the location of the event data
 
-    Returns:
-        precipitation (np.array): np.array of precipitations (not sorted by time)
-        times (np.array): np.array of date times that match 1:q with precipitation
-    """
-    precipitation = []
-    times = []
-    files = glob.glob(os.path.join(fPath, 'july2020_raw/imerg.2020*.tif'))
+#     Returns:
+#         precipitation (np.array): np.array of precipitations (not sorted by time)
+#         times (np.array): np.array of date times that match 1:q with precipitation
+#     """
+#     precipitation = []
+#     times = []
+#     files = glob.glob(os.path.join(fPath, 'july2020_raw/imerg.2020*.tif'))
 
-    if len(files)>0:
-        for file in files:
-            tiff_data = gdal.Open(file, GA_ReadOnly)
-            imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
-            date_str = file.split("/")[-1].split('.')[1]
-            year = date_str[0:4]
-            month = date_str[4:6]
-            day = date_str[6:8]
-            hour = date_str[8:10]
-            minute = date_str[10:12]
-            dt = datetime.datetime.strptime(year + '-'+ month + '-' + day + ' '+ hour + ':' + minute, '%Y-%m-%d %H:%M')
+#     if len(files)>0:
+#         for file in files:
+#             tiff_data = gdal.Open(file, GA_ReadOnly)
+#             imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+#             date_str = file.split("/")[-1].split('.')[1]
+#             year = date_str[0:4]
+#             month = date_str[4:6]
+#             day = date_str[6:8]
+#             hour = date_str[8:10]
+#             minute = date_str[10:12]
+#             dt = datetime.datetime.strptime(year + '-'+ month + '-' + day + ' '+ hour + ':' + minute, '%Y-%m-%d %H:%M')
 
-            if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
-                times.append(dt)
-                precipitation.append(imageArray)
+#             if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
+#                 times.append(dt)
+#                 precipitation.append(imageArray)
 
-        times = np.array(times)
-        # images in tensor [T, H, W]
-        precipitation = np.transpose(np.dstack(precipitation), (2, 0, 1))
+#         times = np.array(times)
+#         # images in tensor [T, H, W]
+#         precipitation = np.transpose(np.dstack(precipitation), (2, 0, 1))
 
-        sorted_index_array = np.argsort(times)
-        sorted_timestamps = times[sorted_index_array]
-        sorted_precipitation = precipitation[sorted_index_array]
+#         sorted_index_array = np.argsort(times)
+#         sorted_timestamps = times[sorted_index_array]
+#         sorted_precipitation = precipitation[sorted_index_array]
 
-    else:
-        sorted_precipitation = None
-        sorted_timestamps = None
+#     else:
+#         sorted_precipitation = None
+#         sorted_timestamps = None
 
-    if save2h5: 
-        sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
-        with h5py.File(os.path.join(fPath, fname), 'w') as hf:
-            hf.create_dataset('precipitations', data=sorted_precipitation)
-            hf.create_dataset('timestamps', data=sorted_timestamps_dt)
+#     if save2h5: 
+#         sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
+#         with h5py.File(os.path.join(fPath, fname), 'w') as hf:
+#             hf.create_dataset('precipitations', data=sorted_precipitation)
+#             hf.create_dataset('timestamps', data=sorted_timestamps_dt)
 
-    return sorted_precipitation, sorted_timestamps
+#     return sorted_precipitation, sorted_timestamps
 
 
 # load data from h5 file
