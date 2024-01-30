@@ -111,11 +111,13 @@ config['rank'], config['world_size'] = get_dist_info()
 
 ##==================Training=========================##
 # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, 'model_params.pth')
+para_dict_fpath = os.path.join(base_results_path, 'model_params_1gpu.pth')
 print(f'model parameters saved at {para_dict_fpath}')
 
+checkpoint_fname = os.path.join(base_results_path, 'checkpoint_1gpu.pth')
+print(f'model training checkpoint saved at {para_dict_fpath}')
 
-# train(dataloader_train, dataloader_val, method, config, para_dict_fpath)    
+train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fname)    
 ##==================Testing==========================## 
 
 # Loads best model’s parameter dictionary 

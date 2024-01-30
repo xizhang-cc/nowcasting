@@ -2,9 +2,20 @@ import os
 import torch
 
 from servir.core.recorder import Recorder   
-from servir.utils.main_utils import print_log
+from servir.utils.main_utils import print_log, weights_to_cpu
 
-def train(train_loader, vali_loader, method, config, para_dict_fpath, log_step = 1):
+
+def save_checkpoint(method, epoch, checkpoint_fname='checkpoint.pth'):
+
+    checkpoint = {
+        'epoch': epoch + 1,
+        'optimizer': method.model_optim.state_dict(),
+        'state_dict': weights_to_cpu(method.model.state_dict()),
+        'scheduler': method.scheduler.state_dict()}
+    
+    torch.save(checkpoint, checkpoint_fname)
+
+def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint_fname, log_step = 1):
 
     epoch = 0
     max_epochs = config['max_epoch']
@@ -32,10 +43,13 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, log_step =
                     epoch + 1, len(train_loader), cur_lr, train_loss, vali_loss))
                 
                 # update and save best model as the one with lowest validation loss
-                update_model = recorder(vali_loss, method, epoch, config['work_dir'])
+                update_model = recorder(vali_loss)
 
                 if update_model:
                     torch.save(method.model.state_dict(), para_dict_fpath)
+
+                save_checkpoint(method, epoch, checkpoint_fname=checkpoint_fname)
+
 
 
 

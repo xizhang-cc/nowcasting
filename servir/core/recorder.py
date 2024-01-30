@@ -11,7 +11,7 @@ class Recorder:
         self.val_loss_min = np.Inf
         self.delta = delta
 
-    def __call__(self, val_loss, method, epoch, work_dir):
+    def __call__(self, val_loss):
 
         update_model = False
 
@@ -27,9 +27,6 @@ class Recorder:
             # update best score and minimum validation loss
             self.best_score = score
             self.val_loss_min = val_loss
-
-            # save checkpoint   
-            self.save_checkpoint(method, epoch, work_dir)
         
         else:
             if self.verbose:
@@ -37,15 +34,6 @@ class Recorder:
 
         return update_model
 
-    def save_checkpoint(self, method, epoch, work_dir):
-
-        checkpoint = {
-            'epoch': epoch + 1,
-            'optimizer': method.model_optim.state_dict(),
-            'state_dict': weights_to_cpu(method.model.state_dict()),
-            'scheduler': method.scheduler.state_dict()}
-        
-        torch.save(checkpoint, os.path.join(work_dir, 'latest.pth'))
 
         
 
