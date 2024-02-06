@@ -15,8 +15,6 @@ from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, sched
 from servir.utils.distributed_utils import reduce_tensor
 
 
-
-
 class ConvLSTMCell(nn.Module):
 
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):

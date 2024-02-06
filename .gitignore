@@ -7,6 +7,9 @@ results/
 # run files returned from HPC system
 runs/
 
+# Ignore temporary files
+temp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
