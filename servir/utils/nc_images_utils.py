@@ -9,60 +9,12 @@ import glob
 
 import numpy as np
 import netCDF4 as nc
-
-method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
-
-
-##==================Data Loading=====================##
-# where to load data
-dataPath = os.path.join(base_path, 'data', 'IR' , 'july2020_raw/')
-
-
-dir_t = [filename for filename in os.listdir(dataPath ) if filename.startswith('HRSEVIRI_20200701T') and filename.endswith('.nc')]
-filename_t = dataPath + dir_t[0]
-nc_data_t = nc.Dataset(filename_t,'r')
-# variable_t=nc_data_t.variables
-dir_t.sort()  # sorted chronologically
-lat_t= nc_data_t.variables['lat'][:]
-lon_t= nc_data_t.variables['lon'][:]
-
-
-for d in np.arange(1, 32):
-    pass
-   
-dates_t = []   
-ch9= np.full((len(lat_t), len(lon_t), len(dir_t)), np.nan)
-Tb= np.full((len(lat_t), len(lon_t), len(dir_t)), np.nan)
-
-
-ch9= nc_data_t.variables['channel_9']
-
-
-ch9 = np.full((len(lat_t), len(lon_t), len(dir_t)), np.nan)
-Tb = np.full((len(lat_t), len(lon_t), len(dir_t)), np.nan)
-
-
-lambda_val = 10.8
-nu = 10000 / lambda_val
-c1 = 1.19104E-5
-c2 = 1.43877
-
-
-for i in range(len(dir_t)):
-    filename_t= dataPath+dir_t[i]
-    nc_data_t = nc.Dataset(filename_t)
-    date_str = filename_t.split('HRSEVIRI_')[1][:13]  # Extract date string from file name
-    date_obj = datetime.datetime.strptime(date_str, '%Y%m%dT%H%M')
-    dates_t.append(date_obj)
-    ch9[:, :, i] = nc_data_t.variables['channel_9'][:]
-    Tb[:, :, i] = c2 * nu / np.log(1 + (c1 * nu**3 /ch9[:, :, i]))
-
-# Resample function
-
 from scipy.interpolate import griddata
 
 
+
+
+# Resample function
 def resample_Tb(old_lat, old_lon, old_data, lat_R, lon_R):
     old_coordinates = np.array(np.meshgrid(old_lat, old_lon)).T.reshape(-1, 2)
     new_coordinates = np.array(np.meshgrid(lat_R, lon_R)).T.reshape(-1, 2)
@@ -75,30 +27,125 @@ def resample_Tb(old_lat, old_lon, old_data, lat_R, lon_R):
     return new_data
 
 
+def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
+##==================Data Loading=====================##
+    # find all .nc files
+    files = glob.glob(dataPath+'/raw/*.nc')
 
-lat_R= np.arange(-2.9, 33.1, 0.1)
-lon_R = np.arange(-21.4, 30.4, 0.1)
-
-Tb_R= resample_Tb(lat_t, lon_t, Tb, lat_R, lon_R)
-
-Tb_R = Tb_R.transpose(2, 0, 1)  # [S, H, W]
-
-
-
-
-
-
-
-# dir_t = glob.glob(dataPath+'/*.nc')
-
-# filename_t = dir_t[0]
-
-# nc_data_t = nc.Dataset(filename_t,'r')
-# variable_t=nc_data_t.variables
-
-# ch9= nc_data_t.variables['channel_9']
+    # load the first file to get the lat and lon
+    nc_data_t = nc.Dataset(os.path.join(dataPath, files[0]),'r')
+    lat_t= nc_data_t.variables['lat'][:]
+    lon_t= nc_data_t.variables['lon'][:]
+    lat_R= np.arange(-2.9, 33.1, 0.1)
+    lon_R = np.arange(-21.4, 30.4, 0.1)
 
 
-print('stop for debugging')
+    lambda_val = 10.8
+    nu = 10000 / lambda_val
+    c1 = 1.19104E-5
+    c2 = 1.43877
+
+    # get only the files that are within the date range
+    st = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    et = datetime.datetime.strptime(end_date, '%Y-%m-%d') 
+
+    requested_files = []
+    test = []
+    for file in files:
+        f_dt = datetime.datetime.strptime(file.split('HRSEVIRI_')[1][:13], '%Y%m%dT%H%M')
+
+        if f_dt < et and f_dt >= st:
+            requested_files.append(file)
+            test.append(f_dt)
+
+    test.sort()
+
+    file_size = len(requested_files)
+    batch_size = 10
+    batches = file_size // batch_size
+
+    # start loading the data
+    IR_imgs = [] 
+    IR_dts = []
+    for i in range(batches):
+
+        print(f'batch: {i}')
+
+        ch9 = np.full((len(lat_t), len(lon_t), batch_size), np.nan)
+        Tb = np.full((len(lat_t), len(lon_t), batch_size), np.nan)
+
+        for j in range(batch_size):
+            index = i*batch_size+j
+            file = requested_files[index]
+
+            nc_data_t = nc.Dataset(file)
+            date_str = file.split('HRSEVIRI_')[1][:13]  # Extract date string from file name
+            date_obj = datetime.datetime.strptime(date_str, '%Y%m%dT%H%M')
+
+            IR_dts.append(date_obj)
+
+            ch9[:, :, j] = nc_data_t.variables['channel_9'][:]
+            Tb[:, :, j] = c2 * nu / np.log(1 + (c1 * nu**3 /ch9[:, :, j]))
+
+        Tb_R= resample_Tb(lat_t, lon_t, Tb, lat_R, lon_R)
+        Tb_R = Tb_R.transpose(2, 0, 1)  # [S, H, W]
+
+        IR_imgs.append(Tb_R)
+
+    # get the remaining files
+    remaining_files_size = file_size - batches*batch_size
+    ch9 = np.full((len(lat_t), len(lon_t), remaining_files_size), np.nan)
+    Tb = np.full((len(lat_t), len(lon_t), remaining_files_size), np.nan)
+
+    for j in range(remaining_files_size):
+        index = batches* batch_size+j 
+        file = requested_files[index]
+        nc_data_t = nc.Dataset(file)
+        
+        # get datetime object
+        date_str = file.split('HRSEVIRI_')[1][:13]  # Extract date string from file name
+        date_obj = datetime.datetime.strptime(date_str, '%Y%m%dT%H%M')
+        IR_dts.append(date_obj)
+
+        ch9[:, :, j] = nc_data_t.variables['channel_9'][:]
+        Tb[:, :, j] = c2 * nu / np.log(1 + (c1 * nu**3 /ch9[:, :, j]))
+
+    Tb_R= resample_Tb(lat_t, lon_t, Tb, lat_R, lon_R)
+    Tb_R = Tb_R.transpose(2, 0, 1)  # [S, H, W]
+
+    IR_imgs.append(Tb_R)
+
+    #==================================================================================================#
+
+    # convert to numpy array
+    IR_imgs = np.concatenate(IR_imgs, axis=0)
+
+    # sort the files by datetime
+    IR_dts = np.array(IR_dts)
+    sorted_index_array = np.argsort(IR_dts)
+    sorted_timestamps = IR_dts[sorted_index_array]
+
+    sorted_IR = IR_imgs[sorted_index_array]
+
+    # find mean and std and save into json file
+    # IR_mean = np.mean(requested_IRs)
+    # IR_std = np.std(requested_IRs)
+    sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
+
+    with h5py.File(os.path.join(dataPath, fname), 'w') as hf:
+        hf.create_dataset('IRs', data=sorted_IR)
+        hf.create_dataset('timestamps', data=sorted_timestamps_dt)
+        # hf.create_dataset('mean', data=IR_mean)
+        # hf.create_dataset('std', data=IR_std)
 
 
+
+
+if __name__ == "__main__":
+
+    dataPath = os.path.join(base_path, 'data', 'IR')
+    start_date = '2020-08-01'
+    end_date = '2020-09-01'
+    nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
+
+    print('stop for debugging')

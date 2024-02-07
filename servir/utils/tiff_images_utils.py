@@ -1,7 +1,8 @@
 
 import os
 import sys
-sys.path.append("/home/cc/projects/nowcasting/")
+base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
+sys.path.append(base_path)
 import glob
 import datetime
 import h5py
@@ -14,7 +15,7 @@ from osgeo.gdalconst import GA_ReadOnly
 
 
 
-def tiff2h5py(fPath, start_date, end_date, save2h5=False, fname='raw_images.h5'):
+def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -26,7 +27,7 @@ def tiff2h5py(fPath, start_date, end_date, save2h5=False, fname='raw_images.h5')
     """
     precipitation = []
     times = []
-    files = glob.glob(os.path.join(fPath, 'july2020_raw/imerg.2020*.tif'))
+    files = glob.glob(os.path.join(fPath, 'raw/imerg.2020*.tif'))
 
     if len(files)>0:
         for file in files:
@@ -56,13 +57,18 @@ def tiff2h5py(fPath, start_date, end_date, save2h5=False, fname='raw_images.h5')
         sorted_precipitation = None
         sorted_timestamps = None
 
-    if save2h5: 
-        sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
-        with h5py.File(os.path.join(fPath, fname), 'w') as hf:
-            hf.create_dataset('precipitations', data=sorted_precipitation)
-            hf.create_dataset('timestamps', data=sorted_timestamps_dt)
+    # find the mean and std and save into h5py file
+    precipitation_mean = np.mean(sorted_precipitation)
+    precipitation_std = np.std(sorted_precipitation)
 
-    return sorted_precipitation, sorted_timestamps
+    sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
+    with h5py.File(os.path.join(fPath, fname), 'w') as hf:
+        hf.create_dataset('precipitations', data=sorted_precipitation)
+        hf.create_dataset('timestamps', data=sorted_timestamps_dt)
+        hf.create_dataset('mean', data=precipitation_mean)
+        hf.create_dataset('std', data=precipitation_std)
+
+    return sorted_precipitation, sorted_timestamps, precipitation_mean, precipitation_std
 
 
 
@@ -125,7 +131,9 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
+    fPath = os.path.join(base_path, 'data', 'IR')
+    start_date = '2020-05-31'
+    end_date = '2020-09-01'
 
-
-    pass
+    tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
     

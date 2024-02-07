@@ -29,6 +29,8 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
         precipitation = hf['precipitations'][:]
         times = hf['timestamps'][:]
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
+        mean = hf['mean'][:]
+        std = hf['std'][:]  
 
     st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
@@ -38,26 +40,22 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     requested_precipitation = precipitation[ind]
     requested_times = times[ind]
 
-    return requested_precipitation, requested_times
+    return requested_precipitation, requested_times, mean, std
 
 class waImergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, 
-                max_rainfall_intensity = 52, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length):
 
-        self.precipitations, self.datetimes = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
-        # pixel value range (0, 1)
-        self.precipitations =  self.precipitations / max_rainfall_intensity
-    
+
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
-        if normalize:
-            self.mean = np.mean(self.precipitations, axis=(0, 1, 2))
-            self.std = np.std(self.precipitations, axis=(0, 1, 2))
-            self.precipitations = (self.precipitations - self.mean)/self.std
+        # normalize the data
+        self.precipitations = (self.precipitations - self.mean)/self.std
 
-
+        # cut off 2 columns of data
+        self.precipitations = self.precipitations[:, :, 1:-2]
 
     def __len__(self):
         return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length
