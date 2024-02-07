@@ -16,13 +16,13 @@ import osgeo.gdal as gdal
 
 ####
 
-h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
-meta_fname = '/home/cc/projects/nowcasting/temp/imerg_giotiff_meta.json'
-tif_directory = '/home/cc/projects/nowcasting/temp/'
+# h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
+# meta_fname = '/home/cc/projects/nowcasting/temp/imerg_giotiff_meta.json'
+# tif_directory = '/home/cc/projects/nowcasting/temp/'
 
-# h5_fname =  sys.argv[1] 
-# meta_fname = sys.argv[2]
-# tif_directory = sys.argv[3]
+h5_fname =  sys.argv[1] 
+meta_fname = sys.argv[2]
+tif_directory = sys.argv[3]
 
 def get_EF5_geotiff_metadata(meta_fname):
 

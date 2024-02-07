@@ -6,20 +6,20 @@ import datetime
 import numpy as np  
 import torch
 
-# servir_path = sys.argv[1]
-servir_path ='/home/cc/projects/nowcasting' 
+servir_path = sys.argv[1]
+# servir_path ='/home/cc/projects/nowcasting' 
 sys.path.append(servir_path)
 
 
-input_h5_fname = '/home/cc/projects/nowcasting/temp/imerg_202007010000_202007010530.h5'
-output_h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
-para_dict_fpath = '/home/cc/projects/nowcasting/temp/model_params.pth'
-use_gpu = True
+# input_h5_fname = '/home/cc/projects/nowcasting/temp/imerg_202007010000_202007010530.h5'
+# output_h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
+# para_dict_fpath = '/home/cc/projects/nowcasting/temp/model_params.pth'
+# use_gpu = True
 
-# input_h5_fname = sys.argv[1]
-# output_h5_fname = sys.argv[2]
-# para_dict_fpath = sys.argv[3]   
-# use_gpu = sys.argv[4]
+input_h5_fname = sys.argv[2]
+output_h5_fname = sys.argv[3]
+para_dict_fpath = sys.argv[4]   
+use_gpu = sys.argv[5]
 
 
 from servir.utils.config_utils import load_config
