@@ -27,7 +27,7 @@ def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
     """
     precipitation = []
     times = []
-    files = glob.glob(os.path.join(fPath, 'raw/imerg.2020*.tif'))
+    files = glob.glob(os.path.join(fPath, 'IMERG_WA', 'IMERG_WA', 'imerg.2020*.tif'))
 
     if len(files)>0:
         for file in files:
@@ -131,9 +131,18 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    fPath = os.path.join(base_path, 'data', 'IR')
-    start_date = '2020-05-31'
-    end_date = '2020-09-01'
+    fPath = os.path.join(base_path, 'data', 'wa_imerg')
+    # start_date = '2020-06-01'
+    # end_date = '2020-09-01'
 
-    tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
+    # tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
+
+    with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'r') as hf:
+        precipitations = hf['precipitations'][:]
+        timestamps = hf['timestamps'][:]
+        timestamps = [x.decode('utf-8') for x in timestamps]
+        mean = hf['mean'][()]
+        std = hf['std'][()]
+
+    print('stop for debugging')
     

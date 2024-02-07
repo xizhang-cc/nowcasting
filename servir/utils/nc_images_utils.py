@@ -144,8 +144,29 @@ def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
 if __name__ == "__main__":
 
     dataPath = os.path.join(base_path, 'data', 'IR')
-    start_date = '2020-08-01'
-    end_date = '2020-09-01'
-    nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
+    # start_date = '2020-08-01'
+    # end_date = '2020-09-01'
+    # nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
 
+    # print('stop for debugging')
+
+    with h5py.File(os.path.join(dataPath, 'wa_IR_06.h5'), 'r') as hf:
+        imgs_06 = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+        img_dts_06 = [x.decode('utf-8') for x in img_dts]
+
+    with h5py.File(os.path.join(dataPath, 'wa_IR_07.h5'), 'r') as hf:
+        imgs_07 = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+        img_dts_07 = [x.decode('utf-8') for x in img_dts]
+
+    with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
+        imgs_08 = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+        img_dts_08 = [x.decode('utf-8') for x in img_dts]
+
+
+    imgs_IR = np.concatenate([imgs_06, imgs_07, imgs_08], axis=0)
+
+    img_IR_dts = img_dts_06 + img_dts_07 + img_dts_08
     print('stop for debugging')
