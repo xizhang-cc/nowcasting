@@ -1,7 +1,5 @@
 
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
-sys.path.append(base_path)
 import datetime
 import h5py
 import numpy as np

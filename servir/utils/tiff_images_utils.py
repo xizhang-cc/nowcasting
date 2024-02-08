@@ -1,7 +1,7 @@
 
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
+base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -10,8 +10,7 @@ import h5py
 
 import numpy as np
 import pandas as pd
-import osgeo.gdal as gdal
-from osgeo.gdalconst import GA_ReadOnly
+
 
 
 
@@ -89,6 +88,8 @@ def get_EF5_geotiff_metadata(fPath='/home/cc/projects/nowcasting/data/wa_imerg/i
     return nx, ny, gt, proj
 
 def WriteGrid(gridOutName, dataOut, nx, ny, gt, proj):
+    import osgeo.gdal as gdal
+    from osgeo.gdalconst import GA_ReadOnly
     #Writes out a GeoTIFF based on georeference information in RefInfo
     driver = gdal.GetDriverByName('GTiff')
     dst_ds = driver.Create(gridOutName, nx, ny, 1, gdal.GDT_Float32, ['COMPRESS=DEFLATE'])

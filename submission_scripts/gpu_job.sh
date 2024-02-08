@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name 1gpu
+#SBATCH --job-name imerg_only
 
 
 #SBATCH --nodes 1
