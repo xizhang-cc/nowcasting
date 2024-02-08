@@ -31,8 +31,8 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 64
-val_batch_size = 64
+batch_size = 2
+val_batch_size = 2
 dataname = 'wa_imerg'
 channels = 1
 in_seq_length = 12
