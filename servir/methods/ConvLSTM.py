@@ -95,6 +95,8 @@ class ConvLSTM_Model(nn.Module):
 
         height = H // config['patch_size']
         width = W // config['patch_size']
+
+        
         self.MSE_criterion = nn.MSELoss()
 
         for i in range(num_layers):
@@ -150,8 +152,13 @@ class ConvLSTM_Model(nn.Module):
 
         # [length, batch, channel, height, width] -> [batch, length, height, width, channel]
         next_frames = torch.stack(next_frames, dim=0).permute(1, 0, 3, 4, 2).contiguous()
-        if kwargs.get('return_loss', True):
-            loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:])
+
+        if kwargs.get('return_loss')==True:
+            if kwargs.get('skip_frame_loss')==True:
+                loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
+                                        frames_tensor[:, -self.config['out_seq_length']::2])
+            else:
+                loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:])
         else:
             loss = None
 
@@ -242,7 +249,7 @@ class ConvLSTM():
 
         return pred_y
 
-    def _collect_evaluate_predictions(self, data_loader, setName, gather_pred, withMeta):
+    def _collect_evaluate_predictions(self, data_loader, setName, gather_pred, withMeta, skip_frame_loss=False):
         """Evaluate the model with val_loader.
 
         Args:
@@ -275,8 +282,11 @@ class ConvLSTM():
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
                 pred_y = self._predict(batch_x, batch_y)
-
-                loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                if skip_frame_loss:
+                    loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
+                                        batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
+                else:
+                    loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
 
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
@@ -342,7 +352,7 @@ class ConvLSTM():
         else:
             assert False, f"Unknown clip mode ({self.clip_mode})."
 
-    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None):
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, return_loss = True, skip_frame_loss = False):
 
         """Train the model with train_loader."""
         data_time_m = AverageMeter()
@@ -375,7 +385,7 @@ class ConvLSTM():
                     eta, num_updates, ims.shape[0], self.config)
 
             with self.amp_autocast():
-                _, loss = self.model(ims, real_input_flag)
+                _, loss = self.model(ims, real_input_flag, return_loss=return_loss, skip_frame_loss=skip_frame_loss)
 
             if not self.dist:
                 losses_m.update(loss.item(), batch_x.size(0))
@@ -414,7 +424,7 @@ class ConvLSTM():
 
         return num_updates, losses_m.avg, eta
 
-    def vali(self, data_loader, gather_pred=False):
+    def vali(self, data_loader, gather_pred=False, skip_frame_loss=False):
         """Evaluate the model with test_loader.
 
         Args:
@@ -423,12 +433,13 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        vali_loss, vali_results, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='vali', withMeta=False)
+        vali_loss, vali_results, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
+                                                                        setName='vali', withMeta=False, skip_frame_loss=skip_frame_loss)
 
         return vali_loss, vali_results  
 
 
-    def test(self, data_loader, gather_pred=True):
+    def test(self, data_loader, gather_pred=True, skip_frame_loss=False):
         """Evaluate the model with test_loader.
 
         Args:
@@ -437,7 +448,7 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test', withMeta=True)
+        test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test', withMeta=True, skip_frame_loss=skip_frame_loss)
 
         return test_loss, test_results, test_meta 
 

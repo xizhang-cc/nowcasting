@@ -64,18 +64,18 @@ config['work_dir'] = work_dir
 ##==================Data Loading=====================##
 # where to load data
 dataPath = os.path.join(base_path, 'data', dataset_name)
-# fname = os.path.join(dataPath, 'wa_IR_08.h5')
+fname = os.path.join(dataPath, 'wa_IR_08_m.h5')
 
 # training data from 2020-06-01 to 2020-08-18 
-trainSet = IRDataset(dataPath, start_date = '2020-06-01', end_date = '2020-08-18',\
+trainSet = IRDataset(fname, start_date = '2020-08-10', end_date = '2020-08-18',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # validation data from 2020-08-18 to 2020-08-25
-valSet = IRDataset(dataPath, start_date = '2020-08-18', end_date = '2020-08-25',\
+valSet = IRDataset(fname, start_date = '2020-08-18', end_date = '2020-08-25',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = IRDataset_withMeta(dataPath, start_date = '2020-08-25', end_date = '2020-09-01',\
+testSet = IRDataset_withMeta(fname, start_date = '2020-08-25', end_date = '2020-09-01',\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 print('Dataset created.')

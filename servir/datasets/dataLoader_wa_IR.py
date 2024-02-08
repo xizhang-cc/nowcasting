@@ -45,7 +45,7 @@ def load_IR_data_from_h5(fPath, start_date, end_date):
 
 
 class IRDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=True):
 
         self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
@@ -95,7 +95,7 @@ class IRDataset(Dataset):
 
 
 class IRDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=True):
 
         self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
