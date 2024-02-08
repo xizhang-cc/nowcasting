@@ -39,6 +39,7 @@ def collect_env_info():
         for name, devids in devices.items():
             env_info['GPU ' + ','.join(devids)] = name
 
+
     gcc = subprocess.check_output('gcc --version | head -n1', shell=True)
     gcc = gcc.decode('utf-8').strip()
     env_info['GCC'] = gcc
@@ -59,9 +60,15 @@ def collect_method_info(config, method, device):
         Hp, Wp = H // config['patch_size'], W // config['patch_size']
         Cp = config['patch_size'] ** 2 * C
 
-        _tmp_input = torch.ones(1, int(config['in_seq_length'] + config['out_seq_length']), Hp, Wp, Cp).to(device)
-        _tmp_flag = torch.ones(1,  config['out_seq_length'] - 1, Hp, Wp, Cp).to(device)
+        _tmp_input = torch.ones(1, int(config['in_seq_length'] + config['out_seq_length']), Hp, Wp, Cp).to(device, dtype=torch.float32)
+        _tmp_flag = torch.ones(1,  config['out_seq_length'] - 1, Hp, Wp, Cp).to(device, dtype=torch.float32)
         input_dummy = (_tmp_input, _tmp_flag)
+
+        gpu = torch.cuda.get_device_properties(device)
+        print(f"GPU Name: {gpu.name}")
+        print(f"GPU Memory Total: {gpu.total_memory / 1024**3} GB")
+        print(f"GPU Memory Free: {torch.cuda.memory_allocated(device) / 1024**3} GB")
+        print(f"GPU Memory Used: {torch.cuda.memory_reserved(device) / 1024**3} GB")
     else:
         raise ValueError(f"Invalid method name {config['method']}")
 

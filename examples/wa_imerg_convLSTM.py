@@ -6,7 +6,7 @@ sys.path.append(base_path)
 import h5py 
 import time
 import torch
-import pandas as pd
+
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
@@ -60,6 +60,7 @@ print(f'working dir created at {work_dir}')
 
 config['work_dir'] = work_dir   
 
+#======================================================
 
 ##==================Data Loading=====================##
 # where to load data
@@ -67,7 +68,7 @@ dataPath = os.path.join(base_path, 'data', dataset_name)
 fname = os.path.join(dataPath, 'wa_imerg.h5')
 
 # training data from 2020-06-01 to 2020-08-18 
-trainSet = waImergDataset(fname, start_date = '2020-06-01', end_date = '2020-08-18',\
+trainSet = waImergDataset(fname, start_date = '2020-08-01', end_date = '2020-08-18',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # validation data from 2020-08-18 to 2020-08-25
@@ -95,6 +96,11 @@ print(f'There are total {torch.cuda.device_count()} GPUs on current node')
 
 if (config['use_gpu']) and torch.cuda.is_available(): 
     device = torch.device('cuda:0')
+    gpu = torch.cuda.get_device_properties(device)
+    print(f"GPU Name: {gpu.name}")
+    print(f"GPU Memory Total: {gpu.total_memory / 1024**3} GB")
+    # print(f"GPU Memory Free: {torch.cuda.memory_allocated(device) / 1024**3} GB")
+    # print(f"GPU Memory Used: {torch.cuda.memory_reserved(device) / 1024**3} GB")
 else:
     device = torch.device('cpu')
 
