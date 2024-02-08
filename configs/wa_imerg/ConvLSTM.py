@@ -13,7 +13,7 @@ sampling_changing_rate = 0.00002
 num_hidden = '32,32,32,32'
 filter_size = 5
 stride = 1
-patch_size = 6
+patch_size = 2
 layer_norm = 0
 # training
 max_epoch = 100
@@ -31,8 +31,8 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 64
-val_batch_size = 64
+batch_size = 8
+val_batch_size = 8
 dataname = 'wa_imerg'
 channels = 1
 in_seq_length = 12
