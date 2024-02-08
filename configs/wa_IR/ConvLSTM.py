@@ -10,13 +10,13 @@ sampling_stop_iter = 50000
 sampling_start_value = 1.0
 sampling_changing_rate = 0.00002
 # model
-num_hidden = '32,32,32,32'
+num_hidden = '128,128,128,128'
 filter_size = 5
 stride = 1
 patch_size = 6
 layer_norm = 0
 # training
-max_epoch = 20
+max_epoch = 100
 early_stop_epoch= -1
 max_iter = 0
 no_display_method_info= False
@@ -31,8 +31,8 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 2
-val_batch_size = 2
+batch_size = 16
+val_batch_size = 16
 dataname = 'wa_IR'
 channels = 1
 in_seq_length = 10

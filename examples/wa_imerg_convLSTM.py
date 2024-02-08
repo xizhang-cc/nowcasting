@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 import h5py 
@@ -68,7 +68,7 @@ dataPath = os.path.join(base_path, 'data', dataset_name)
 fname = os.path.join(dataPath, 'wa_imerg.h5')
 
 # training data from 2020-06-01 to 2020-08-18 
-trainSet = waImergDataset(fname, start_date = '2020-08-01', end_date = '2020-08-18',\
+trainSet = waImergDataset(fname, start_date = '2020-06-01', end_date = '2020-08-18',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # validation data from 2020-08-18 to 2020-08-25
@@ -106,8 +106,8 @@ config['device'] = device
 method = ConvLSTM(config)
 
 # # log method info
-# logging_method_info(config, method, device)
-# print('method setup')
+logging_method_info(config, method, device)
+print('method setup')
 #==============Distribution=========================##
 
 # setup distribution

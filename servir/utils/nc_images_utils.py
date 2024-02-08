@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
+base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -143,7 +143,7 @@ def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
 
 if __name__ == "__main__":
 
-    dataPath = os.path.join(base_path, 'data', 'IR')
+    dataPath = os.path.join(base_path, 'data', 'wa_IR')
     # start_date = '2020-08-01'
     # end_date = '2020-09-01'
     # nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
@@ -162,11 +162,23 @@ if __name__ == "__main__":
 
     with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
         imgs_08 = hf['IRs'][:]
+        imgs_08[np.isnan(imgs_08)] = 284
         img_dts = hf['timestamps'][:]
         img_dts_08 = [x.decode('utf-8') for x in img_dts]
 
 
     imgs_IR = np.concatenate([imgs_06, imgs_07, imgs_08], axis=0)
-
+    print(f'imgs_IR shape: {imgs_IR.shape}')
     img_IR_dts = img_dts_06 + img_dts_07 + img_dts_08
-    print('stop for debugging')
+    print(f'len(img_IR_dts): {len(img_IR_dts)}')
+
+    print(f'img_IR_dts[0]: {img_IR_dts[0]}')
+    print(f'img_IR_dts[-1]: {img_IR_dts[-1]}')
+
+
+    with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'w') as hf:
+        hf.create_dataset('IRs', data=imgs_IR)
+        hf.create_dataset('timestamps', data=img_IR_dts)
+        hf.create_dataset('mean', data = imgs_IR.mean())
+        hf.create_dataset('std', data = imgs_IR.std())
+

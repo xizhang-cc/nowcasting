@@ -67,7 +67,7 @@ dataPath = os.path.join(base_path, 'data', dataset_name)
 # fname = os.path.join(dataPath, 'wa_IR_08.h5')
 
 # training data from 2020-06-01 to 2020-08-18 
-trainSet = IRDataset(dataPath, start_date = '2020-08-01', end_date = '2020-08-18',\
+trainSet = IRDataset(dataPath, start_date = '2020-06-01', end_date = '2020-08-18',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # validation data from 2020-08-18 to 2020-08-25

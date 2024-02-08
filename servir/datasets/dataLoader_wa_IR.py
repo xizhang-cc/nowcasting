@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 
 
 # load data from h5 file
-def load_IR_data_from_h5(dataPath, start_date, end_date):
+def load_IR_data_from_h5(fPath, start_date, end_date):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -22,53 +22,39 @@ def load_IR_data_from_h5(dataPath, start_date, end_date):
         times (np.array): np.array of date times
     """
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_06.h5'), 'r') as hf:
-    #     imgs_06 = hf['IRs'][:]
-    #     img_dts = hf['timestamps'][:]
-    #     img_dts_06 = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in img_dts]
+    imgs = []
+    times = []
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_07.h5'), 'r') as hf:
-    #     imgs_07 = hf['IRs'][:]
-    #     img_dts = hf['timestamps'][:]
-    #     img_dts_07 = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in img_dts]
-
-    with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
-        imgs_08 = hf['IRs'][:]
-        # temperatry fix for nan to ~mean value
-        imgs_08[np.isnan(imgs_08)] = 284
-
-        img_dts = hf['timestamps'][:]
-        img_dts_08 = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in img_dts]
-
-    # times = np.array( img_dts_06+ img_dts_07 + img_dts_08)
-    # imgs = np.concatenate([img_06, imgs_07, imgs_08], axis=0)
-
-    times = np.array(img_dts_08)
-    imgs = imgs_08
+    with h5py.File(fPath, 'r') as hf:
+        imgs = hf['IRs'][:]
+        times = hf['timestamps'][:]
+        times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
+        mean = hf['mean'][()]
+        std = hf['std'][()]  
 
     st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
     ind = (times>=st_dt) & (times<end_dt)
-    requested_times = times[ind]
-    requested_imgs = imgs[ind]
 
-    return requested_imgs, requested_times
+    requested_imgs = imgs[ind]
+    requested_times = times[ind]
+
+    return requested_imgs, requested_times, mean, std
 
 
 
 class IRDataset(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=False):
 
-        self.imgs, self.datetimes = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
         # normalize the data
         if normalize:
-            pass
-            # self.imgs = (self.imgs - self.mean)/self.std
+            self.imgs = (self.imgs - self.mean)/self.std
         else:
             self.imgs =  self.imgs / max_temp_in_kelvin
 
@@ -111,15 +97,14 @@ class IRDataset(Dataset):
 class IRDataset_withMeta(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=False):
 
-        self.imgs, self.datetimes = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
         # normalize the data
         if normalize:
-            pass
-            # self.imgs = (self.imgs - self.mean)/self.std
+            self.imgs = (self.imgs - self.mean)/self.std
         else:
             self.imgs =  self.imgs / max_temp_in_kelvin
 
@@ -129,7 +114,6 @@ class IRDataset_withMeta(Dataset):
         all_str_ind = self.datetimes[: -(self.in_seq_length+self.out_seq_length)]
         ind = [x.minute in [0, 30] for x in all_str_ind]
         self.samples = all_str_ind[ind]
-
 
     def __len__(self):
     
@@ -148,8 +132,6 @@ class IRDataset_withMeta(Dataset):
         
         in_ind = range(st_ind, st_ind+self.in_seq_length)
         out_ind = range(st_ind+self.in_seq_length, st_ind+self.in_seq_length+self.out_seq_length)
-
-        
 
         # input and output images for a sample
         # current shape: [T, H, W]
@@ -180,7 +162,7 @@ class IRDataset_withMeta(Dataset):
 if __name__=='__main__':
     
     import os
-    dataPath = "/home/cc/projects/nowcasting/data/wa_IR/"
+    # dataPath = "/home/cc/projects/nowcasting/data/wa_IR/"
 
     # a = IRDataset(os.path.join(dataPath, fname), '2020-07-01', '2020-07-04', 9, 9)
     # b = a.__getitem__(0)
@@ -189,13 +171,15 @@ if __name__=='__main__':
     # end_date = '2020-09-01' 
     # fPath = dataPath+f'/imerg_{start_date}_{end_date}.h5'
 
-    start_date = '2020-08-01'
+    start_date = '2020-06-01'
     end_date = '2020-08-18'
-    a = IRDataset_withMeta(dataPath, start_date, end_date, 10, 9)
+    fPath = '/home1/zhang2012/nowcasting/data/wa_IR/wa_IR.h5'
+    a = IRDataset_withMeta(fPath, start_date, end_date, 10, 9)
     for k in range(10):
-        a.__getitem__(k)
+        X, Y, X_dt_str, Y_dt_str = a.__getitem__(k)
+        print(Y_dt_str)
 
-    print('stop for debugging')
+  
 
 
 
