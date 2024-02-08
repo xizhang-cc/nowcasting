@@ -15,6 +15,7 @@ from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, sched
 from servir.utils.distributed_utils import reduce_tensor
 
 
+
 class ConvLSTMCell(nn.Module):
 
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
@@ -56,6 +57,7 @@ class ConvLSTMCell(nn.Module):
                                    stride=1, padding=0, bias=False)
 
     def forward(self, x_t, h_t, c_t):
+        
         x_concat = self.conv_x(x_t)
         h_concat = self.conv_h(h_t)
         i_x, f_x, g_x, o_x = torch.split(x_concat, self.num_hidden, dim=1)
@@ -106,6 +108,7 @@ class ConvLSTM_Model(nn.Module):
                                    kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, frames_tensor, mask_true, **kwargs):
+
         # [batch, length, height, width, channel] -> [batch, length, channel, height, width]
         frames = frames_tensor.permute(0, 1, 4, 2, 3).contiguous()
         mask_true = mask_true.permute(0, 1, 4, 2, 3).contiguous()

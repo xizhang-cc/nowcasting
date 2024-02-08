@@ -10,10 +10,10 @@ sampling_stop_iter = 50000
 sampling_start_value = 1.0
 sampling_changing_rate = 0.00002
 # model
-num_hidden = '32,32,32,32'
+num_hidden = '32, 32, 32, 32'
 filter_size = 5
 stride = 1
-patch_size = 2
+patch_size = 6
 layer_norm = 0
 # training
 max_epoch = 100
@@ -31,8 +31,8 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 8
-val_batch_size = 8
+batch_size = 64
+val_batch_size = 64
 dataname = 'wa_imerg'
 channels = 1
 in_seq_length = 12

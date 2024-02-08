@@ -1,6 +1,6 @@
 import os
 import sys
-import cv2
+# import cv2
 import subprocess
 import logging
 from collections import defaultdict, OrderedDict
@@ -47,7 +47,7 @@ def collect_env_info():
     env_info['PyTorch'] = torch.__version__
     env_info['PyTorch compiling details'] = torch.__config__.show()
     env_info['TorchVision'] = torchvision.__version__
-    env_info['OpenCV'] = cv2.__version__
+    # env_info['OpenCV'] = cv2.__version__
 
 
     return env_info

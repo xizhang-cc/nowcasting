@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" #
+base_path = "/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 import h5py 
@@ -105,9 +105,9 @@ config['device'] = device
 # setup method
 method = ConvLSTM(config)
 
-# log method info
-logging_method_info(config, method, device)
-print('method setup')
+# # log method info
+# logging_method_info(config, method, device)
+# print('method setup')
 #==============Distribution=========================##
 
 # setup distribution
