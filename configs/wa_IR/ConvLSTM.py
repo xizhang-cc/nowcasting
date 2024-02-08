@@ -16,7 +16,7 @@ stride = 1
 patch_size = 6
 layer_norm = 0
 # training
-max_epoch = 100
+max_epoch = 20
 early_stop_epoch= -1
 max_iter = 0
 no_display_method_info= False
@@ -31,12 +31,12 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 10
-val_batch_size = 10
-dataname = 'wa_imerg'
+batch_size = 2
+val_batch_size = 2
+dataname = 'wa_IR'
 channels = 1
-in_seq_length = 12
-out_seq_length = 12 
+in_seq_length = 10
+out_seq_length = 9
 img_height = 360
 img_width = 516
 # system

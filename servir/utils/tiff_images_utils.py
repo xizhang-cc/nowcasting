@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
 
     with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'r') as hf:
-        precipitations = hf['precipitations'][:]
+        precipitations = hf['IRs'][:]
         timestamps = hf['timestamps'][:]
         timestamps = [x.decode('utf-8') for x in timestamps]
         mean = hf['mean'][()]

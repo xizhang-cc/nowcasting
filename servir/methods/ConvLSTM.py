@@ -270,7 +270,7 @@ class ConvLSTM():
 
             st = time.time()
             with torch.no_grad():
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
                 pred_y = self._predict(batch_x, batch_y)
 
                 loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
@@ -356,7 +356,7 @@ class ConvLSTM():
             
             self.model_optim.zero_grad()
             # send data to gpu
-            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+            batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
 
             # preprocess
             #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
