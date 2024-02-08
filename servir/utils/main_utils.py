@@ -64,11 +64,11 @@ def collect_method_info(config, method, device):
         _tmp_flag = torch.ones(1,  config['out_seq_length'] - 1, Hp, Wp, Cp).to(device, dtype=torch.float32)
         input_dummy = (_tmp_input, _tmp_flag)
 
-        gpu = torch.cuda.get_device_properties(device)
-        print(f"GPU Name: {gpu.name}")
-        print(f"GPU Memory Total: {gpu.total_memory / 1024**3} GB")
-        print(f"GPU Memory Free: {torch.cuda.memory_allocated(device) / 1024**3} GB")
-        print(f"GPU Memory Used: {torch.cuda.memory_reserved(device) / 1024**3} GB")
+        # gpu = torch.cuda.get_device_properties(device)
+        # print(f"GPU Name: {gpu.name}")
+        # print(f"GPU Memory Total: {gpu.total_memory / 1024**3} GB")
+        # print(f"GPU Memory Free: {torch.cuda.memory_allocated(device) / 1024**3} GB")
+        # print(f"GPU Memory Used: {torch.cuda.memory_reserved(device) / 1024**3} GB")
     else:
         raise ValueError(f"Invalid method name {config['method']}")
 
