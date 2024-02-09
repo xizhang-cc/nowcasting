@@ -7,7 +7,6 @@ import numpy as np
 from torch.utils.data import Dataset
 
 
-
 # load data from h5 file
 def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     """Function to load IMERG tiff data from the associate event folder
@@ -39,7 +38,7 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     return requested_precipitation, requested_times, mean, std
 
 class waImergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_rainfall_intensity=60.0, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, pred_IR\ max_rainfall_intensity=60.0, normalize=False):
 
         self.precipitations, self.datetimes, self.mean, self.std = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         

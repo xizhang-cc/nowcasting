@@ -22,9 +22,6 @@ def load_IR_data_from_h5(fPath, start_date, end_date):
         times (np.array): np.array of date times
     """
 
-    imgs = []
-    times = []
-
     with h5py.File(fPath, 'r') as hf:
         imgs = hf['IRs'][:]
         times = hf['timestamps'][:]
