@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name imerg+ir
+#SBATCH --job-name imerg+ir+fsss
 
 
 #SBATCH --nodes 1
@@ -14,5 +14,5 @@
 
 # python /home1/zhang2012/nowcasting/servir/datasets/dataLoader_wa_IR.py
 
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 python /home1/zhang2012/nowcasting/examples/wa_imerg_IR_enhanced_convLSTM.py
