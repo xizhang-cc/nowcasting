@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"# '/home/cc/projects/nowcasting' #
+base_path =  '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -57,19 +57,19 @@ print('configuration file logged')
 dataPath = os.path.join(base_path, 'data')
 
 imerg_fPath = os.path.join(dataPath, 'wa_imerg/wa_imerg.h5')
-IR_fPath = os.path.join(dataPath, 'wa_IR/wa_IR.h5')
-pred_IR_fPath = os.path.join(base_path, 'results/wa_IR/IR_predictions_skip_loss.h5')
+IR_fPath = os.path.join(dataPath, 'wa_IR/wa_IR_06_m.h5')
+pred_IR_fPath = os.path.join(base_path, 'results/wa_IR/IR_predictions_temp.h5')
 
 # training data from 2020-06-01 to 2020-08-18 
-trainSet = waImergIRDataset(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-06-01', '2020-08-18',\
+trainSet = waImergIRDataset(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-06-01', '2020-06-04',\
                             config['in_seq_length'], config['out_seq_length'], config['pred_IR_length'])
 
 # validation data from 2020-08-18 to 2020-08-25
-valSet = waImergIRDataset(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-08-18',  '2020-08-25',\
+valSet = waImergIRDataset(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-06-04',  '2020-06-06',\
                         config['in_seq_length'], config['out_seq_length'], config['pred_IR_length'])
 
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = waImergIRDataset_withMeta(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-08-25', '2020-09-01',\
+testSet = waImergIRDataset_withMeta(imerg_fPath, IR_fPath, pred_IR_fPath, '2020-06-06', '2020-06-08',\
                                 config['in_seq_length'], config['out_seq_length'], config['pred_IR_length'])
 
 print('Dataset created.')
@@ -108,10 +108,10 @@ config['rank'], config['world_size'] = get_dist_info()
 
 ##==================Training=========================##
 # # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, 'imerg_ir_params.pth')
+para_dict_fpath = os.path.join(base_results_path, 'imerg_ir_fsss_params.pth')
 print(f'model parameters saved at {para_dict_fpath}')
 
-checkpoint_fname = os.path.join(base_results_path, 'imerg_ir_only_checkpoint.pth')
+checkpoint_fname = os.path.join(base_results_path, 'imerg_ir_fsss_only_checkpoint.pth')
 print(f'model training checkpoint saved at {para_dict_fpath}')
 
 train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fname)    

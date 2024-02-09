@@ -66,8 +66,6 @@ class waImergIRDataset(Dataset):
         self.IRs = self.IRs[:, :, 1:-1]
 
 
-        print('stop for debugging')
-
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length
 
@@ -154,7 +152,6 @@ class waImergIRDataset_withMeta(Dataset):
         self.imergs = self.imergs[:, :, 1:-1]
         self.IRs = self.IRs[:, :, 1:-1]
 
-        print('stop for debugging')
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length
