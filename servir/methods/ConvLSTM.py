@@ -275,6 +275,8 @@ class ConvLSTM():
 
             if withMeta:
                 batch_x, batch_y, batch_x_dt, batch_y_dt = batch
+                print(f'batch_x_dt: {batch_x_dt}')
+                print(f'batch_y_dt: {batch_y_dt}')
             else:
                 batch_x, batch_y = batch
 
