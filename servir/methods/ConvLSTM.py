@@ -306,11 +306,12 @@ class ConvLSTM():
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
                 pred_y = self._predict(batch_x, batch_y, channel_sep=channel_sep)
+                self.config['channels']
                 if skip_frame_loss:
                     loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
                                         batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
                 else:
-                    loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                    loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
 
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
