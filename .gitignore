@@ -7,6 +7,9 @@ results/
 # run files returned from HPC system
 runs/
 
+# 
+imlr_results/
+
 # Ignore temporary files
 temp/
 

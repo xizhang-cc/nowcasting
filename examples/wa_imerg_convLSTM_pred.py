@@ -87,6 +87,7 @@ method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+test_pred = test_pred*60.0
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, 'imerg_only_mse_predictions.h5'),'w') as hf:
