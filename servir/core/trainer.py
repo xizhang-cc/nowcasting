@@ -21,7 +21,6 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
     max_epochs = config['max_epoch']
 
 
-    """Training loops of STL methods"""
     recorder = Recorder(verbose=True)
     num_updates = epoch * config['steps_per_epoch']
 

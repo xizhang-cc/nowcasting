@@ -13,6 +13,7 @@ from contextlib import suppress
 from servir.core.optimizor import get_optim_scheduler
 from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, schedule_sampling, reserve_schedule_sampling_exp
 from servir.utils.distributed_utils import reduce_tensor
+from servir.core.losses import FSSSurrogateLoss
 
 
 
@@ -102,9 +103,11 @@ class ConvLSTM_Model(nn.Module):
         height = H // config['patch_size']
         width = W // config['patch_size']
 
-        
-        self.MSE_criterion = nn.MSELoss()
-
+        # if config['loss'] == 'MSE':
+        #     self.MSEcriterion = nn.MSELoss()
+        # elif config['loss'] == 'FSSS':
+        #     self.criterion = FSSSurrogateLoss
+        self.MSEcriterion = nn.MSELoss()    
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]
             cell_list.append(
@@ -178,7 +181,14 @@ class ConvLSTM_Model(nn.Module):
                 loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
                                         frames_tensor[:, -self.config['out_seq_length']::2, :, :, :input_channel_num])
             else:
-                loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
+                if self.config['loss'] == 'FSSS':
+                    img_frames_tensor = frames_tensor[:, :, :, :, :input_channel_num]
+                    next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
+                    next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'])
+                    frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'])
+                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0])
+                elif self.config['loss'] == 'MSE':  
+                    loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
         else:
             loss = None
 
@@ -207,7 +217,11 @@ class ConvLSTM():
         self.model = self._build_model()
 
         self.model_optim, self.scheduler, self.by_epoch = self._init_optimizer()
-        self.criterion = nn.MSELoss()
+
+        if self.config['loss'] == 'MSE':
+            self.criterion = nn.MSELoss()
+        elif self.config['loss'] == 'FSSS':
+            self.criterion = FSSSurrogateLoss
 
 
         self.clip_value = self.config['clip_grad']
@@ -295,8 +309,7 @@ class ConvLSTM():
 
             if withMeta:
                 batch_x, batch_y, batch_x_dt, batch_y_dt = batch
-                print(f'batch_x_dt: {batch_x_dt}')
-                print(f'batch_y_dt: {batch_y_dt}')
+
             else:
                 batch_x, batch_y = batch
 
@@ -306,12 +319,17 @@ class ConvLSTM():
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
                 pred_y = self._predict(batch_x, batch_y, channel_sep=channel_sep)
-                self.config['channels']
+                # self.config['channels']
                 if skip_frame_loss:
                     loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
                                         batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
                 else:
-                    loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
+                    if self.config['loss'] == 'FSSS':
+                        img_batch_y = batch_y[:, :, 0, :, :]
+                        img_pred_y = pred_y[:, :, 0, :, :]
+                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y).cpu().numpy().item()
+                    elif self.config['loss'] == 'MSE':
+                        loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
 
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
