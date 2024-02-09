@@ -100,18 +100,39 @@ def schedule_sampling(eta, itr, batch_size, config):
     return eta, torch.FloatTensor(real_input_flag).to(config['device'])
 
 
-def reshape_patch(img_tensor, patch_size):
+
+def reshape_patch(img_tensor, patch_size, channel_sep=False):
     assert 5 == img_tensor.ndim
     batch_size, seq_length, img_height, img_width, num_channels = img_tensor.shape
-    a = img_tensor.reshape(batch_size, seq_length,
-                                img_height//patch_size, patch_size,
-                                img_width//patch_size, patch_size,
-                                num_channels)
-    b = a.transpose(3, 4)
-    patch_tensor = b.reshape(batch_size, seq_length,
-                                  img_height//patch_size,
-                                  img_width//patch_size,
-                                  patch_size*patch_size*num_channels)
+    if channel_sep:
+        img_tensor_list = []
+        for i in range(num_channels):
+            img_tensor_i = img_tensor[:, :, :, :, i:i+1]
+
+            a = img_tensor_i.reshape(batch_size, seq_length,
+                                        img_height//patch_size, patch_size,
+                                        img_width//patch_size, patch_size,
+                                        1)
+            b = a.transpose(3, 4)
+            img_tensor_i = b.reshape(batch_size, seq_length,
+                                        img_height//patch_size,
+                                        img_width//patch_size,
+                                        patch_size*patch_size*1)
+            
+            img_tensor_list.append(img_tensor_i)
+        
+        patch_tensor = torch.cat(img_tensor_list, -1)
+
+    else:
+        a = img_tensor.reshape(batch_size, seq_length,
+                                    img_height//patch_size, patch_size,
+                                    img_width//patch_size, patch_size,
+                                    num_channels)
+        b = a.transpose(3, 4)
+        patch_tensor = b.reshape(batch_size, seq_length,
+                                    img_height//patch_size,
+                                    img_width//patch_size,
+                                    patch_size*patch_size*num_channels)
     return patch_tensor
 
 

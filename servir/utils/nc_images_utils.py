@@ -150,27 +150,27 @@ if __name__ == "__main__":
 
     # print('stop for debugging')
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_06.h5'), 'r') as hf:
-    #     imgs_06 = hf['IRs'][:]
-    #     img_dts = hf['timestamps'][:]
-    #     img_dts_06 = [x.decode('utf-8') for x in img_dts]
+    with h5py.File(os.path.join(dataPath, 'wa_IR_06.h5'), 'r') as hf:
+        imgs_06 = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+        img_dts_06 = [x.decode('utf-8') for x in img_dts]
 
     # with h5py.File(os.path.join(dataPath, 'wa_IR_07.h5'), 'r') as hf:
     #     imgs_07 = hf['IRs'][:]
     #     img_dts = hf['timestamps'][:]
     #     img_dts_07 = [x.decode('utf-8') for x in img_dts]
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
-        imgs_08 = hf['IRs'][:]
-        imgs_08[np.isnan(imgs_08)] = 284
-        img_dts = hf['timestamps'][:]
-        img_dts_08 = [x.decode('utf-8') for x in img_dts]
+    # with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
+    #     imgs_08 = hf['IRs'][:]
+    #     imgs_08[np.isnan(imgs_08)] = 284
+    #     img_dts = hf['timestamps'][:]
+    #     img_dts_08 = [x.decode('utf-8') for x in img_dts]
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_08_m.h5'), 'w') as hf:
-    #     hf.create_dataset('IRs', data=imgs_08)
-    #     hf.create_dataset('timestamps', data=img_dts_08)
-    #     hf.create_dataset('mean', data=imgs_08.mean())
-    #     hf.create_dataset('std', data=imgs_08.std())
+    with h5py.File(os.path.join(dataPath, 'wa_IR_06_m.h5'), 'w') as hf:
+        hf.create_dataset('IRs', data=imgs_06)
+        hf.create_dataset('timestamps', data=img_dts_06)
+        hf.create_dataset('mean', data=imgs_06.mean())
+        hf.create_dataset('std', data=imgs_06.std())
 
     print('stop for debugging')
 

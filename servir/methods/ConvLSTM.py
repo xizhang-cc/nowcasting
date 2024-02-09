@@ -85,10 +85,16 @@ class ConvLSTM_Model(nn.Module):
 
     def __init__(self, num_layers, num_hidden, config, **kwargs):
         super(ConvLSTM_Model, self).__init__()
-        C, H, W = config['channels'], config['img_height'], config['img_width']
+        if 'input_channel' in config:
+            C_in = config['input_channel']
+        else:
+            C_in = config['channels']
+
+        H, W = config['img_height'], config['img_width']
 
         self.config = config
-        self.frame_channel = config['patch_size'] * config['patch_size'] * C
+        self.frame_channel = config['patch_size'] * config['patch_size'] * C_in
+        self.output_channel = config['patch_size'] * config['patch_size'] * config['channels']
         self.num_layers = num_layers
         self.num_hidden = num_hidden
         cell_list = []
@@ -106,7 +112,8 @@ class ConvLSTM_Model(nn.Module):
                                        config['stride'], config['layer_norm'])
             )
         self.cell_list = nn.ModuleList(cell_list)
-        self.conv_last = nn.Conv2d(num_hidden[num_layers - 1], self.frame_channel,
+
+        self.conv_last = nn.Conv2d(num_hidden[num_layers - 1], self.output_channel,
                                    kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, frames_tensor, mask_true, **kwargs):
@@ -114,6 +121,16 @@ class ConvLSTM_Model(nn.Module):
         # [batch, length, height, width, channel] -> [batch, length, channel, height, width]
         frames = frames_tensor.permute(0, 1, 4, 2, 3).contiguous()
         mask_true = mask_true.permute(0, 1, 4, 2, 3).contiguous()
+
+        input_channel_num = mask_true.shape[2]
+        input_frames = frames[:, :, :input_channel_num] 
+
+        extra_input_channels = frames.shape[2] - mask_true.shape[2]
+
+        if extra_input_channels > 0:
+            extra_frames = frames[:, :, input_channel_num:]
+        else:
+            extra_frames = None
 
         batch = frames.shape[0]
         height = frames.shape[3]
@@ -132,15 +149,18 @@ class ConvLSTM_Model(nn.Module):
             # reverse schedule sampling
             if self.config['reverse_scheduled_sampling'] == 1:
                 if t == 0:
-                    net = frames[:, t]
+                    net = input_frames[:, t]
                 else:
-                    net = mask_true[:, t - 1] * frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
+                    net = mask_true[:, t - 1] * input_frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
             else:
                 if t < self.config['in_seq_length']:
-                    net = frames[:, t]
+                    net = input_frames[:, t]
                 else:
-                    net = mask_true[:, t - self.config['in_seq_length']] * frames[:, t] + \
-                          (1 - mask_true[:, t - self.config['in_seq_length']]) * x_gen
+                    net = mask_true[:, t - self.config['in_seq_length']] * input_frames[:, t] + \
+                        (1 - mask_true[:, t - self.config['in_seq_length']]) * x_gen
+
+            if extra_frames is not None:
+                net = torch.cat([net, extra_frames[:, t]], dim=1)
 
             h_t[0], c_t[0] = self.cell_list[0](net, h_t[0], c_t[0])
 
@@ -156,9 +176,9 @@ class ConvLSTM_Model(nn.Module):
         if kwargs.get('return_loss')==True:
             if kwargs.get('skip_frame_loss')==True:
                 loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
-                                        frames_tensor[:, -self.config['out_seq_length']::2])
+                                        frames_tensor[:, -self.config['out_seq_length']::2, :, :, :input_channel_num])
             else:
-                loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:])
+                loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
         else:
             loss = None
 
@@ -205,10 +225,9 @@ class ConvLSTM():
     def _build_model(self):
         num_hidden = [int(x) for x in self.config['num_hidden'].split(',')]
         num_layers = len(num_hidden)
-        model = ConvLSTM_Model(num_layers, num_hidden, self.config)
 
-        if (torch.cuda.device_count() > 1) and self.config['DataParallel']:
-            model = nn.DataParallel(model)
+
+        model = ConvLSTM_Model(num_layers, num_hidden, self.config)
 
         return model.to(self.device)
     
@@ -219,6 +238,12 @@ class ConvLSTM():
     
     def _predict(self, batch_x, batch_y, **kwargs):
         """Forward the model"""
+        channel_sep = kwargs.get('channel_sep')
+        #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
+        test_ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
+        #=== img reshpe [S, T, H, W, C] --> [S, T, H//patch_size, W//patch_size, patch_size**2*C]
+        test_dat = reshape_patch(test_ims, self.config['patch_size'], channel_sep=channel_sep)
+
         # reverse schedule sampling
         if self.config['reverse_scheduled_sampling'] == 1:
             mask_input = 1
@@ -227,11 +252,6 @@ class ConvLSTM():
 
         img_channel, img_height, img_width = self.config['channels'], self.config['img_height'], self.config['img_width']
 
-        # preprocess
-        #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
-        test_ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
-        #=== img reshpe [S, T, H, W, C] --> [S, T, H//patch_size, W//patch_size, patch_size**2*C]
-        test_dat = reshape_patch(test_ims, self.config['patch_size'])
 
         real_input_flag = torch.zeros(
             (batch_x.shape[0],
@@ -249,7 +269,7 @@ class ConvLSTM():
 
         return pred_y
 
-    def _collect_evaluate_predictions(self, data_loader, setName, gather_pred, withMeta, skip_frame_loss=False):
+    def _collect_evaluate_predictions(self, data_loader, setName, gather_pred, withMeta, **kwargs):
         """Evaluate the model with val_loader.
 
         Args:
@@ -280,10 +300,12 @@ class ConvLSTM():
             else:
                 batch_x, batch_y = batch
 
+            skip_frame_loss = kwargs.get('skip_frame_loss')
+            channel_sep = kwargs.get('channel_sep') 
             st = time.time()
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
-                pred_y = self._predict(batch_x, batch_y)
+                pred_y = self._predict(batch_x, batch_y, channel_sep=channel_sep)
                 if skip_frame_loss:
                     loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
                                         batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
@@ -354,7 +376,7 @@ class ConvLSTM():
         else:
             assert False, f"Unknown clip mode ({self.clip_mode})."
 
-    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, return_loss = True, skip_frame_loss = False):
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, return_loss = True, skip_frame_loss = False, channel_sep=False):
 
         """Train the model with train_loader."""
         data_time_m = AverageMeter()
@@ -377,7 +399,7 @@ class ConvLSTM():
             #=== img order [S, T, C, H, W] --> [S, T, H, W, C]
             ims = torch.cat([batch_x, batch_y], dim=1).permute(0, 1, 3, 4, 2).contiguous()
             #=== img reshpe [S, T, H, W, C] --> [S, T, H//patch_size, W//patch_size, patch_size**2*C]
-            ims = reshape_patch(ims, self.config['patch_size'])
+            ims = reshape_patch(ims, self.config['patch_size'], channel_sep=channel_sep)
             
             if self.config['reverse_scheduled_sampling'] == 1:
                 real_input_flag = reserve_schedule_sampling_exp(
@@ -426,7 +448,7 @@ class ConvLSTM():
 
         return num_updates, losses_m.avg, eta
 
-    def vali(self, data_loader, gather_pred=False, skip_frame_loss=False):
+    def vali(self, data_loader, gather_pred=False, skip_frame_loss=False, channel_sep=False):
         """Evaluate the model with test_loader.
 
         Args:
@@ -436,7 +458,8 @@ class ConvLSTM():
             list(tensor, ...): The list of inputs and predictions.
         """
         vali_loss, vali_results, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
-                                                                        setName='vali', withMeta=False, skip_frame_loss=skip_frame_loss)
+                                                                        setName='vali', withMeta=False,\
+                                                                        skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
 
         return vali_loss, vali_results  
 
