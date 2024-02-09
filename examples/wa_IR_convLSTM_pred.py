@@ -50,15 +50,6 @@ config = load_config(config_path)
 # # log config
 # logging_config_info(config)
 # print('configuration file logged')
-##==================Setup============================##
-
-# Setup Working dirs
-work_dir = os.path.join(base_results_path, 'work_dir')
-if not os.path.exists(work_dir):
-    os.makedirs(work_dir)
-print(f'working dir created at {work_dir}')
-
-config['work_dir'] = work_dir   
 
 
 ##==================Data Loading=====================##
@@ -66,29 +57,16 @@ config['work_dir'] = work_dir
 dataPath = os.path.join(base_path, 'data', dataset_name)
 fname = os.path.join(dataPath, 'wa_IR.h5')
 
-# training data from 2020-06-01 to 2020-08-18 
-trainSet = IRDataset(fname, start_date = '2020-06-01', end_date = '2020-08-18',\
-                        in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
-
-# validation data from 2020-08-18 to 2020-08-25
-valSet = IRDataset(fname, start_date = '2020-08-18', end_date = '2020-08-25',\
-                        in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
-
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = IRDataset_withMeta(fname, start_date = '2020-06-01', end_date = '2020-06-08',\
+testSet = IRDataset_withMeta(fname, start_date = '2020-06-01', end_date = '2020-09-01',\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
-print('Dataset created.')
-print(f'training_len = {len(trainSet)}')
-print(f'val_len = {len(valSet)}')
 print(f'test_len = {len(testSet)}')
 
-dataloader_train = torch.utils.data.DataLoader(trainSet, batch_size=config['batch_size'], shuffle=True, pin_memory=True)
-dataloader_val = torch.utils.data.DataLoader(valSet, batch_size=config['val_batch_size'], shuffle=True, pin_memory=True) 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
 # update config
-config['steps_per_epoch'] = len(dataloader_train)
+config['steps_per_epoch'] = 10 #len(dataloader_train)
 ##==================Setup Method=====================##
 # get device
 print(f'There are total {torch.cuda.device_count()} GPUs on current node')
@@ -103,44 +81,24 @@ config['device'] = device
 # setup method
 method = ConvLSTM(config)
 
-# log method info
-# logging_method_info(config, method, device)
-# print('method setup')
-#==============Distribution=========================##
-
-# setup distribution
 config['rank'], config['world_size'] = get_dist_info()
 
-##==================Training=========================##
-# # # path and name of best model
-# para_dict_fpath = os.path.join(base_results_path, 'wa_IR_params.pth')
-# print(f'model parameters saved at {para_dict_fpath}')
-
-# checkpoint_fname = os.path.join(base_results_path, 'wa_IR_checkpoint.pth')
-# print(f'model training checkpoint saved at {para_dict_fpath}')
-
-# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fname)    
 ##==================Testing==========================## 
 # # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, 'wa_IR_params_temp.pth')
+para_dict_fpath = os.path.join(base_results_path, 'wa_IR_params.pth') 
 # Loads best model’s parameter dictionary 
 method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
-if config['dataname'] == 'wa_IR':
-    skip_frame_loss = True
-else:
-    skip_frame_loss = False
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, skip_frame_loss=config['skip_frame_loss'])
 
-st = time.time()
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, skip_frame_loss=skip_frame_loss)
-print(time.time()-st)
 # save results to h5py file
-with h5py.File(os.path.join(base_results_path, 'IR_predictions_temp.h5'),'w') as hf:
+pred_fName = 'IR_predictions_skip_loss.h5'
+with h5py.File(os.path.join(base_results_path, pred_fName),'w') as hf:
     hf.create_dataset('IRs', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-print(f'results saved at {os.path.join(base_results_path, "IR_predictions_temp.h5")}')
+print(f'results saved at {os.path.join(base_results_path, pred_fName)}')
 
 
 print("DONE")
