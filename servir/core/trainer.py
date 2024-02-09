@@ -26,10 +26,12 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
     num_updates = epoch * config['steps_per_epoch']
 
     return_loss = True
-    if config['dataname'] == 'wa_IR':
-        skip_frame_loss = True
+
+    if 'skip_frame_loss' in config:
+        skip_frame_loss = config['skip_frame_loss']
     else:
-        skip_frame_loss = False
+        skip_frame_loss=False
+
 
     if 'channel_sep' in config:
         channel_sep = config['channel_sep']
