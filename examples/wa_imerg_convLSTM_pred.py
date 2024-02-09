@@ -1,24 +1,24 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 import h5py 
 import time
 import torch
-import pandas as pd
+
 
 from servir.core.distribution import get_dist_info
-# from servir.core.trainer import train
-from servir.datasets.dataLoader_wa_IR import IRDataset, IRDataset_withMeta
+from servir.core.trainer import train
+from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
 from servir.utils.config_utils import load_config
-# from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
+from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
 from servir.methods.ConvLSTM import ConvLSTM
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_IR'
+dataset_name = 'wa_imerg'
 
 
 # Results base path for logging, working dirs, etc. 
@@ -41,32 +41,26 @@ else:
 config = load_config(config_path)
 
 
-# # log config
-# logging_config_info(config)
-# print('configuration file logged')
-
-
 ##==================Data Loading=====================##
 # where to load data
 dataPath = os.path.join(base_path, 'data', dataset_name)
-fname = os.path.join(dataPath, 'wa_IR.h5')
+fname = os.path.join(dataPath, 'wa_imerg.h5')
+
 
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = IRDataset_withMeta(fname, start_date = '2020-06-01', end_date = '2020-09-01',\
+testSet = waImergDataset_withMeta(fname, start_date = '2020-08-25', end_date = '2020-09-01',\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
-print(f'test_len = {len(testSet)}')
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
 # update config
-config['steps_per_epoch'] = 10 #len(dataloader_train)
+config['steps_per_epoch'] = 10
 ##==================Setup Method=====================##
-# get device
-print(f'There are total {torch.cuda.device_count()} GPUs on current node')
 
 if (config['use_gpu']) and torch.cuda.is_available(): 
     device = torch.device('cuda:0')
+    gpu = torch.cuda.get_device_properties(device)
 else:
     device = torch.device('cpu')
 
@@ -75,25 +69,31 @@ config['device'] = device
 # setup method
 method = ConvLSTM(config)
 
+# # log method info
+logging_method_info(config, method, device)
+print('method setup')
+#==============Distribution=========================##
+
+# setup distribution
 config['rank'], config['world_size'] = get_dist_info()
+
+
 
 ##==================Testing==========================## 
 # # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, 'wa_IR_params.pth') 
+para_dict_fpath = os.path.join(base_results_path, 'imerg_only_mse_params.pth')
 # Loads best model’s parameter dictionary 
 method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, skip_frame_loss=config['skip_frame_loss'])
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
 
 # save results to h5py file
-pred_fName = 'IR_predictions_skip_loss.h5'
-with h5py.File(os.path.join(base_results_path, pred_fName),'w') as hf:
-    hf.create_dataset('IRs', data=test_pred)
+with h5py.File(os.path.join(base_results_path, 'imerg_only_mse_predictions.h5'),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-print(f'results saved at {os.path.join(base_results_path, pred_fName)}')
-
+print(f'results saved at {os.path.join(base_results_path, "imerg_only_mse_predictions.h5")}')
 
 print("DONE")
 

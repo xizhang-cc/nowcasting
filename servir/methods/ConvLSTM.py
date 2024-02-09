@@ -103,10 +103,10 @@ class ConvLSTM_Model(nn.Module):
         height = H // config['patch_size']
         width = W // config['patch_size']
 
-        # if config['loss'] == 'MSE':
-        #     self.MSEcriterion = nn.MSELoss()
-        # elif config['loss'] == 'FSSS':
-        #     self.criterion = FSSSurrogateLoss
+        if config['loss'] == 'MSE':
+            self.MSEcriterion = nn.MSELoss()
+        elif config['loss'] == 'FSSS':
+            self.criterion = FSSSurrogateLoss
         self.MSEcriterion = nn.MSELoss()    
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]

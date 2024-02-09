@@ -5,7 +5,7 @@ import datetime
 
 import numpy as np  
 
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
+base_path ="/home1/zhang2012/nowcasting/" '/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 from servir.utils.config_utils import load_config
 from servir.visulizations.gif_creation import create_precipitation_gif
@@ -41,7 +41,7 @@ config = load_config(config_path)
 
 # data path
 dataPath = os.path.join(base_path, 'data', dataset_name)
-data_fname = os.path.join(dataPath, 'imerg_2020_july.h5py')
+data_fname = os.path.join(dataPath, 'wa_imerg.h5py')
 # Load the ground truth
 with h5py.File(data_fname, 'r') as hf:
     imgs = hf['precipitations'][:]
