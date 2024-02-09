@@ -75,7 +75,7 @@ valSet = IRDataset(fname, start_date = '2020-08-18', end_date = '2020-08-25',\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = IRDataset_withMeta(fname, start_date = '2020-06-01', end_date = '2020-09-01',\
+testSet = IRDataset_withMeta(fname, start_date = '2020-06-01', end_date = '2020-06-08',\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'])
 
 print('Dataset created.')
