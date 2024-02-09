@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 
 # load data from h5 file
-def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
+def load_wa_imerg_data_from_h5(fPath, pred_IRs_fPath, start_date, end_date):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -35,10 +35,18 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     requested_precipitation = precipitation[ind]
     requested_times = times[ind]
 
+    with h5py.File(pred_IRs_fPath, 'r') as hf:
+        IRs = hf['IRs'][:]
+        IR_metas = hf['timestamps'][:]
+        IR_metas = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_metas])
+
+
     return requested_precipitation, requested_times, mean, std
 
+
+
 class waImergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, pred_IR\ max_rainfall_intensity=60.0, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_rainfall_intensity=60.0, normalize=False):
 
         self.precipitations, self.datetimes, self.mean, self.std = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
@@ -148,16 +156,18 @@ class waImergDataset_withMeta(Dataset):
 if __name__=='__main__':
     
 
-    dataPath = "/home/cc/projects/nowcasting/data/wa_imerg/"
+    fPath = "/home/cc/projects/nowcasting/data/wa_imerg/wa_imerg.h5"
+    start_date = '2020-07-01'
+    end_date = '2020-08-01' 
+    pred_IRs_fPath = "/home/cc/projects/nowcasting/results/wa_IR/IR_predictions_temp.h5py"
+    load_wa_imerg_data_from_h5(fPath, pred_IRs_fPath, start_date, end_date)
 
-    # start_date = '2020-07-01'
-    # end_date = '2020-08-01' 
-    # fPath = dataPath+'wa_imerg.h5'
+
 
     # a = waImergDataset(fPath, start_date, end_date, 12, 12)
     # a.__getitem__(0)
 
-    # print('stop for debugging')
+    print('stop for debugging')
 
 
 

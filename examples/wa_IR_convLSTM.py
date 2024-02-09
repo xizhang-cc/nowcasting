@@ -129,11 +129,11 @@ st = time.time()
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
 print(time.time()-st)
 # save results to h5py file
-with h5py.File(os.path.join(base_results_path, 'IR_predictions.h5py'),'w') as hf:
+with h5py.File(os.path.join(base_results_path, 'IR_predictions.h5'),'w') as hf:
     hf.create_dataset('IRs', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-print(f'results saved at {os.path.join(base_results_path, "IR_predictions.h5py")}')
+print(f'results saved at {os.path.join(base_results_path, "IR_predictions.h5")}')
 
 
 print("DONE")
