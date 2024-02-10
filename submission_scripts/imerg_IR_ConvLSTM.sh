@@ -5,8 +5,8 @@
 
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
-#SBATCH --mem=256GB
-#SBATCH --partition=gpu1
+#SBATCH --mem=100GB
+#SBATCH --partition=gpu2
 
 #SBATCH --error=/home1/zhang2012/nowcasting/runs/job.%J.err 
 #SBATCH --output=/home1/zhang2012/nowcasting/runs/job.%J.out
@@ -14,5 +14,5 @@
 
 # python /home1/zhang2012/nowcasting/servir/datasets/dataLoader_wa_IR.py
 
-export CUDA_VISIBLE_DEVICES=0
-python /home1/zhang2012/nowcasting/examples/wa_imerg_IR_enhanced_convLSTM.py
+export CUDA_VISIBLE_DEVICES=2
+python /home1/zhang2012/nowcasting/examples/wa_imerg_IR_enhanced_convLSTM_pred.py
