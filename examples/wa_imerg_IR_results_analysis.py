@@ -13,7 +13,7 @@ from servir.visulizations.gif_creation import create_precipitation_gif
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
+dataset_name = 'wa_imerg_IR'
 
 wa_imerg_metadata = {'accutime': 30.0,
     'cartesian_unit': 'degrees',
@@ -40,7 +40,7 @@ config_path = os.path.join(base_path, f'configs/{dataset_name}', f'{method_name}
 config = load_config(config_path)
 
 # data path
-dataPath = os.path.join(base_path, 'data', dataset_name)
+dataPath = os.path.join(base_path, 'data', "wa_imerg")
 data_fname = os.path.join(dataPath, 'wa_imerg.h5')
 
 # Load the ground truth
@@ -54,14 +54,14 @@ img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 # Load the predictions
-with h5py.File(os.path.join(base_results_path, 'imerg_only_fsss_predictions.h5'), 'r') as hf:
+with h5py.File(os.path.join(base_results_path, 'imerg_ir_mse_predictions.h5'), 'r') as hf:
     pred_imgs = hf['precipitations'][:]
     output_dts = hf['timestamps'][:]
     output_dts = [x.decode('utf-8').split(',') for x in output_dts]
 
 
 # specify the gif output path
-results_path = os.path.join(base_results_path, 'imerg_only_fsss')
+results_path = os.path.join(base_results_path, 'imerg_ir_mse')
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
 
@@ -96,8 +96,8 @@ for i, output_dt_i in enumerate(output_dts):
     
     # locate the predicted images for sample i
     pred_imgs_i = pred_imgs[i, :, :, :]
-    # create_precipitation_gif(pred_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata, \
-    #                         os.path.join(i_path, 'pred'), f'{i} - pred', gif_dur = 1000)
+    create_precipitation_gif(pred_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata, \
+                            os.path.join(i_path, 'pred'), f'{i} - pred', gif_dur = 1000)
 
 
 

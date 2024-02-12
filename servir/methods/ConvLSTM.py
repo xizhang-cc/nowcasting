@@ -118,7 +118,11 @@ class ConvLSTM_Model(nn.Module):
 
         self.conv_last = nn.Conv2d(num_hidden[num_layers - 1], self.output_channel,
                                    kernel_size=1, stride=1, padding=0, bias=False)
-
+        
+        # add relu activation 
+        self.relu_last = nn.ReLU()
+        
+    
     def forward(self, frames_tensor, mask_true, **kwargs):
 
         # [batch, length, height, width, channel] -> [batch, length, channel, height, width]
@@ -171,6 +175,8 @@ class ConvLSTM_Model(nn.Module):
                 h_t[i], c_t[i] = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i])
 
             x_gen = self.conv_last(h_t[self.num_layers - 1])
+
+            x_gen = self.relu_last(x_gen)
             next_frames.append(x_gen)
 
         # [length, batch, channel, height, width] -> [batch, length, height, width, channel]
@@ -187,6 +193,7 @@ class ConvLSTM_Model(nn.Module):
                     next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'])
                     frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'])
                     loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0])
+                    
                 elif self.config['loss'] == 'MSE':  
                     loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
         else:
