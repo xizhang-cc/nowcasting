@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -10,33 +10,36 @@ import torch
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
+from servir.datasets.dataLoader_wa_imerg import waImergDataset
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
 from servir.methods.ConvLSTM import ConvLSTM
 
 
+#================Specification=========================#
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-train_st = '2020-06-01'
-train_ed = '2020-08-18'
-val_st = '2020-08-18'
-val_ed = '2020-08-25'
-
+train_st = '2020-08-25' #'2020-06-01'
+train_ed = '2020-08-28' #'2020-08-18'
+val_st = '2020-08-28' #'2020-08-18'
+val_ed = '2020-08-30' #'2020-08-25'
 
 # for data normalization
 max_value = 60.0
 normalize = False
 
-para_dict_fname = 'imerg_only_mse_params.pth'
-checkpoint_fname = 'imerg_only_fsss_checkpoint.pth'
+model_para_fname = 'imerg_only_mse_params.pth'
+checkpoint_fname = 'imerg_only_mse_checkpoint.pth'
+
+
+#================================================#
 
 # test run on local machine
-if base_path == 'home/cc/projects/nowcasting':
-    para_dict_fname = para_dict_fname.split('.')[0] + '_local.pth'
+if base_path == '/home/cc/projects/nowcasting':
+    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
 
 # Results base path for logging, working dirs, etc. 
@@ -84,8 +87,6 @@ valSet = waImergDataset(fname, start_date = val_st, end_date = val_ed,\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
                         max_rainfall_intensity = max_value, normalize=normalize)
 
-
-
 print('Dataset created.')
 print(f'training_len = {len(trainSet)}')
 print(f'val_len = {len(valSet)}')
@@ -121,7 +122,7 @@ config['rank'], config['world_size'] = get_dist_info()
 
 ##==================Training=========================##
 # # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, para_dict_fname)
+para_dict_fpath = os.path.join(base_results_path, model_para_fname)
 print(f'model parameters saved at {para_dict_fpath}')
 
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
@@ -129,7 +130,8 @@ print(f'model training checkpoint saved at {checkpoint_fpath}')
 
 train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 
-print("DONE")
+print("TRAINING DONE")
+
 
 
             

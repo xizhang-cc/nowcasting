@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -24,6 +24,11 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 max_value = 60.0
 normalize = False
+
+# test run on local machine
+if base_path == 'home/cc/projects/nowcasting':
+    para_dict_fname = model_para_fname.split('.')[0] + '_local.pth'
+
 
 
 # Results base path for logging, working dirs, etc. 
@@ -66,7 +71,6 @@ config['steps_per_epoch'] = 10
 
 if (config['use_gpu']) and torch.cuda.is_available(): 
     device = torch.device('cuda:0')
-    gpu = torch.cuda.get_device_properties(device)
 else:
     device = torch.device('cpu')
 

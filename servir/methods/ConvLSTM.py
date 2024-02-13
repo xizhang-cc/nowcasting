@@ -104,10 +104,10 @@ class ConvLSTM_Model(nn.Module):
         width = W // config['patch_size']
 
         if config['loss'] == 'MSE':
-            self.MSEcriterion = nn.MSELoss()
+            self.criterion = nn.MSELoss()
         elif config['loss'] == 'FSSS':
             self.criterion = FSSSurrogateLoss
-        self.MSEcriterion = nn.MSELoss()    
+
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]
             cell_list.append(
@@ -175,8 +175,8 @@ class ConvLSTM_Model(nn.Module):
                 h_t[i], c_t[i] = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i])
 
             x_gen = self.conv_last(h_t[self.num_layers - 1])
-
             x_gen = self.relu_last(x_gen)
+
             next_frames.append(x_gen)
 
         # [length, batch, channel, height, width] -> [batch, length, height, width, channel]
@@ -195,7 +195,7 @@ class ConvLSTM_Model(nn.Module):
                     loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0])
                     
                 elif self.config['loss'] == 'MSE':  
-                    loss = self.MSE_criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
+                    loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
         else:
             loss = None
 
@@ -212,10 +212,6 @@ class ConvLSTM():
     """
 
     def __init__(self, config):
-
-        # update config
-        if config['early_stop_epoch'] <= config['max_epoch'] // 5:
-            config['early_stop_epoch'] = config['max_epoch'] * 2
             
         self.device = config['device']
         self.dist = config['distributed']
@@ -253,7 +249,8 @@ class ConvLSTM():
         return model.to(self.device)
     
     def _init_optimizer(self):
-        epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
+        # epochs = min(self.config['max_epoch'], self.config['early_stop_epoch'])
+        epochs = self.config['max_epoch']
         return get_optim_scheduler(self.config, self.model, epochs)
 
     

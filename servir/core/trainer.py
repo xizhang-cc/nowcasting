@@ -21,7 +21,7 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
     max_epochs = config['max_epoch']
 
 
-    recorder = Recorder(verbose=True)
+    recorder = Recorder(verbose=True, delta=0, patience=config['early_stop_epoch'])
     num_updates = epoch * config['steps_per_epoch']
 
     return_loss = True
@@ -57,7 +57,11 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
                     epoch + 1, len(train_loader), cur_lr, train_loss, vali_loss))
                 
                 # update and save best model as the one with lowest validation loss
-                update_model = recorder(vali_loss)
+                update_model, early_stop = recorder(vali_loss)
+
+                if early_stop:
+                    print_log(f'Early stopping at epoch {epoch + 1}')
+                    break
 
                 if update_model:
                     torch.save(method.model.state_dict(), para_dict_fpath)

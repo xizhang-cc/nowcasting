@@ -1,15 +1,17 @@
 import os
 import numpy as np
 import torch
-from servir.utils.main_utils import  weights_to_cpu, print_log
+from servir.utils.main_utils import  print_log
 
 
 class Recorder:
-    def __init__(self, verbose=True, delta=0):
+    def __init__(self, verbose=True, delta=0, patience=10):
         self.verbose = verbose
         self.best_score = None
         self.val_loss_min = np.Inf
         self.delta = delta
+        self.patience = patience
+        self.stop = False
 
     def __call__(self, val_loss):
 
@@ -27,12 +29,22 @@ class Recorder:
             # update best score and minimum validation loss
             self.best_score = score
             self.val_loss_min = val_loss
+
+            # reset patience
+            self.patience = self.patience
         
         else:
-            if self.verbose:
-                print_log('Validation loss higher than current best model, best model not updated.\n')
+            # update patience
+            self.patience -= 1
+            if self.patience <= 0:
+                self.stop = True
+                if self.verbose:
+                    print_log(f'Early stopping. Validation loss did not decrease for the last {self.patience} epochs.\n')
+            else:
+                if self.verbose:
+                    print_log(f'Validation loss higher than current lowest {self.val_loss_min}, best model not updated.\n')
 
-        return update_model
+        return update_model, self.stop
 
 
         
