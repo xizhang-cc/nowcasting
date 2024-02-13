@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -24,19 +24,19 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-train_st = '2020-06-01' #'2020-08-25' #
-train_ed = '2020-08-18' #'2020-08-28' #
-val_st = '2020-08-18' #'2020-08-28'#
-val_ed = '2020-08-25' #'2020-08-30' #
-test_st = '2020-08-25'
+train_st = '2020-08-25' #'2020-06-01' #
+train_ed = '2020-08-28' #'2020-08-18' #
+val_st = '2020-08-28'#'2020-08-18' #
+val_ed = '2020-08-30' #'2020-08-25' #
+test_st = '2020-08-30' #'2020-08-25' 
 test_ed = '2020-09-01'
 
 
-model_para_fname = 'imerg_only_fsss_params.pth'
-checkpoint_fname = 'imerg_only_fsss_checkpoint.pth'
-pred_fname = 'imerg_only_fsss_predictions.h5'
-
-
+# file names
+base_fname = 'imerg_only_fsss'
+model_para_fname = f'{base_fname}_params.pth'
+checkpoint_fname = f'{base_fname}_checkpoint.pth'
+pred_fname = f'{base_fname}_predictions.h5'
 
 #================================================#
 
@@ -44,6 +44,7 @@ pred_fname = 'imerg_only_fsss_predictions.h5'
 if base_path == '/home/cc/projects/nowcasting':
     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+    pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
