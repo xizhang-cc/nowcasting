@@ -50,7 +50,7 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
             cur_lr = sum(cur_lr) / len(cur_lr)
             with torch.no_grad():
                 #===A validation loop during training==
-                vali_loss, _ = method.vali(vali_loader, gather_pred=False, skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
+                vali_loss = method.vali(vali_loader, gather_pred=False, skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
                 #=======================================
             if config['rank'] == 0:
                 print_log('Epoch: {0}, Steps: {1} | Lr: {2:.7f} | Train Loss: {3:.7f} | Vali Loss: {4:.7f}'.format(

@@ -6,24 +6,24 @@ import datetime
 import numpy as np  
 import torch
 
-servir_path = sys.argv[1]
+# servir_path = sys.argv[1]
 
-config_path = sys.argv[2]
-para_dict_fpath = sys.argv[3]   
-use_gpu = sys.argv[4]
+# config_path = sys.argv[2]
+# para_dict_fpath = sys.argv[3]   
+# use_gpu = sys.argv[4]
 
-input_h5_fname = sys.argv[5]
-output_h5_fname = sys.argv[6]
+# input_h5_fname = sys.argv[5]
+# output_h5_fname = sys.argv[6]
 
 
-# servir_path ='/home/cc/projects/nowcasting' 
+servir_path ='/home/cc/projects/nowcasting' 
 
-# config_path = '/home/cc/projects/nowcasting/temp/ConvLSTM_Config.py'
-# para_dict_fpath = '/home/cc/projects/nowcasting/temp/imerg_only_mse_params.pth'
-# use_gpu = True
+config_path = '/home/cc/projects/nowcasting/temp/ConvLSTM_Config.py'
+para_dict_fpath = '/home/cc/projects/nowcasting/temp/imerg_only_mse_params.pth'
+use_gpu = False
 
-# input_h5_fname = '/home/cc/projects/nowcasting/temp/input_imerg.h5'
-# output_h5_fname = '/home/cc/projects/nowcasting/temp/output_imerg.h5'
+input_h5_fname = '/home/cc/projects/nowcasting/temp/input_imerg.h5'
+output_h5_fname = '/home/cc/projects/nowcasting/temp/output_imerg.h5'
 
 sys.path.append(servir_path)
 
@@ -35,6 +35,7 @@ from servir.core.distribution import get_dist_info
 # Load configuration file
 config = load_config(config_path)
 config['steps_per_epoch'] = 1
+
 ##==================Setup Method=====================##
 # get device
 
@@ -70,6 +71,8 @@ Y = np.zeros(X.shape)
 # convert to tensor 
 X = torch.tensor(X, dtype=torch.float32, device=device)
 Y = torch.tensor(Y, dtype=torch.float32, device=device)
+
+print(config['device'])
 
 # predict
 with torch.no_grad():   

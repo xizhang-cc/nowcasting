@@ -8,7 +8,7 @@ python m_nowcasting.py \
 '/vol_efthymios/NFS07/en279/SERVIR/nowcasting' \
 '/vol_efthymios/NFS07/en279/SERVIR/temp/ConvLSTM_Config.py' \
 '/vol_efthymios/NFS07/en279/SERVIR/temp/imerg_only_mse_params.pth' \
-True \
+False \
 '/vol_efthymios/NFS07/en279/SERVIR/temp/input_imerg.h5' \
 '/vol_efthymios/NFS07/en279/SERVIR/temp/output_imerg.h5'
 

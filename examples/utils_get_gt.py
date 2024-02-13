@@ -68,10 +68,3 @@ with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'),'w') as hf:
 
 
 
-
-
-
-
-
-
-print('stop for debug')

@@ -483,11 +483,11 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        vali_loss, vali_results, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
+        vali_loss, _, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
                                                                         setName='vali', withMeta=False,\
                                                                         skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
 
-        return vali_loss, vali_results  
+        return vali_loss
 
 
     def test(self, data_loader, gather_pred=True, skip_frame_loss=False):
