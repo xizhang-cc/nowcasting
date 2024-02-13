@@ -29,18 +29,18 @@ Returns:
     Save precipitation and times in string format to h5py file
 """
 # tif_directory = '/home/cc/projects/nowcasting/temp/'
-# h5_directory = '/home/cc/projects/nowcasting/temp/'
+# h5_fname = '/home/cc/projects/nowcasting/temp/input_imerg.h5'
 
 tif_directory = sys.argv[1]
-h5_directory = sys.argv[2]
+h5_fname = sys.argv[2]
 
 
 filename_extension = 'tif'
 
 
-if len(sys.argv) != 3:
-    print("Usage: scriptname <path_to_hot_folder>")
-    exit(1)
+# if len(sys.argv) != 3:
+#     print("Usage: scriptname <path_to_hot_folder>")
+#     exit(1)
 
 
 
@@ -80,14 +80,15 @@ precipitation = np.transpose(np.dstack(precipitation), (2, 0, 1))
 sorted_index_array = np.argsort(times)
 sorted_timestamps = times[sorted_index_array]
 sorted_precipitation = precipitation[sorted_index_array]
+# cut off 2 columns of data
+sorted_precipitation = sorted_precipitation[:, :, 1:-1]
 
 st_dt = sorted_timestamps[0].strftime('%Y%m%d%H%M')
 end_dt = sorted_timestamps[-1].strftime('%Y%m%d%H%M')
-fname = f"imerg_{st_dt}_{end_dt}.h5"
 
 
 sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
-with h5py.File(os.path.join(h5_directory, fname), 'w') as hf:
+with h5py.File(h5_fname, 'w') as hf:
     hf.create_dataset('precipitations', data=sorted_precipitation)
     hf.create_dataset('timestamps', data=sorted_timestamps_dt)
 

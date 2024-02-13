@@ -16,7 +16,7 @@ import osgeo.gdal as gdal
 
 ####
 
-# h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
+# h5_fname = '/home/cc/projects/nowcasting/temp/output_imerg.h5'
 # meta_fname = '/home/cc/projects/nowcasting/temp/imerg_giotiff_meta.json'
 # tif_directory = '/home/cc/projects/nowcasting/temp/'
 
@@ -55,6 +55,9 @@ with h5py.File(h5_fname, 'r') as hf:
     pred_imgs = hf['precipitations'][:]
     output_dts = hf['timestamps'][:]
     output_dts = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in output_dts])
+
+pred_imgs = np.insert(pred_imgs, 0, 0, axis=2)
+pred_imgs = np.insert(pred_imgs, -1, 0, axis=2)
 
 
 for i in range(len(output_dts)):

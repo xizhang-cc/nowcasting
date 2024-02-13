@@ -7,20 +7,25 @@ import numpy as np
 import torch
 
 servir_path = sys.argv[1]
+
+config_path = sys.argv[2]
+para_dict_fpath = sys.argv[3]   
+use_gpu = sys.argv[4]
+
+input_h5_fname = sys.argv[5]
+output_h5_fname = sys.argv[6]
+
+
 # servir_path ='/home/cc/projects/nowcasting' 
-sys.path.append(servir_path)
 
-
-# input_h5_fname = '/home/cc/projects/nowcasting/temp/imerg_202007010000_202007010530.h5'
-# output_h5_fname = '/home/cc/projects/nowcasting/temp/test_predictions.h5'
-# para_dict_fpath = '/home/cc/projects/nowcasting/temp/model_params.pth'
+# config_path = '/home/cc/projects/nowcasting/temp/ConvLSTM_Config.py'
+# para_dict_fpath = '/home/cc/projects/nowcasting/temp/imerg_only_mse_params.pth'
 # use_gpu = True
 
-input_h5_fname = sys.argv[2]
-output_h5_fname = sys.argv[3]
-para_dict_fpath = sys.argv[4]   
-use_gpu = sys.argv[5]
+# input_h5_fname = '/home/cc/projects/nowcasting/temp/input_imerg.h5'
+# output_h5_fname = '/home/cc/projects/nowcasting/temp/output_imerg.h5'
 
+sys.path.append(servir_path)
 
 from servir.utils.config_utils import load_config
 from servir.methods.ConvLSTM import ConvLSTM
@@ -28,7 +33,6 @@ from servir.core.distribution import get_dist_info
 
 
 # Load configuration file
-config_path = os.path.join(servir_path, 'configs/wa_imerg/ConvLSTM.py')
 config = load_config(config_path)
 config['steps_per_epoch'] = 1
 ##==================Setup Method=====================##
@@ -56,7 +60,7 @@ with h5py.File(input_h5_fname, 'r') as hf:
 
 
 # pixel value range (0, 1)
-max_rainfall_intensity = 52 
+max_rainfall_intensity = 60
 input =  input / max_rainfall_intensity
 # add batch and channel dimension to input. From [T, H, W] to [B, T, C, H, W]
 X = np.expand_dims(input, axis=(0,2))
@@ -106,8 +110,7 @@ with h5py.File(output_h5_fname,'w') as hf:
 #     'yorigin': 'upper',
 #     'ypixelsize': 0.04,
 #     'zerovalue': 0}
-# create_precipitation_gif(pred_Y, input_dt, \
-#                             30, wa_imerg_metadata, '/home/cc/projects/nowcasting/temp/', 'test', gif_dur = 1000)
+# create_precipitation_gif(pred_Y, input_dt, 30, wa_imerg_metadata, '/home/cc/projects/nowcasting/temp/', 'test', gif_dur = 1000)
 
 
 
