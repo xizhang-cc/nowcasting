@@ -100,5 +100,4 @@ for i, output_dt_i in enumerate(output_dts):
     #                         os.path.join(i_path, 'pred'), f'{i} - pred', gif_dur = 1000)
 
 
-
 print('stop for debug')

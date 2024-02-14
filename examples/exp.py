@@ -33,7 +33,7 @@ test_ed = '2020-09-01'
 
 
 # file names
-base_fname = 'imerg_only_fsss'
+base_fname = 'imerg_only_test'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'

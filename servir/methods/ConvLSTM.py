@@ -1,5 +1,5 @@
 import time
-
+from decimal import Decimal
 from tqdm import tqdm
 from typing import Dict, List, Union
  
@@ -121,6 +121,9 @@ class ConvLSTM_Model(nn.Module):
         
         # add relu activation 
         self.relu_last = nn.ReLU()
+
+        nn.init.normal_(self.conv_last.weight, mean=0, std=0.0000001)
+
         
     
     def forward(self, frames_tensor, mask_true, **kwargs):
@@ -192,7 +195,9 @@ class ConvLSTM_Model(nn.Module):
                     next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
                     next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'])
                     frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'])
-                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0], self.config['max_value'])
+                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0],\
+                                            frames_tensor_img[:, :, :, :, 0],\
+                                            max_value =  self.config['max_value'])
                     
                 elif self.config['loss'] == 'MSE':  
                     loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
@@ -331,7 +336,8 @@ class ConvLSTM():
                     if self.config['loss'] == 'FSSS':
                         img_batch_y = batch_y[:, :, 0, :, :]
                         img_pred_y = pred_y[:, :, 0, :, :]
-                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y, self.config['max_value']).cpu().numpy().item()
+                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y,\
+                                                max_value = self.config['max_value']).cpu().numpy().item()
                     elif self.config['loss'] == 'MSE':
                         loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
 
@@ -339,7 +345,7 @@ class ConvLSTM():
                 data_time_m.update(time.time() - st)
 
                 if self.config['rank'] == 0:
-                    log_buffer = '{} loss: {:.4f}'.format(setName,loss)
+                    log_buffer = "{} loss : {:.2E}".format(setName, Decimal(loss)) #'{} loss: {:.4f}'.format(setName,loss)
                     log_buffer += ' | avg {} time: {:.4f}'.format(setName, data_time_m.avg)
                     pbar.set_description(log_buffer)
                 
@@ -461,7 +467,7 @@ class ConvLSTM():
             data_time_m.update(time.time() - st)
 
             if self.config['rank'] == 0:
-                log_buffer = 'train loss: {:.4f}'.format(loss.item())
+                log_buffer = "train loss : {:.2E}".format(Decimal(loss.item())) #'train loss: {:.4f}'.format(loss.item())
                 log_buffer += ' | avg train time: {:.4f}'.format(data_time_m.avg)
                 train_pbar.set_description(log_buffer)
 

@@ -20,7 +20,7 @@ max_epoch = 100
 early_stop_epoch= 2 #10 #
 max_iter = 0
 no_display_method_info= False
-loss='FSSS' #'MSE'#
+loss='MSE'#'FSSS' #
 # train optimizer
 opt = 'adam'
 lr = 5e-4

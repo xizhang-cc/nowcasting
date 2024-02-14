@@ -10,6 +10,7 @@ class Recorder:
         self.best_score = None
         self.val_loss_min = np.Inf
         self.delta = delta
+        self.torlerance = patience
         self.patience = patience
         self.stop = False
 
@@ -31,7 +32,7 @@ class Recorder:
             self.val_loss_min = val_loss
 
             # reset patience
-            self.patience = self.patience
+            self.patience = self.torlerance
         
         else:
             # update patience

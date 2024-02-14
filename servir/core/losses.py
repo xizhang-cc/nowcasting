@@ -12,19 +12,26 @@ Inputs:
     theta: (float64) threshold used for FSS calculations (for "significant" precipitation)
     c: (float64) small positive constant used to avoid Nan values in loss function
 """
-def FSSSurrogateLoss(gt, pred, max_value, n=2, theta=8, c=1e-6):
-
-    theta = theta /max_value
+def FSSSurrogateLoss(gt, pred, n=2, theta=8, c=1e-6, **kwargs):
+    if 'max_value' in kwargs:
+        max_value = kwargs['max_value']
+        theta = theta /max_value
+    elif kwargs.get('normalize', True) and ('std' in kwargs) and ('mean' in kwargs):
+        theta = theta * kwargs['std'] + kwargs['mean']
+    else:
+        theta = theta
 
     # averaging kernel with no padding
     averaging_kernel = torch.nn.AvgPool2d(kernel_size=(2*n+1, 2*n+1), stride=1)
     
     # UF
-    psi_gt_u = torch.relu(gt - torch.ones_like(gt)*(theta - 1))
+    # psi_gt_u = torch.relu(gt - torch.ones_like(gt)*(theta - 1))
+    psi_gt_u = torch.relu(torch.ones_like(gt) - torch.relu(-gt+theta*torch.ones_like(gt)) )
     psi_gt_u = averaging_kernel(psi_gt_u)
 
     # U\hat{F}
-    psi_pred_u = torch.relu(pred - torch.ones_like(pred)*(theta - 1))
+    # psi_pred_u = torch.relu(pred - torch.ones_like(pred)*(theta - 1))
+    psi_pred_u =torch.relu(torch.ones_like(pred) - torch.relu(-pred+theta*torch.ones_like(pred)) )
     psi_pred_u = averaging_kernel(psi_pred_u)
     
     # LF
@@ -39,10 +46,14 @@ def FSSSurrogateLoss(gt, pred, max_value, n=2, theta=8, c=1e-6):
     # FSS_Surrogate = 1 - \frac{1*\sum_{i,j}{LF_{i,j}.L\hat{F}_{i,j}}}{\sum_{i,j}{U\hat{F}_{ij}^2} +\sum_{i,j}{UF_{ij}^2}  + c}
     # FSS_Surrogate = 1- (numerator/denominator) 
     numerator = 2*torch.mul(psi_gt_l,psi_pred_l).sum()
-    denominator = torch.square(psi_gt_u).sum() + torch.square(psi_pred_u).sum() + c
+    denominator = torch.square(psi_gt_u).sum() + torch.square(psi_pred_u).sum() + c 
     FSS_surrogate = 1- (numerator/denominator)
+    # print('\n')
+    # print('numerator:\n',numerator)
+    # print('denominator:\n',denominator)
+    # print('\n')
 
-    return FSS_surrogate
+    return torch.log(FSS_surrogate)
 
 
 
