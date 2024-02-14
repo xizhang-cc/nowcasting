@@ -192,7 +192,7 @@ class ConvLSTM_Model(nn.Module):
                     next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
                     next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'])
                     frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'])
-                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0])
+                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0], frames_tensor_img[:, :, :, :, 0], self.config['max_value'])
                     
                 elif self.config['loss'] == 'MSE':  
                     loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
@@ -331,7 +331,7 @@ class ConvLSTM():
                     if self.config['loss'] == 'FSSS':
                         img_batch_y = batch_y[:, :, 0, :, :]
                         img_pred_y = pred_y[:, :, 0, :, :]
-                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y).cpu().numpy().item()
+                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y, self.config['max_value']).cpu().numpy().item()
                     elif self.config['loss'] == 'MSE':
                         loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
 

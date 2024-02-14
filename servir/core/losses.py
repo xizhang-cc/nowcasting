@@ -12,9 +12,9 @@ Inputs:
     theta: (float64) threshold used for FSS calculations (for "significant" precipitation)
     c: (float64) small positive constant used to avoid Nan values in loss function
 """
-def FSSSurrogateLoss(gt, pred, n, max_precipitation, theta=8, c=1e-6):
+def FSSSurrogateLoss(gt, pred, max_value, n=2, theta=8, c=1e-6):
 
-    theta = theta /max_precipitation
+    theta = theta /max_value
 
     # averaging kernel with no padding
     averaging_kernel = torch.nn.AvgPool2d(kernel_size=(2*n+1, 2*n+1), stride=1)
