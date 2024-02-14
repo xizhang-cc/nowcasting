@@ -19,6 +19,7 @@ def logging_setup(log_path, fname='log.log'):
                         filename=os.path.join(log_path, fname_wt),
                         filemode='a', format='%(asctime)s - %(message)s', 
                         force=True)
+    
 
 
 def logging_env_info():

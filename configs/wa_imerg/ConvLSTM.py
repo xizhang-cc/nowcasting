@@ -10,14 +10,14 @@ sampling_stop_iter = 50000
 sampling_start_value = 1.0
 sampling_changing_rate = 0.00002
 # model
-num_hidden = '32, 32, 32, 32'#'128, 128, 128, 128'#
+num_hidden = '128, 128, 128, 128'#'32, 32, 32, 32'#
 filter_size = 5
 stride = 1
 patch_size = 6
 layer_norm = 0
 # training
 max_epoch = 100 
-early_stop_epoch= 2 #10#
+early_stop_epoch= 10 #2 #
 max_iter = 0
 no_display_method_info= False
 loss='MSE'
@@ -32,14 +32,17 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 2
-val_batch_size = 2
+batch_size = 16 #2#
+val_batch_size = 16 #2#
 dataname = 'wa_imerg'
 channels = 1
 in_seq_length = 12
 out_seq_length = 12 
 img_height = 360
 img_width = 516
+# for dataloader
+max_precipitation = 60.0
+normalize = False
 # system
 use_gpu = True
 DataParallel = False
