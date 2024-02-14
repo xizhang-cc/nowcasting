@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -24,16 +24,23 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-train_st = '2020-08-25' #'2020-06-01' #
-train_ed = '2020-08-28' #'2020-08-18' #
-val_st = '2020-08-28'#'2020-08-18' #
-val_ed = '2020-08-30' #'2020-08-25' #
-test_st = '2020-08-30' #'2020-08-25' 
+# train_st = '2020-08-25' #'2020-06-01' #
+# train_ed = '2020-08-28' #'2020-08-18' #
+# val_st = '2020-08-28'#'2020-08-18' #
+# val_ed = '2020-08-30' #'2020-08-25' #
+# test_st = '2020-08-30' #'2020-08-25' 
+# test_ed = '2020-09-01'
+
+train_st = '2020-06-01' 
+train_ed = '2020-08-18' 
+val_st = '2020-08-18'
+val_ed = '2020-08-25'
+test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
-
 # file names
-base_fname = 'imerg_only_test'
+base_fname = 'imerg_only_mse_relu'
+
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
