@@ -41,7 +41,7 @@ pred_IR_length = 5
 img_height = 360
 img_width = 516
 channels = 1 
-channel_sep = True
+channel_sep = False
 input_channel = 2 # channel 1 is Imerg, channel 2 is IR
 # for dataloader
 max_value = 60.0
