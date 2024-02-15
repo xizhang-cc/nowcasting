@@ -1,7 +1,7 @@
 
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" #
+base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -144,7 +144,6 @@ if __name__ == "__main__":
         # times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
         mean = hf['mean'][()]
         std = hf['std'][()]  
-        max = hf['max'][()]
 
     # crop images
     precipitation = precipitation[:, :, 1:-1]
@@ -154,7 +153,9 @@ if __name__ == "__main__":
         hf.create_dataset('timestamps', data=times)
         hf.create_dataset('mean', data=mean)
         hf.create_dataset('std', data=std)
-        hf.create_dataset('max', data =max)
+        hf.create_dataset('max', data =60.0)
 
+    print(precipitation.shape)
+    print(precipitation.max())
     print('stop for debugging')
     
