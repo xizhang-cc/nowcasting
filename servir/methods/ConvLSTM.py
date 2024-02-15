@@ -122,8 +122,6 @@ class ConvLSTM_Model(nn.Module):
         # add relu activation 
         self.relu_last = nn.ReLU()
 
-        nn.init.normal_(self.conv_last.weight, mean=0, std=0.0000001)
-
         
     
     def forward(self, frames_tensor, mask_true, **kwargs):

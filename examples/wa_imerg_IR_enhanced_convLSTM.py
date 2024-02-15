@@ -10,7 +10,7 @@ import torch
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-from servir.datasets.dataLoader_wa_imerg_with_IR import waImergIRDataset, waImergIRDataset_withMeta
+from servir.datasets.dataLoader_wa_imerg_IR import waImergIRDataset, waImergIRDataset_withMeta
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
 
