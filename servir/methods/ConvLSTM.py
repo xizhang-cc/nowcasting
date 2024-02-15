@@ -191,8 +191,8 @@ class ConvLSTM_Model(nn.Module):
                 if self.config['loss'] == 'FSSS':
                     img_frames_tensor = frames_tensor[:, :, :, :, :input_channel_num]
                     next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
-                    next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'])
-                    frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'])
+                    next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'], self.config['channel_sep'])
+                    frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'],self.config['channel_sep'])
                     loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0],\
                                             frames_tensor_img[:, :, :, :, 0],\
                                             max_value =  self.config['max_value'])
@@ -285,7 +285,7 @@ class ConvLSTM():
             real_input_flag[:, :self.config['out_seq_length'] - 1, :, :] = 1.0
 
         img_gen, _ = self.model(test_dat, real_input_flag, return_loss=False)
-        img_gen = reshape_patch_back(img_gen, self.config['patch_size'])
+        img_gen = reshape_patch_back(img_gen, self.config['patch_size'], channel_sep=channel_sep)   
         pred_y = img_gen[:, -self.config['out_seq_length']:].permute(0, 1, 4, 2, 3).contiguous()
 
         return pred_y

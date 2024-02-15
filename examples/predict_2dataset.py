@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ="/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'# 
+base_path ='/home/cc/projects/nowcasting'# "/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -8,13 +8,13 @@ import time
 import torch
 import logging
 
+import numpy as np
 
 from servir.core.distribution import get_dist_info
 from servir.datasets.dataLoader_wa_imerg_IR import waImergIRDatasetTr_withMeta
 from servir.utils.config_utils import load_config
 
 from servir.methods.ConvLSTM import ConvLSTM
-
 
 #================Specification=========================#
 method_name = 'ConvLSTM'
@@ -36,7 +36,7 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_gtIR_mse'
+base_fname = 'imerg_gtIR_2c_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -81,7 +81,6 @@ if base_path == '/home/cc/projects/nowcasting':
     config['early_stop_epoch'] = 2
 
 
-
 ##==================Data Loading=====================##
 # where to load data
 f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
@@ -120,10 +119,17 @@ else:
 
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+
+if config['channels'] > 1:
+    test_pred = test_pred[:, :, 0:1, :, :]
+    test_pred = np.squeeze(test_pred, axis=2)
+
 if config['normalize']:
     test_pred  = test_pred * config['std'] + config['mean']
 else:
     test_pred  = test_pred * config['max_value']
+
+
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

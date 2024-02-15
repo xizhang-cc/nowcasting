@@ -1,6 +1,6 @@
 import os
 import torch
-
+from decimal import Decimal
 from servir.core.recorder import Recorder   
 from servir.utils.main_utils import print_log, weights_to_cpu
 
@@ -43,7 +43,7 @@ def train(train_loader, vali_loader, method, config, para_dict_fpath, checkpoint
 
         num_updates, train_loss, eta = method.train_one_epoch(train_loader, epoch, num_updates, \
                                                             eta, return_loss, skip_frame_loss, channel_sep=channel_sep)
-        from decimal import Decimal
+
         print("train loss : {:.2E}".format(Decimal(train_loss)))
         if epoch % log_step == 0:
             cur_lr = method.current_lr()

@@ -104,7 +104,8 @@ def schedule_sampling(eta, itr, batch_size, config):
 def reshape_patch(img_tensor, patch_size, channel_sep=False):
     assert 5 == img_tensor.ndim
     batch_size, seq_length, img_height, img_width, num_channels = img_tensor.shape
-    if channel_sep:
+
+    if (channel_sep) and (num_channels> 1) :
         img_tensor_list = []
         for i in range(num_channels):
             img_tensor_i = img_tensor[:, :, :, :, i:i+1]
@@ -136,16 +137,36 @@ def reshape_patch(img_tensor, patch_size, channel_sep=False):
     return patch_tensor
 
 
-def reshape_patch_back(patch_tensor, patch_size):
+def reshape_patch_back(patch_tensor, patch_size, channel_sep=False):
     batch_size, seq_length, patch_height, patch_width, channels = patch_tensor.shape
     img_channels = channels // (patch_size*patch_size)
-    a = patch_tensor.reshape(batch_size, seq_length,
-                                  patch_height, patch_width,
-                                  patch_size, patch_size,
-                                  img_channels)
-    b = a.transpose(3, 4)
-    img_tensor = b.reshape(batch_size, seq_length,
-                                patch_height * patch_size,
-                                patch_width * patch_size,
-                                img_channels)
+
+    if (channel_sep) and (channels > 1) :
+        img_tensor_list = []
+        for i in range(img_channels):
+            patch_tensor_i = patch_tensor[:, :, :, :, i*patch_size*patch_size:(i+1)*patch_size*patch_size]
+            a = patch_tensor_i.reshape(batch_size, seq_length,
+                                    patch_height, patch_width,
+                                    patch_size, patch_size,
+                                    1)
+            b = a.transpose(3, 4)
+            img_tensor_i = b.reshape(batch_size, seq_length,
+                                    patch_height * patch_size,
+                                    patch_width * patch_size,
+                                    1)
+            
+            img_tensor_list.append(img_tensor_i)
+
+        img_tensor = torch.cat(img_tensor_list, -1)
+
+    else:
+        a = patch_tensor.reshape(batch_size, seq_length,
+                                    patch_height, patch_width,
+                                    patch_size, patch_size,
+                                    img_channels)
+        b = a.transpose(3, 4)
+        img_tensor = b.reshape(batch_size, seq_length,
+                                    patch_height * patch_size,
+                                    patch_width * patch_size,
+                                    img_channels)
     return img_tensor
