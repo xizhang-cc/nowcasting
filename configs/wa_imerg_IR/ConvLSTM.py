@@ -10,7 +10,7 @@ sampling_stop_iter = 50000
 sampling_start_value = 1.0
 sampling_changing_rate = 0.00002
 # model
-num_hidden = '128, 128, 128, 128'#'32, 32' #
+num_hidden ='32, 32' # '128, 128, 128, 128'#
 filter_size = 5
 stride = 1
 patch_size = 6
@@ -32,8 +32,8 @@ weight_decay = 0
 clip_grad= None
 clip_mode= 'norm'
 # dataset
-batch_size = 16#2#
-val_batch_size = 16#2#
+batch_size = 2#16#
+val_batch_size = 2#16#
 dataname = 'wa_imerg_IR'
 in_seq_length = 12
 out_seq_length = 12 
@@ -43,6 +43,9 @@ img_width = 516
 channels = 1 
 channel_sep = True
 input_channel = 2 # channel 1 is Imerg, channel 2 is IR
+# for dataloader
+max_value = 60.0
+normalize = False
 # system
 use_gpu = True
 DataParallel = False
