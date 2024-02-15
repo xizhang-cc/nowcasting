@@ -20,16 +20,23 @@ dataset_name = 'wa_imerg_IR'
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
 data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
 
-# true ir data path
-dataPath2 = os.path.join(base_path, 'data', 'wa_IR')
-data2_fname = os.path.join(dataPath2, 'wa_IR_08.h5')
+if dataset_name == 'wa_imerg_IR':
+    # true ir data path
+    dataPath2 = os.path.join(base_path, 'data', 'wa_IR')
+    data2_fname = os.path.join(dataPath2, 'wa_IR_08.h5')
+
+    with h5py.File(data2_fname, 'r') as hf:
+        IRs = hf['IRs'][:]
+        IR_times = hf['timestamps'][:]
+        IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
+
 
 in_seq_length = 12
 out_seq_length = 12 
 
 
 # prediction file name
-base_fname = 'imerg_gtIR_mse'
+base_fname = 'imerg_gtIR_mse' #'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
 
@@ -62,12 +69,6 @@ with h5py.File(data1_fname, 'r') as hf:
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
 
-with h5py.File(data2_fname, 'r') as hf:
-    IRs = hf['IRs'][:]
-    IR_times = hf['timestamps'][:]
-    IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
-
-
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 # Load the predictions
@@ -82,6 +83,7 @@ results_path = os.path.join(base_results_path, base_fname)
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
 
+losses = []
 # For each senario, match the input, true, and pred images.
 for i, output_dt_i in enumerate(output_dts):
     # path to save the current sample images
@@ -91,7 +93,8 @@ for i, output_dt_i in enumerate(output_dts):
         os.mkdir(os.path.join(i_path, 'true'))
         os.mkdir(os.path.join(i_path, 'pred'))
         # os.mkdir(os.path.join(i_path, 'input'))
-        os.mkdir(os.path.join(i_path, 'IR'))
+        if dataset_name == 'wa_imerg_IR':
+            os.mkdir(os.path.join(i_path, 'IR'))
 
     
     # locate the index of output index for sample i
@@ -101,13 +104,15 @@ for i, output_dt_i in enumerate(output_dts):
     in_dt_i = [img_datetimes[x] for x in input_ind_i]
     out_dt_i = [img_datetimes[x] for x in output_ind_i]
 
-    # locate IR images for sample i
-    output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
-    output_IRs_i = IRs[output_ind_IR_i, :, :]
-    for k in range(output_IRs_i.shape[0]):
+    if dataset_name == 'wa_imerg_IR':
+        # locate IR images for sample i
+        output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
+        output_IRs_i = IRs[output_ind_IR_i, :, :]
+        for k in range(output_IRs_i.shape[0]):
+            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
 
-        plt.imshow(output_IRs_i[k], cmap='gray')
-        plt.savefig(os.path.join(i_path, 'IR', f'{IR_times[output_ind_IR_i[k]]}.png'))
+            plt.imshow(output_IRs_i[k], cmap='gray')
+            plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
 
 
     # # locate the input images for sample i
@@ -125,5 +130,11 @@ for i, output_dt_i in enumerate(output_dts):
     create_precipitation_plots(pred_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata, \
                             os.path.join(i_path, 'pred'), f'{i} - pred')
 
+    mse_i = np.mean((true_imgs_i - pred_imgs_i)**2) 
+    print(mse_i)
+    losses.append(mse_i)
 
-print('stop for debug')
+    
+
+# plt.boxplot(losses)
+# print('stop for debug')
