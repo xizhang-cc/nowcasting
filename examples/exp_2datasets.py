@@ -26,24 +26,17 @@ dataset1_name = 'wa_imerg'
 dataset2_name = 'wa_IR'
 
 data1_fname = 'wa_imerg.h5'
-data2_fname = 'wa_IR_08_m.h5'
+data2_fname = 'wa_IR.h5'
 
 # new data name
 dataset_name = 'wa_imerg_IR'
 
-train_st = '2020-08-25' #'2020-06-01' #
-train_ed = '2020-08-28' #'2020-08-18' #
-val_st = '2020-08-28'#'2020-08-18' #
-val_ed = '2020-08-30' #'2020-08-25' #
-test_st = '2020-08-30' #'2020-08-25' 
+train_st = '2020-06-01' 
+train_ed = '2020-08-18' 
+val_st = '2020-08-18'
+val_ed = '2020-08-25'
+test_st = '2020-08-25' 
 test_ed = '2020-09-01'
-
-# train_st = '2020-06-01' 
-# train_ed = '2020-08-18' 
-# val_st = '2020-08-18'
-# val_ed = '2020-08-25'
-# test_st = '2020-08-25' 
-# test_ed = '2020-09-01'
 
 # file names
 base_fname = 'imerg_gtIR_mse'
@@ -51,27 +44,6 @@ model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
 
-#================================================#
-
-# test run on local machine
-if base_path == '/home/cc/projects/nowcasting':
-    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-    pred_fname = pred_fname.split('.')[0] + '_local.h5'
-
-# Results base path for logging, working dirs, etc. 
-base_results_path = os.path.join(base_path, f'results/{dataset_name}')
-if not os.path.exists(base_results_path):
-    os.makedirs(base_results_path)
-
-print_log(f'results path : {base_results_path}')
-
-# logging setup
-logging_setup(base_results_path, fname=f'{method_name}.log')   
-print('logging file created')
-# log env info
-logging_env_info()
-print('env info logged')
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -84,8 +56,43 @@ else:
 
 config = load_config(config_path)
 
-print_log(f'config file at {config_path} logged')
+print(f'config file at {config_path} logged')
 
+#================================================#
+# test run on local machine
+if base_path == '/home/cc/projects/nowcasting':
+    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+    pred_fname = pred_fname.split('.')[0] + '_local.h5'
+
+    train_st = '2020-08-25'
+    train_ed = '2020-08-28' 
+    val_st = '2020-08-28'
+    val_ed = '2020-08-30' 
+    test_st = '2020-08-30'
+    test_ed = '2020-09-01'
+
+    data2_fname = 'wa_IR_08.h5'
+
+    config['batch_size'] = 2
+    config['val_batch_size'] = 2
+    config['num_hidden'] = '32, 32' 
+    config['max_epoch'] = 10
+    config['early_stop_epoch'] = 2# test run on local machine
+
+
+# Results base path for logging, working dirs, etc. 
+base_results_path = os.path.join(base_path, f'results/{dataset_name}')
+if not os.path.exists(base_results_path):
+    os.makedirs(base_results_path)
+
+
+# logging setup
+logging_setup(base_results_path, fname=f'{method_name}.log')   
+print('logging file created')
+# log env info
+logging_env_info()
+print('env info logged')
 
 # log config
 logging_config_info(config)
@@ -98,12 +105,12 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 trainSet = waImergIRDatasetTr(f1name, f2name, train_st, train_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0)
+                        imerg_normalize=False, IR_normalize=True)
 
 
 valSet = waImergIRDatasetTr(f1name, f2name, val_st, val_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0)
+                        imerg_normalize=False, IR_normalize=True)
 
 print('Dataset created.')
 print_log(f'training_len = {len(trainSet)}')
@@ -127,7 +134,6 @@ config['device'] = device
 # setup method
 method = ConvLSTM(config)
 
-
 #==============Distribution=========================##
 
 # setup distribution
@@ -148,7 +154,7 @@ print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 #======================================
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0)
+                        imerg_normalize=False, IR_normalize=True)
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
