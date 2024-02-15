@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -13,7 +13,7 @@ from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
 from servir.datasets.dataLoader_wa_imerg_IR import waImergIRDatasetTr, waImergIRDatasetTr_withMeta
 from servir.utils.config_utils import load_config
-from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
+from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info
 from servir.utils.main_utils import print_log
 
 from servir.methods.ConvLSTM import ConvLSTM
@@ -26,27 +26,27 @@ dataset1_name = 'wa_imerg'
 dataset2_name = 'wa_IR'
 
 data1_fname = 'wa_imerg.h5'
-data2_fname = 'wa_IR_08_m.h5'
+data2_fname = 'wa_IR.h5'
 
 # new data name
 dataset_name = 'wa_imerg_IR'
 
-train_st = '2020-08-25' #'2020-06-01' #
-train_ed = '2020-08-28' #'2020-08-18' #
-val_st = '2020-08-28'#'2020-08-18' #
-val_ed = '2020-08-30' #'2020-08-25' #
-test_st = '2020-08-30' #'2020-08-25' 
-test_ed = '2020-09-01'
-
-# train_st = '2020-06-01' 
-# train_ed = '2020-08-18' 
-# val_st = '2020-08-18'
-# val_ed = '2020-08-25'
-# test_st = '2020-08-25' 
+# train_st = '2020-08-25' #'2020-06-01' #
+# train_ed = '2020-08-28' #'2020-08-18' #
+# val_st = '2020-08-28'#'2020-08-18' #
+# val_ed = '2020-08-30' #'2020-08-25' #
+# test_st = '2020-08-30' #'2020-08-25' 
 # test_ed = '2020-09-01'
 
+train_st = '2020-06-01' 
+train_ed = '2020-08-18' 
+val_st = '2020-08-18'
+val_ed = '2020-08-25'
+test_st = '2020-08-25' 
+test_ed = '2020-09-01'
+
 # file names
-base_fname = 'imerg_IR_mse'
+base_fname = 'imerg_gtIR_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -146,7 +146,7 @@ train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpo
 print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
 #======================================
-testSet = waImergIRDatasetTr(f1name, f2name, test_st, test_ed, \
+testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
                         max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0)
 
