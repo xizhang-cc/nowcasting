@@ -129,8 +129,6 @@ if config['normalize']:
 else:
     test_pred  = test_pred * config['max_value']
 
-
-
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
     hf.create_dataset('precipitations', data=test_pred)

@@ -7,6 +7,7 @@ import h5py
 import time
 import torch
 import logging
+import numpy as np
 
 
 from servir.core.distribution import get_dist_info
@@ -147,7 +148,7 @@ print_log(f'model parameters saved at {para_dict_fpath}')
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
 logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
-train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
+# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 
 print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
@@ -166,6 +167,12 @@ else:
 
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+
+if config['channels'] > 1:
+    test_pred = test_pred[:, :, 0:1, :, :]
+    test_pred = np.squeeze(test_pred, axis=2)
+
+
 if config['normalize']:
     test_pred  = test_pred * config['std'] + config['mean']
 else:
@@ -176,7 +183,9 @@ with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
     hf.create_dataset('precipitations', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-logging.info(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+
+
             
     
 
