@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 
 
 # load data from h5 file
-def load_IR_data_from_h5(fPath, start_date, end_date):
+def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -28,23 +28,27 @@ def load_IR_data_from_h5(fPath, start_date, end_date):
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
         mean = hf['mean'][()]
         std = hf['std'][()]  
+        max = hf['max'][()]
 
-    st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    if (start_date is not None) and (end_date is not None):
+   
+        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
-    ind = (times>=st_dt) & (times<end_dt)
+        ind = (times>=st_dt) & (times<end_dt)
 
-    requested_imgs = imgs[ind]
-    requested_times = times[ind]
+        imgs = imgs[ind]
+        times = times[ind]
 
-    return requested_imgs, requested_times, mean, std
+
+    return imgs, times, mean, std, max
 
 
 
 class IRDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=True):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length ,normalize=True):
 
-        self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std, self.max = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
@@ -53,7 +57,7 @@ class IRDataset(Dataset):
         if normalize:
             self.imgs = (self.imgs - self.mean)/self.std
         else:
-            self.imgs =  self.imgs / max_temp_in_kelvin
+            self.imgs =  self.imgs / self.max
 
         # crop images
         self.imgs = self.imgs[:, :, 1:-1]
@@ -92,9 +96,9 @@ class IRDataset(Dataset):
 
 
 class IRDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_temp_in_kelvin=337 ,normalize=True):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length ,normalize=True):
 
-        self.imgs, self.datetimes, self.mean, self.std = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std, self.max = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
@@ -103,7 +107,7 @@ class IRDataset_withMeta(Dataset):
         if normalize:
             self.imgs = (self.imgs - self.mean)/self.std
         else:
-            self.imgs =  self.imgs / max_temp_in_kelvin
+            self.imgs =  self.imgs / self.max
 
         # crop images
         self.imgs = self.imgs[:, :, 1:-1]

@@ -150,27 +150,25 @@ if __name__ == "__main__":
 
     # print('stop for debugging')
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_06.h5'), 'r') as hf:
-        imgs_06 = hf['IRs'][:]
+    with h5py.File(os.path.join(dataPath, 'wa_IR_08_temp.h5'), 'r') as hf:
+        imgs = hf['IRs'][:]
         img_dts = hf['timestamps'][:]
-        img_dts_06 = [x.decode('utf-8') for x in img_dts]
+        mean = hf['mean'][()]
+        std = hf['std'][()]
+        max = hf['max'][()] 
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_07.h5'), 'r') as hf:
-    #     imgs_07 = hf['IRs'][:]
-    #     img_dts = hf['timestamps'][:]
-    #     img_dts_07 = [x.decode('utf-8') for x in img_dts]
+    # flip images up-down
+    imgs = np.dstack([np.flipud(imgs[k]) for k in range(imgs.shape[0])]).transpose(2, 0, 1)
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
-    #     imgs_08 = hf['IRs'][:]
-    #     imgs_08[np.isnan(imgs_08)] = 284
-    #     img_dts = hf['timestamps'][:]
-    #     img_dts_08 = [x.decode('utf-8') for x in img_dts]
+    # cropping 2 columns from the left and right
+    imgs = imgs[:, :, 1:-1]
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_06_m.h5'), 'w') as hf:
-        hf.create_dataset('IRs', data=imgs_06)
-        hf.create_dataset('timestamps', data=img_dts_06)
-        hf.create_dataset('mean', data=imgs_06.mean())
-        hf.create_dataset('std', data=imgs_06.std())
+    with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'w') as hf:
+        hf.create_dataset('IRs', data=imgs)
+        hf.create_dataset('timestamps', data=img_dts)
+        hf.create_dataset('mean', data=mean)
+        hf.create_dataset('std', data=std)
+        hf.create_dataset('max', data = 337)
 
     print('stop for debugging')
 

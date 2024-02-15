@@ -27,6 +27,7 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
         mean = hf['mean'][()]
         std = hf['std'][()]  
+        max = hf['max'][()]
 
     st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
@@ -36,12 +37,12 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     requested_precipitation = precipitation[ind]
     requested_times = times[ind]
 
-    return requested_precipitation, requested_times, mean, std
+    return requested_precipitation, requested_times, mean, std, max
 
 class waImergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, max_rainfall_intensity=60.0, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize=False):
 
-        self.precipitations, self.datetimes, self.mean, self.std = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
 
         self.in_seq_length = in_seq_length
@@ -51,10 +52,7 @@ class waImergDataset(Dataset):
         if normalize:
             self.precipitations = (self.precipitations - self.mean)/self.std
         else:
-            self.precipitations =  self.precipitations / max_rainfall_intensity
-
-        # cut off 2 columns of data
-        self.precipitations = self.precipitations[:, :, 1:-1]
+            self.precipitations =  self.precipitations / self.max   
 
         print('stop for debugging')
 
@@ -86,10 +84,9 @@ class waImergDataset(Dataset):
 
 
 class waImergDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, 
-                max_rainfall_intensity = 60.0, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize=False):
 
-        self.precipitations, self.datetimes, self.mean, self.std = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
 
     
         self.in_seq_length = in_seq_length
@@ -99,10 +96,8 @@ class waImergDataset_withMeta(Dataset):
         if normalize:
             self.precipitations = (self.precipitations - self.mean)/self.std
         else:
-            self.precipitations =  self.precipitations / max_rainfall_intensity
+            self.precipitations =  self.precipitations / self.max
 
-        # cut off 2 columns of data
-        self.precipitations = self.precipitations[:, :, 1:-1]
 
 
     def __len__(self):

@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
+base_path ='/home/cc/projects/nowcasting'# "/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -28,13 +28,6 @@ data2_fname = 'wa_IR.h5'
 # new data name
 dataset_name = 'wa_imerg_IR'
 
-# train_st = '2020-08-25' #'2020-06-01' #
-# train_ed = '2020-08-28' #'2020-08-18' #
-# val_st = '2020-08-28'#'2020-08-18' #
-# val_ed = '2020-08-30' #'2020-08-25' #
-# test_st = '2020-08-30' #'2020-08-25' 
-# test_ed = '2020-09-01'
-
 train_st = '2020-06-01' 
 train_ed = '2020-08-18' 
 val_st = '2020-08-18'
@@ -47,14 +40,6 @@ base_fname = 'imerg_gtIR_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
-
-#================================================#
-
-# test run on local machine
-if base_path == '/home/cc/projects/nowcasting':
-    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-    pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -74,6 +59,29 @@ config = load_config(config_path)
 
 print(f'config file at {config_path} logged')
 
+# test run on local machine
+if base_path == '/home/cc/projects/nowcasting':
+    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+    pred_fname = pred_fname.split('.')[0] + '_local.h5'
+
+    train_st = '2020-08-25'
+    train_ed = '2020-08-28' 
+    val_st = '2020-08-28'
+    val_ed = '2020-08-30' 
+    test_st = '2020-08-30'
+    test_ed = '2020-09-01'
+
+    data2_fname = 'wa_IR_08.h5'
+
+    config['batch_size'] = 2
+    config['val_batch_size'] = 2
+    config['num_hidden'] = '32, 32' 
+    config['max_epoch'] = 10
+    config['early_stop_epoch'] = 2
+
+
+
 ##==================Data Loading=====================##
 # where to load data
 f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
@@ -81,7 +89,7 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0)
+                        imerg_normalize=False, IR_normalize=True)
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 

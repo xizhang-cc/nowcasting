@@ -124,10 +124,10 @@ class waImergIRDataset(Dataset):
 
 class waImergIRDataset_withMeta(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, pred_IR_fPath, start_date, end_date, in_seq_length, out_seq_length, pred_IR_length, \
-                  max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0):
+                 imerg_normalize=False, IR_normalize=True):
 
-        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
-        self.IRs, self.IR_dts, self.IR_mean, self.IR_std = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
+        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
+        self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
         self.pred_IRs, self.pred_IR_metas = load_pred_IR_data_from_h5(pred_IR_fPath)
         # convert self.pred_IR_metas to list of datetime
         self.pred_IR_metas = [[datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in y] for y in self.pred_IR_metas]
@@ -140,18 +140,13 @@ class waImergIRDataset_withMeta(Dataset):
         if imerg_normalize:
             self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
         else:
-            self.imergs =  self.imergs / max_rainfall_intensity
+            self.imergs =  self.imergs / self.imerg_max
 
                 # normalize the data
         if IR_normalize:
             self.IRs = (self.IRs - self.IR_mean)/self.IR_std
         else:
-            self.IRs =  self.IRs / max_temp_in_kelvin
-
-        # crop images
-        self.imergs = self.imergs[:, :, 1:-1]
-        self.IRs = self.IRs[:, :, 1:-1]
-
+            self.IRs =  self.IRs / self.IR_max
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length
@@ -231,10 +226,10 @@ class waImergIRDataset_withMeta(Dataset):
 
 class waImergIRDatasetTr(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
-                  max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0):
+                imerg_normalize=False, IR_normalize=True):
 
-        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
-        self.IRs, self.IR_dts, self.IR_mean, self.IR_std = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
+        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
+        self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
 
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
@@ -243,18 +238,13 @@ class waImergIRDatasetTr(Dataset):
         if imerg_normalize:
             self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
         else:
-            self.imergs =  self.imergs / max_rainfall_intensity
+            self.imergs =  self.imergs / self.imerg_max 
 
                 # normalize the data
         if IR_normalize:
             self.IRs = (self.IRs - self.IR_mean)/self.IR_std
         else:
-            self.IRs =  self.IRs / max_temp_in_kelvin
-
-        # crop images
-        self.imergs = self.imergs[:, :, 1:-1]
-        self.IRs = self.IRs[:, :, 1:-1]
-
+            self.IRs =  self.IRs / self.IR_max
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length
@@ -301,11 +291,10 @@ class waImergIRDatasetTr(Dataset):
 
 
 class waImergIRDatasetTr_withMeta(Dataset):
-    def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
-                  max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0):
+    def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, imerg_normalize=False, IR_normalize=True):
 
-        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
-        self.IRs, self.IR_dts, self.IR_mean, self.IR_std = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
+        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
+        self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
 
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
@@ -314,18 +303,13 @@ class waImergIRDatasetTr_withMeta(Dataset):
         if imerg_normalize:
             self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
         else:
-            self.imergs =  self.imergs / max_rainfall_intensity
+            self.imergs =  self.imergs / self.imerg_max
 
                 # normalize the data
         if IR_normalize:
             self.IRs = (self.IRs - self.IR_mean)/self.IR_std
         else:
-            self.IRs =  self.IRs / max_temp_in_kelvin
-
-        # crop images
-        self.imergs = self.imergs[:, :, 1:-1]
-        self.IRs = self.IRs[:, :, 1:-1]
-
+            self.IRs =  self.IRs / self.IR_max
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length
