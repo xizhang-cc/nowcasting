@@ -15,4 +15,4 @@
 # python /home1/zhang2012/nowcasting/servir/datasets/dataLoader_wa_IR.py
 
 export CUDA_VISIBLE_DEVICES=2
-python /home1/zhang2012/nowcasting/servir/utils/tiff_images_utils.py
+python /home1/zhang2012/nowcasting/examples/results_analysis.py
