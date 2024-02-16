@@ -39,9 +39,9 @@ val_ed = '2020-08-25'
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
-channel_sep = True
+channel_sep = False
 # file names
-base_fname = 'imerg_gtIR_r01_mse'
+base_fname = 'imerg_gtIR_r01_nosep_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
