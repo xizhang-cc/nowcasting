@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting'# "/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -40,7 +40,7 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_gtIR_2c_nosplit_mse'
+base_fname = 'imerg_gtIR_2c_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -148,7 +148,7 @@ print_log(f'model parameters saved at {para_dict_fpath}')
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
 logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
-# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
+train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 
 print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
