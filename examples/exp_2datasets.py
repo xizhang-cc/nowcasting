@@ -39,8 +39,9 @@ val_ed = '2020-08-25'
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
+channel_sep = True
 # file names
-base_fname = 'imerg_gtIR_2c_mse'
+base_fname = 'imerg_gtIR_r01_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -58,6 +59,8 @@ else:
 config = load_config(config_path)
 
 print(f'config file at {config_path} logged')
+
+config['channel_sep'] = channel_sep
 
 #================================================#
 # test run on local machine
@@ -106,12 +109,12 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 trainSet = waImergIRDatasetTr(f1name, f2name, train_st, train_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=True)
+                        imerg_normalize=False, IR_normalize=False)
 
 
 valSet = waImergIRDatasetTr(f1name, f2name, val_st, val_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=True)
+                        imerg_normalize=False, IR_normalize=False)
 
 print('Dataset created.')
 print_log(f'training_len = {len(trainSet)}')
@@ -155,7 +158,7 @@ print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 #======================================
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=True)
+                        imerg_normalize=False, IR_normalize=False)
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
@@ -172,11 +175,8 @@ if config['channels'] > 1:
     test_pred = test_pred[:, :, 0:1, :, :]
     test_pred = np.squeeze(test_pred, axis=2)
 
-
-if config['normalize']:
-    test_pred  = test_pred * config['std'] + config['mean']
-else:
-    test_pred  = test_pred * config['max_value']
+# imerg convert to mm/hr (need to be updated)
+test_pred  = test_pred * config['max_value']
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

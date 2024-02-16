@@ -26,9 +26,11 @@ def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
         imgs = hf['IRs'][:]
         times = hf['timestamps'][:]
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
-        mean = hf['mean'][()]
-        std = hf['std'][()]  
-        max = hf['max'][()]
+
+    mean = imgs.mean()
+    std = imgs.std()    
+    max = imgs.max()
+    min = imgs.min()
 
     if (start_date is not None) and (end_date is not None):
    
@@ -41,14 +43,14 @@ def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
         times = times[ind]
 
 
-    return imgs, times, mean, std, max
+    return imgs, times, mean, std, max, min
 
 
 
 class IRDataset(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length ,normalize=True):
 
-        self.imgs, self.datetimes, self.mean, self.std, self.max = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std, self.max, self.min = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
