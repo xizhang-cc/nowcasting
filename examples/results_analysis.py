@@ -16,6 +16,10 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg_IR'
 
+# prediction file name
+base_fname = 'imerg_gtIR_2c_mse' #'imerg_only_mse_relu'
+pred_fname = f'{base_fname}_predictions.h5'
+
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
 data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
@@ -35,9 +39,7 @@ in_seq_length = 12
 out_seq_length = 12 
 
 
-# prediction file name
-base_fname = 'imerg_gtIR_mse' #'imerg_only_mse_relu'
-pred_fname = f'{base_fname}_predictions.h5'
+
 
 
 wa_imerg_metadata = {'accutime': 30.0,
