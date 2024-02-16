@@ -6,7 +6,7 @@ import datetime
 import numpy as np  
 from matplotlib import pyplot as plt
 
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" 
+base_path ="/home1/zhang2012/nowcasting/"# '/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 from servir.visulizations.gif_creation import create_precipitation_plots, create_precipitation_gif
@@ -20,14 +20,19 @@ dataset_name = 'wa_imerg_IR'
 base_fname = 'imerg_gtIR_2c_mse' #'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
+
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
 data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
 
+
 if dataset_name == 'wa_imerg_IR':
     # true ir data path
     dataPath2 = os.path.join(base_path, 'data', 'wa_IR')
-    data2_fname = os.path.join(dataPath2, 'wa_IR_08.h5')
+    data2_fname = os.path.join(dataPath2, 'wa_IR.h5')
+
+    if base_path == '/home/cc/projects/nowcasting':
+        data2_fname = os.path.join(dataPath2, 'wa_IR_08.h5')
 
     with h5py.File(data2_fname, 'r') as hf:
         IRs = hf['IRs'][:]
@@ -37,7 +42,6 @@ if dataset_name == 'wa_imerg_IR':
 
 in_seq_length = 12
 out_seq_length = 12 
-
 
 
 
@@ -135,6 +139,8 @@ for i, output_dt_i in enumerate(output_dts):
     mse_i = np.mean((true_imgs_i - pred_imgs_i)**2) 
     print(mse_i)
     losses.append(mse_i)
+
+print(np.mean(losses))
 
     
 
