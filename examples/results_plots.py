@@ -12,14 +12,14 @@ sys.path.append(base_path)
 from servir.visulizations.gif_creation import create_precipitation_plots, create_precipitation_gif
 
 
-
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_gtIR_2c_nosep_mse' #'imerg_only_mse_relu'
+base_fname = 'imerg_gtIR_r01_mse' #'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
+plot = True
 
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
@@ -39,6 +39,7 @@ if dataset_name == 'wa_imerg_IR':
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
 
+    IRs = 1 -  (IRs - IR_min) / (IR_max - IR_min)
 
 in_seq_length = 12
 out_seq_length = 12 
@@ -72,7 +73,6 @@ with h5py.File(data1_fname, 'r') as hf:
 
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
-
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 # Load the predictions
@@ -80,7 +80,6 @@ with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
     pred_imgs = hf['precipitations'][:]
     output_dts = hf['timestamps'][:]
     output_dts = [x.decode('utf-8').split(',') for x in output_dts]
-
 
 # specify the gif output path
 results_path = os.path.join(base_results_path, base_fname)
