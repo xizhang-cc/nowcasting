@@ -17,7 +17,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_gtIR_2c_mse' #'imerg_only_mse_relu'
+base_fname = 'imerg_gtIR_2c_nosep_mse' #'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
 
@@ -42,8 +42,6 @@ if dataset_name == 'wa_imerg_IR':
 
 in_seq_length = 12
 out_seq_length = 12 
-
-
 
 
 wa_imerg_metadata = {'accutime': 30.0,
