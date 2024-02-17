@@ -13,7 +13,7 @@ from contextlib import suppress
 from servir.core.optimizor import get_optim_scheduler
 from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, schedule_sampling, reserve_schedule_sampling_exp
 from servir.utils.distributed_utils import reduce_tensor
-from servir.core.losses import FSSSurrogateLoss
+from servir.core.losses import CFSSSurrogateLoss, g_func_relu, g_func_log 
 
 
 
@@ -105,8 +105,8 @@ class ConvLSTM_Model(nn.Module):
 
         if config['loss'] == 'MSE':
             self.criterion = nn.MSELoss()
-        elif config['loss'] == 'FSSS':
-            self.criterion = FSSSurrogateLoss
+        elif config['loss'] == 'CFSSS':
+            self.criterion = CFSSSurrogateLoss
 
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]
@@ -190,14 +190,14 @@ class ConvLSTM_Model(nn.Module):
                 loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
                                         frames_tensor[:, -self.config['out_seq_length']::2, :, :, :input_channel_num])
             else:
-                if self.config['loss'] == 'FSSS':
+                if self.config['loss'] == 'CFSSS':
                     img_frames_tensor = frames_tensor[:, :, :, :, :input_channel_num]
                     next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
                     next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'], self.config['channel_sep'])
                     frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'],self.config['channel_sep'])
-                    loss = FSSSurrogateLoss(next_frames_img[:, :, :, :, 0],\
+                    loss = CFSSSurrogateLoss(next_frames_img[:, :, :, :, 0],\
                                             frames_tensor_img[:, :, :, :, 0],\
-                                            max_value =  self.config['max_value'])
+                                            0, 1.0/60.0, g_func_log)
                     
                 elif self.config['loss'] == 'MSE':  
                     loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
@@ -228,8 +228,8 @@ class ConvLSTM():
 
         if self.config['loss'] == 'MSE':
             self.criterion = nn.MSELoss()
-        elif self.config['loss'] == 'FSSS':
-            self.criterion = FSSSurrogateLoss
+        elif self.config['loss'] == 'CFSSS':
+            self.criterion = CFSSSurrogateLoss
 
 
         self.clip_value = self.config['clip_grad']
@@ -333,11 +333,10 @@ class ConvLSTM():
                     loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
                                         batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
                 else:
-                    if self.config['loss'] == 'FSSS':
+                    if self.config['loss'] == 'CFSSS':
                         img_batch_y = batch_y[:, :, 0, :, :]
                         img_pred_y = pred_y[:, :, 0, :, :]
-                        loss = FSSSurrogateLoss(img_pred_y, img_batch_y,\
-                                                max_value = self.config['max_value']).cpu().numpy().item()
+                        loss = CFSSSurrogateLoss(img_pred_y, img_batch_y,0, 1.0/60.0, g_func_log).cpu().numpy().item()
                     elif self.config['loss'] == 'MSE':
                         # loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
                         loss = self.criterion(pred_y[:, :, 0:1, :, :], batch_y[:, :, 0:1, :, :]).cpu().numpy().item()

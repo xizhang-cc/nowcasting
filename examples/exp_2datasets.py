@@ -46,7 +46,7 @@ IR_normalize_method = '01range'
 
 
 # file names
-base_fname = 'imerg_gtIR_2c_01range_mse'
+base_fname = 'imerg_gtIR_01range_cfsss'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -87,8 +87,8 @@ if base_path == '/home/cc/projects/nowcasting':
     config['batch_size'] = 2
     config['val_batch_size'] = 2
     config['num_hidden'] = '32, 32' 
-    config['max_epoch'] = 10
-    config['early_stop_epoch'] = 2# test run on local machine
+    config['max_epoch'] = 100
+    config['early_stop_epoch'] = 20 # test run on local machine
 
 
 # Results base path for logging, working dirs, etc. 
@@ -159,7 +159,7 @@ logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
 train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 
-print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
+# print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
 #======================================
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
@@ -182,11 +182,11 @@ if config['channels'] > 1:
     test_pred = np.squeeze(test_pred, axis=2)
 
 with h5py.File(f1name, 'r') as hf:
-    mean = hf['mean'][:]    
-    std = hf['std'][:]
-    max_value = hf['max'][:]
-    min_value = hf['min'][:]
-
+    mean = hf['mean'][()]   
+    std = hf['std'][()]
+    max_value = hf['max'][()]
+    min_value = hf['min'][()]
+    
 # imerg convert to mm/hr (need to be updated)
 if imerg_normalize_method == 'gaussian':
     test_pred = test_pred * std + mean

@@ -40,7 +40,7 @@ class Recorder:
             if self.patience <= 0:
                 self.stop = True
                 if self.verbose:
-                    print_log(f'Early stopping. Validation loss did not decrease for the last {self.patience} epochs.\n')
+                    print_log(f'Early stopping. Validation loss did not decrease for the last {self.torlerance} epochs.\n')
             else:
                 if self.verbose:
                     print_log(f'Validation loss higher than current lowest {self.val_loss_min}, best model not updated.\n')

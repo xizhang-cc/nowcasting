@@ -226,7 +226,7 @@ class waImergIRDataset_withMeta(Dataset):
 
 class waImergIRDatasetTr(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
-                imerg_normalize_method='01range', IR_normalize_method='gaussian'):
+                imerg_normalize_method='01range', IR_normalize_method='01range'):
 
         self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max, self.imerg_min = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max, self.IR_min = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
@@ -295,7 +295,8 @@ class waImergIRDatasetTr(Dataset):
 
 
 class waImergIRDatasetTr_withMeta(Dataset):
-    def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, imerg_normalize=False, IR_normalize=False):
+    def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
+                imerg_normalize_method='01range', IR_normalize_method='01range'):
 
         self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max, self.imerg_min = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max, self.IR_min = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
@@ -303,17 +304,22 @@ class waImergIRDatasetTr_withMeta(Dataset):
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
-        # normalize the data
-        if imerg_normalize:
-            self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
-        else:
-            self.imergs =  (self.imergs -self.imerg_min) / (self.imerg_max - self.imerg_min)
 
         # normalize the data
-        if IR_normalize:
-            self.IRs = (self.IRs - self.IR_mean)/self.IR_std
+        if imerg_normalize_method == 'gaussian':
+            self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
+        elif imerg_normalize_method == '01range':
+            self.imergs =  (self.imergs -self.imerg_min) / (self.imerg_max - self.imerg_min)
         else:
-            self.IRs = 1 -  (self.IRs - self.IR_min) / (self.IR_max - self.IR_min)
+            self.imergs = self.imergs   
+
+        # normalize the data
+        if IR_normalize_method=='gaussian':
+            self.IRs = (self.IRs - self.IR_mean)/self.IR_std
+        elif IR_normalize_method=='01range':
+            self.IRs =  1 -  (self.IRs - self.IR_min) / (self.IR_max - self.IR_min)
+        else:
+            self.IRs = self.IRs 
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length

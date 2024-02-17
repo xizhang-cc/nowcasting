@@ -13,11 +13,11 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg' #'wa_imerg_IR'
+dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_r01_mse'
-pred_fname = f'{base_fname}_predictions.h5'
+base_fname = 'imerg_gtIR_01range_cfsss'
+pred_fname = f'{base_fname}_predictions_local.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -64,9 +64,9 @@ if withIR:
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
 
-    if IR_norm:
+    # if IR_norm:
 
-        IRs = norm_IR(IRs, st_dt, end_dt, IR_max, IR_min)
+    #     IRs = norm_IR(IRs, st_dt, end_dt, IR_max, IR_min)
 
 
 in_seq_length = 12

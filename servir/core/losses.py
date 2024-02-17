@@ -11,7 +11,7 @@ Inputs:
     avg_kernel_half_width: (int) value used to construct the averaging kernel (0 <= n < (min(image_length,image_width)/2))
     threshold: (float64) threshold used for FSS calculations (for "significant" precipitation)
 """
-def CFSSSurrogateLoss(gt, pred, avg_kernel_half_width, threshold/60.0, g_func):
+def CFSSSurrogateLoss(gt, pred, avg_kernel_half_width, threshold, g_func):
     # averaging kernel with no padding
     averaging_kernel = torch.nn.AvgPool2d(kernel_size=(2*avg_kernel_half_width+1, 2*avg_kernel_half_width+1), stride=1)
     
@@ -21,7 +21,7 @@ def CFSSSurrogateLoss(gt, pred, avg_kernel_half_width, threshold/60.0, g_func):
     
     prod_gt_pred_thresholded = g_func(torch.mul(gt_thresholded, pred_thresholded))
     
-    return averaging_kernel(prod_gt_pred_thresholded).sum()
+    return averaging_kernel(prod_gt_pred_thresholded).mean()
 
     
 def g_func_relu(tensor):
