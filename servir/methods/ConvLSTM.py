@@ -119,8 +119,7 @@ class ConvLSTM_Model(nn.Module):
         self.conv_last = nn.Conv2d(num_hidden[num_layers - 1], self.output_channel,
                                    kernel_size=1, stride=1, padding=0, bias=False)
         
-        # add relu activation 
-        self.relu_last = nn.ReLU()
+
 
         
     
@@ -176,7 +175,10 @@ class ConvLSTM_Model(nn.Module):
                 h_t[i], c_t[i] = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i])
 
             x_gen = self.conv_last(h_t[self.num_layers - 1])
-            x_gen = self.relu_last(x_gen)
+
+            if self.config['relu_last']:
+                x_gen = torch.relu(x_gen)
+
 
             next_frames.append(x_gen)
 

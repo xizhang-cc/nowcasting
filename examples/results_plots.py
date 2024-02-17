@@ -13,17 +13,15 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_imerg' #'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_gtIR_r01_mse' #'imerg_only_mse_relu'
+base_fname = 'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 
-plot = True
-norm = False 
 
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
@@ -35,14 +33,9 @@ with h5py.File(data1_fname, 'r') as hf:
     img_dts = hf['timestamps'][:]
     img_dts = [x.decode('utf-8') for x in img_dts]
 
-imgs_min = 0.0
-imgs_max = 60.0
-
-imgs_norm = (imgs - imgs_min) / (imgs_max - imgs_min)
-
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
-
+IR_norm = False
 if dataset_name == 'wa_imerg_IR':
     # true ir data path
     dataPath2 = os.path.join(base_path, 'data', 'wa_IR')
@@ -56,6 +49,21 @@ if dataset_name == 'wa_imerg_IR':
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
 
+    if IR_norm:
+
+        st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
+        end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
+
+        ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
+
+        IRs = IRs[ind]
+        IR_times = np.array(IR_times)[ind]
+        IR_times = list(IR_times)
+
+        IR_max = 336.0
+        IR_min = 108.0
+        IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
+        IRs = IRs_norm
 
 
 in_seq_length = 12
@@ -92,22 +100,6 @@ with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
 results_path = os.path.join(base_results_path, base_fname)
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
-
-if norm:
-
-    st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
-
-    ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
-
-    IRs = IRs[ind]
-    IR_times = np.array(IR_times)[ind]
-    IR_times = list(IR_times)
-
-    IR_max = 336.0
-    IR_min = 108.0
-    IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
-    IRs = IRs_norm
 
 losses = []
 # For each senario, match the input, true, and pred images.

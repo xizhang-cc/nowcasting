@@ -15,6 +15,7 @@ filter_size = 5
 stride = 1
 patch_size = 6
 layer_norm = 0
+relu_last = False
 # training
 max_epoch = 100
 early_stop_epoch= 10
