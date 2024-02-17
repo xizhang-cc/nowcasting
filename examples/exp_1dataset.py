@@ -24,12 +24,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-# train_st = '2020-08-25' #'2020-06-01' #
-# train_ed = '2020-08-28' #'2020-08-18' #
-# val_st = '2020-08-28'#'2020-08-18' #
-# val_ed = '2020-08-30' #'2020-08-25' #
-# test_st = '2020-08-30' #'2020-08-25' 
-# test_ed = '2020-09-01'
+normalize_method = '01range'
 
 train_st = '2020-06-01' 
 train_ed = '2020-08-18' 
@@ -39,32 +34,10 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_only_mse_relu'
+base_fname = 'imerg_only_cfsss_log'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
-
-#================================================#
-
-# test run on local machine
-if base_path == '/home/cc/projects/nowcasting':
-    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-    pred_fname = pred_fname.split('.')[0] + '_local.h5'
-
-# Results base path for logging, working dirs, etc. 
-base_results_path = os.path.join(base_path, f'results/{dataset_name}')
-if not os.path.exists(base_results_path):
-    os.makedirs(base_results_path)
-
-print_log(f'results path : {base_results_path}')
-
-# logging setup
-logging_setup(base_results_path, fname=f'{method_name}.log')   
-print('logging file created')
-# log env info
-logging_env_info()
-print('env info logged')
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -79,6 +52,33 @@ config = load_config(config_path)
 
 print_log(f'config file at {config_path} logged')
 
+# test run on local machine
+if base_path == '/home/cc/projects/nowcasting':
+    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+    pred_fname = pred_fname.split('.')[0] + '_local.h5'
+
+    train_st = '2020-08-25'
+    train_ed = '2020-08-28' 
+    val_st = '2020-08-28'
+    val_ed = '2020-08-30' 
+    test_st = '2020-08-30'
+    test_ed = '2020-09-01'
+
+    config['batch_size'] = 2
+    config['val_batch_size'] = 2
+    config['num_hidden'] = '32, 32' 
+    config['max_epoch'] = 10
+    config['early_stop_epoch'] = 2 # test run on local machine
+
+# Results base path for logging, working dirs, etc. 
+base_results_path = os.path.join(base_path, f'results/{dataset_name}')
+if not os.path.exists(base_results_path):
+    os.makedirs(base_results_path)
+
+print_log(f'results path : {base_results_path}')
+
+#================================================#
 
 # log config
 logging_config_info(config)
@@ -92,12 +92,12 @@ fname = os.path.join(dataPath, data_fname)
 
 trainSet = waImergDataset(fname, start_date = train_st, end_date = train_ed,\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'],\
-                        max_rainfall_intensity = config['max_value'], normalize=config['normalize'])
+                        normalize_method=normalize_method)
 
 
 valSet = waImergDataset(fname, start_date = val_st, end_date = val_ed,\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
-                        max_rainfall_intensity = config['max_value'], normalize=config['normalize'])
+                        normalize_method=normalize_method)
 
 print('Dataset created.')
 print_log(f'training_len = {len(trainSet)}')
@@ -145,7 +145,7 @@ print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 #======================================
 testSet = waImergDataset_withMeta(fname, start_date = test_st, end_date = test_ed,\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
-                                max_rainfall_intensity = config['max_value'], normalize=config['normalize'])
+                                normalize_method=normalize_method)
 
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
@@ -158,10 +158,21 @@ else:
 
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
-if config['normalize']:
-    test_pred  = test_pred * config['std'] + config['mean']
+
+with h5py.File(fname, 'r') as hf:
+    mean = hf['mean'][()]   
+    std = hf['std'][()]
+    max_value = hf['max'][()]
+    min_value = hf['min'][()]
+    
+# imerg convert to mm/hr (need to be updated)
+if normalize_method == 'gaussian':
+    test_pred = test_pred * std + mean
+elif normalize_method == '01range':
+    test_pred = test_pred * (max_value - min_value) + min_value
 else:
-    test_pred  = test_pred * config['max_value']
+    test_pred = test_pred 
+
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

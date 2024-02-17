@@ -41,21 +41,22 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
     return requested_precipitation, requested_times, mean, std, max, min
 
 class waImergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
 
-        self.precipitations, self.datetimes, self.mean, self.std, self.max = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
 
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
         # normalize the data
-        if normalize:
-            self.precipitations = (self.precipitations - self.mean)/self.std
+        if normalize_method == 'gaussian':
+            self.precipitations = (self.precipitations - self.mean) / self.std
+        elif normalize_method == '01range':
+            self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
         else:
-            self.precipitations =  self.precipitations / self.max   
+            self.precipitations = self.precipitations
 
-        print('stop for debugging')
 
     def __len__(self):
         return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length
@@ -85,19 +86,21 @@ class waImergDataset(Dataset):
 
 
 class waImergDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize=False):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
 
-        self.precipitations, self.datetimes, self.mean, self.std, self.max = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        
 
-    
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
         # normalize the data
-        if normalize:
-            self.precipitations = (self.precipitations - self.mean)/self.std
+        if normalize_method == 'gaussian':
+            self.precipitations = (self.precipitations - self.mean) / self.std
+        elif normalize_method == '01range':
+            self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
         else:
-            self.precipitations =  self.precipitations / self.max
+            self.precipitations = self.precipitations
 
 
 
