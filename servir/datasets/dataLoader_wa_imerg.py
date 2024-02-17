@@ -25,11 +25,10 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
         precipitation = hf['precipitations'][:]
         times = hf['timestamps'][:]
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
-
-    mean = precipitation.mean()
-    std = precipitation.std()   
-    max = precipitation.max()   
-    min = precipitation.min()
+        mean = hf['mean'][()]   
+        std = hf['std'][()]
+        max = hf['max'][()]
+        min = hf['min'][()]
 
     st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')

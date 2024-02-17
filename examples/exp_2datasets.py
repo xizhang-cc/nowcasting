@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -41,7 +41,7 @@ test_ed = '2020-09-01'
 
 channel_sep = False
 # file names
-base_fname = 'imerg_gtIR_r01_nosep_mse'
+base_fname = 'imerg_gtIR_norm_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -109,12 +109,12 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 trainSet = waImergIRDatasetTr(f1name, f2name, train_st, train_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=False)
+                        imerg_normalize=True, IR_normalize=True)
 
 
 valSet = waImergIRDatasetTr(f1name, f2name, val_st, val_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=False)
+                        imerg_normalize=True, IR_normalize=True)
 
 print('Dataset created.')
 print_log(f'training_len = {len(trainSet)}')
@@ -158,7 +158,7 @@ print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 #======================================
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=False)
+                        imerg_normalize=True, IR_normalize=True)
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 

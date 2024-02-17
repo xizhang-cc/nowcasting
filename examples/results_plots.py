@@ -109,6 +109,7 @@ if norm:
     IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
     IRs = IRs_norm
 
+losses = []
 # For each senario, match the input, true, and pred images.
 for i, output_dt_i in enumerate(output_dts):
     # path to save the current sample images
@@ -156,8 +157,11 @@ for i, output_dt_i in enumerate(output_dts):
                             os.path.join(i_path, 'pred'), f'{i} - pred')
 
     mse_i = np.mean((true_imgs_i - pred_imgs_i)**2) 
+    losses.append(mse_i)
     print(mse_i)
 
+
+print(np.mean(losses))
 
     
 

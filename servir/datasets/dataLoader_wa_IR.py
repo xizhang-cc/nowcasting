@@ -26,11 +26,11 @@ def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
         imgs = hf['IRs'][:]
         times = hf['timestamps'][:]
         times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
-
-    mean = imgs.mean()
-    std = imgs.std()    
-    max = imgs.max()
-    min = imgs.min()
+        mean = hf['mean'][()]
+        std = hf['std'][()]
+        max = hf['max'][()]
+        min = hf['min'][()]
+        
 
     if (start_date is not None) and (end_date is not None):
    
