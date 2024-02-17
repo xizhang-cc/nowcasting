@@ -339,7 +339,8 @@ class ConvLSTM():
                         loss = FSSSurrogateLoss(img_pred_y, img_batch_y,\
                                                 max_value = self.config['max_value']).cpu().numpy().item()
                     elif self.config['loss'] == 'MSE':
-                        loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
+                        # loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
+                        loss = self.criterion(pred_y[:, :, 0:1, :, :], batch_y[:, :, 0:1, :, :]).cpu().numpy().item()
 
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
