@@ -39,7 +39,7 @@ val_ed = '2020-08-25'
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
-channel_sep = False
+channel_sep = True
 # file names
 base_fname = 'imerg_gtIR_norm_mse'
 model_para_fname = f'{base_fname}_params.pth'
