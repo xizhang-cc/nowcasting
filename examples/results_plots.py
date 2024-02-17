@@ -16,12 +16,11 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg' #'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_only_mse_relu'
+base_fname = 'imerg_r01_mse'
 pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
-
 
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
@@ -35,8 +34,24 @@ with h5py.File(data1_fname, 'r') as hf:
 
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
+withIR = True
 IR_norm = False
-if dataset_name == 'wa_imerg_IR':
+
+def norm_IR(IRs, st_dt, end_dt, IR_max=336.0, IR_min=108.0):
+    st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
+    end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
+
+    ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
+
+    IRs = IRs[ind]
+    IR_times = np.array(IR_times)[ind]
+    IR_times = list(IR_times)
+
+    IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
+
+    return IRs_norm
+
+if withIR:
     # true ir data path
     dataPath2 = os.path.join(base_path, 'data', 'wa_IR')
     data2_fname = os.path.join(dataPath2, 'wa_IR.h5')
@@ -51,19 +66,7 @@ if dataset_name == 'wa_imerg_IR':
 
     if IR_norm:
 
-        st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
-        end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
-
-        ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
-
-        IRs = IRs[ind]
-        IR_times = np.array(IR_times)[ind]
-        IR_times = list(IR_times)
-
-        IR_max = 336.0
-        IR_min = 108.0
-        IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
-        IRs = IRs_norm
+        IRs = norm_IR(IRs, st_dt, end_dt, IR_max, IR_min)
 
 
 in_seq_length = 12
@@ -90,6 +93,7 @@ wa_imerg_metadata = {'accutime': 30.0,
 timestep_min = 30.0
 
 
+
 # Load the predictions
 with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
     pred_imgs = hf['precipitations'][:]
@@ -111,7 +115,7 @@ for i, output_dt_i in enumerate(output_dts):
         os.mkdir(os.path.join(i_path, 'true'))
         os.mkdir(os.path.join(i_path, 'pred'))
         # os.mkdir(os.path.join(i_path, 'input'))
-        if dataset_name == 'wa_imerg_IR':
+        if withIR == True:
             os.mkdir(os.path.join(i_path, 'IR'))
 
     

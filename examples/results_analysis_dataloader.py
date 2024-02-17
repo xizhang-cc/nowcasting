@@ -27,8 +27,8 @@ ed = '2020-09-01'
 
 
 # prediction file name
-pred_fnames = ['imerg_only_mse_predictions.h5', 'imerg_only_mse_relu_predictions.h5', \
-               'imerg_gtIR_r01_mse_predictions.h5', 'imerg_gtIR_mse.h5']
+pred_fnames = ['imerg_r01_mse_predictions.h5', 'imerg_gtIR_r01_mse_predictions.h5']
+
 pred_labels = ['imerg', 'imerg_relu', 'withIR_r01', 'withIR']
 
 if add_naive:
