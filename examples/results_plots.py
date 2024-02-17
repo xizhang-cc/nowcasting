@@ -16,8 +16,8 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_gtIR_01range_cfsss'
-pred_fname = f'{base_fname}_predictions_local.h5'
+base_fname = 'imerg_gtIR_01range_mse'
+pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -34,7 +34,7 @@ with h5py.File(data1_fname, 'r') as hf:
 
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
-withIR = True
+withIR = False
 IR_norm = False
 
 def norm_IR(IRs, st_dt, end_dt, IR_max=336.0, IR_min=108.0):
