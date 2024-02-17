@@ -41,6 +41,8 @@ test_ed = '2020-09-01'
 
 channel_sep = True
 relu_last = False
+imerg_normalize_method = 'gaussian'
+IR_normalize_method = 'gaussian'
 
 # file names
 base_fname = 'imerg_gtIR_gaussian_mse'
@@ -112,12 +114,12 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 trainSet = waImergIRDatasetTr(f1name, f2name, train_st, train_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=True, IR_normalize=True)
+                        imerg_normalize_method='gaussian', IR_normalize_method='gaussian')
 
 
 valSet = waImergIRDatasetTr(f1name, f2name, val_st, val_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=True, IR_normalize=True)
+                        imerg_normalize_method='gaussian', IR_normalize_method='gaussian')
 
 print('Dataset created.')
 print_log(f'training_len = {len(trainSet)}')
@@ -161,7 +163,7 @@ print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 #======================================
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=True, IR_normalize=True)
+                        imerg_normalize_method='gaussian', IR_normalize_method='gaussian')
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
@@ -178,8 +180,19 @@ if config['channels'] > 1:
     test_pred = test_pred[:, :, 0:1, :, :]
     test_pred = np.squeeze(test_pred, axis=2)
 
+with h5py.File(f1name, 'r') as hf:
+    mean = hf['mean'][:]    
+    std = hf['std'][:]
+    max_value = hf['max_value'][:]
+    min_value = hf['min_value'][:]
+
 # imerg convert to mm/hr (need to be updated)
-test_pred  = test_pred * config['max_value']
+if imerg_normalize_method == 'gaussian':
+    test_pred = test_pred * std + mean
+elif imerg_normalize_method == '01range':
+    test_pred = test_pred * (max_value - min_value) + min_value
+else:
+    test_pred = test_pred 
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
