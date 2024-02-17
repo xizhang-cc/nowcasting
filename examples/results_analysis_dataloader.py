@@ -7,8 +7,12 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+import torch
+
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
+from servir.datasets.dataLoader_wa_imerg_IR import waImergIRDatasetTr_withMeta
+
 
 
 method_name = 'ConvLSTM'
@@ -19,6 +23,7 @@ metrics = ['mse', 'fss']
 
 st = '2020-08-25' 
 ed = '2020-09-01'
+
 
 
 # prediction file name
@@ -57,6 +62,12 @@ if dataset_name == 'wa_imerg_IR':
         IRs = hf['IRs'][:]
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
+
+testSet = waImergIRDatasetTr_withMeta(data1_fname, data2_fname, st, ed, \
+                        in_seq_length=in_seq_length,  out_seq_length=out_seq_length, \
+                        imerg_normalize=False, IR_normalize=False)
+
+dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
 # specify the gif output path
 results_path = os.path.join(base_path, f'results/{dataset_name}')

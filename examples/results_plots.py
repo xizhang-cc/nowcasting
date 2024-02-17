@@ -19,11 +19,28 @@ dataset_name = 'wa_imerg_IR'
 base_fname = 'imerg_gtIR_r01_mse' #'imerg_only_mse_relu'
 pred_fname = f'{base_fname}_predictions.h5'
 
+# Results base path for logging, working dirs, etc. 
+base_results_path = os.path.join(base_path, f'results/{dataset_name}')
+
 plot = True
+norm = False 
 
 # true imerg data path
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
 data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
+
+# Load the ground truth
+with h5py.File(data1_fname, 'r') as hf:
+    imgs = hf['precipitations'][:]
+    img_dts = hf['timestamps'][:]
+    img_dts = [x.decode('utf-8') for x in img_dts]
+
+imgs_min = 0.0
+imgs_max = 60.0
+
+imgs_norm = (imgs - imgs_min) / (imgs_max - imgs_min)
+
+img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
 
 if dataset_name == 'wa_imerg_IR':
@@ -39,7 +56,7 @@ if dataset_name == 'wa_imerg_IR':
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
 
-    IRs = 1 -  (IRs - IR_min) / (IR_max - IR_min)
+
 
 in_seq_length = 12
 out_seq_length = 12 
@@ -65,16 +82,6 @@ wa_imerg_metadata = {'accutime': 30.0,
 timestep_min = 30.0
 
 
-# Load the ground truth
-with h5py.File(data1_fname, 'r') as hf:
-    imgs = hf['precipitations'][:]
-    img_dts = hf['timestamps'][:]
-    img_dts = [x.decode('utf-8') for x in img_dts]
-
-img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
-
-# Results base path for logging, working dirs, etc. 
-base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 # Load the predictions
 with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
     pred_imgs = hf['precipitations'][:]
@@ -86,7 +93,22 @@ results_path = os.path.join(base_results_path, base_fname)
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
 
-losses = []
+if norm:
+
+    st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
+    end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
+
+    ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
+
+    IRs = IRs[ind]
+    IR_times = np.array(IR_times)[ind]
+    IR_times = list(IR_times)
+
+    IR_max = 336.0
+    IR_min = 108.0
+    IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
+    IRs = IRs_norm
+
 # For each senario, match the input, true, and pred images.
 for i, output_dt_i in enumerate(output_dts):
     # path to save the current sample images
@@ -112,8 +134,8 @@ for i, output_dt_i in enumerate(output_dts):
         output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
         output_IRs_i = IRs[output_ind_IR_i, :, :]
         for k in range(output_IRs_i.shape[0]):
-            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
 
+            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
             plt.imshow(output_IRs_i[k], cmap='gray')
             plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
 
@@ -135,9 +157,7 @@ for i, output_dt_i in enumerate(output_dts):
 
     mse_i = np.mean((true_imgs_i - pred_imgs_i)**2) 
     print(mse_i)
-    losses.append(mse_i)
 
-print(np.mean(losses))
 
     
 
