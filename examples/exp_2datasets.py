@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -87,8 +87,8 @@ if base_path == '/home/cc/projects/nowcasting':
     config['batch_size'] = 2
     config['val_batch_size'] = 2
     config['num_hidden'] = '32, 32' 
-    config['max_epoch'] = 100
-    config['early_stop_epoch'] = 20 # test run on local machine
+    config['max_epoch'] = 10
+    config['early_stop_epoch'] = 2 # test run on local machine
 
 
 # Results base path for logging, working dirs, etc. 

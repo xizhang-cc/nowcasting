@@ -21,7 +21,7 @@ max_epoch = 100
 early_stop_epoch= 10
 max_iter = 0
 no_display_method_info= False
-loss='mse'
+loss='MSE'
 # train optimizer
 opt = 'adam'
 lr = 5e-4
