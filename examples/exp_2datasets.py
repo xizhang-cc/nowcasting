@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ="/home1/zhang2012/nowcasting/"# '/home/cc/projects/nowcasting'#
+base_path ='/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"# 
 sys.path.append(base_path)
 
 import h5py 
@@ -41,12 +41,12 @@ test_ed = '2020-09-01'
 
 channel_sep = True
 relu_last = False
-imerg_normalize_method = 'guassian'
-IR_normalize_method = 'guassian'
+imerg_normalize_method = 'gaussian'
+IR_normalize_method = 'gaussian'
 
 
 # file names
-base_fname = 'imerg_gtIR_guassian_mse'
+base_fname = 'imerg_gtIR_gaussian_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'

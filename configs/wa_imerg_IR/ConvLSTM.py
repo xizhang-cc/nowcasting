@@ -44,9 +44,6 @@ img_width = 516
 channels = 1 # output channel number
 channel_sep = False #True#
 input_channel = 2 # channel 1 is Imerg, channel 2 is IR
-# for dataloader
-max_value = 60.0
-normalize = False
 # system
 use_gpu = True
 DataParallel = False
