@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" #
+base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -150,11 +150,20 @@ if __name__ == "__main__":
 
     # print('stop for debugging')
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_08.h5'), 'r') as hf:
+    with h5py.File(os.path.join(dataPath, 'wa_IR_ori_temp.h5'), 'r') as hf:
         imgs = hf['IRs'][:]
         img_dts = hf['timestamps'][:]
-        mean = hf['mean'][()]
-        std = hf['std'][()]
+        mean = imgs.mean()
+        std = imgs.std()
+        max = imgs.max()
+        min = imgs.min()
+
+    print(f'mean = {mean}')
+    print(f'std = {std}')
+    print(f'max = {max}')
+    print(f'min = {min}')
+
+        
 
     # # flip images up-down
     # imgs = np.dstack([np.flipud(imgs[k]) for k in range(imgs.shape[0])]).transpose(2, 0, 1)
@@ -162,13 +171,14 @@ if __name__ == "__main__":
     # # cropping 2 columns from the left and right
     # imgs = imgs[:, :, 1:-1]
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'w') as hf:
-    #     hf.create_dataset('IRs', data=imgs)
-    #     hf.create_dataset('timestamps', data=img_dts)
-    #     hf.create_dataset('mean', data=mean)
-    #     hf.create_dataset('std', data=std)
-    #     hf.create_dataset('max', data = 337)
-
+    with h5py.File(os.path.join(dataPath, 'wa_IR_ori.h5'), 'w') as hf:
+        hf.create_dataset('IRs', data=imgs)
+        hf.create_dataset('timestamps', data=img_dts)
+        hf.create_dataset('mean', data=mean)
+        hf.create_dataset('std', data=std)
+        hf.create_dataset('max', data = max)
+        hf.create_dataset('min', data = min)
+        
     print("Done")
 
 
