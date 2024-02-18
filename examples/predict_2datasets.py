@@ -36,7 +36,7 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_gtIR_2c_nosep_mse'
+base_fname = 'imerg_gtIR_r01_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
