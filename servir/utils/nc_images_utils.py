@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     # print('stop for debugging')
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_ori_temp.h5'), 'r') as hf:
+    with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'r') as hf:
         imgs = hf['IRs'][:]
         img_dts = hf['timestamps'][:]
         mean = imgs.mean()
@@ -171,13 +171,13 @@ if __name__ == "__main__":
     # # cropping 2 columns from the left and right
     # imgs = imgs[:, :, 1:-1]
 
-    with h5py.File(os.path.join(dataPath, 'wa_IR_ori.h5'), 'w') as hf:
-        hf.create_dataset('IRs', data=imgs)
-        hf.create_dataset('timestamps', data=img_dts)
-        hf.create_dataset('mean', data=mean)
-        hf.create_dataset('std', data=std)
-        hf.create_dataset('max', data = max)
-        hf.create_dataset('min', data = min)
+    # with h5py.File(os.path.join(dataPath, 'wa_IR_ori.h5'), 'w') as hf:
+    #     hf.create_dataset('IRs', data=imgs)
+    #     hf.create_dataset('timestamps', data=img_dts)
+    #     hf.create_dataset('mean', data=mean)
+    #     hf.create_dataset('std', data=std)
+    #     hf.create_dataset('max', data = max)
+    #     hf.create_dataset('min', data = min)
         
     print("Done")
 
