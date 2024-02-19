@@ -88,7 +88,7 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
 testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
-                        imerg_normalize=False, IR_normalize=True)
+                        imerg_normalize=False, IR_normalize=False)
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
 
