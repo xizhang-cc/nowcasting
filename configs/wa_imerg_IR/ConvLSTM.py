@@ -41,7 +41,7 @@ out_seq_length = 12
 pred_IR_length = 5
 img_height = 360
 img_width = 516
-channels = 2 # output channel number
+channels = 1 # output channel number
 channel_sep = False #True#
 input_channel = 2 # channel 1 is Imerg, channel 2 is IR
 # system

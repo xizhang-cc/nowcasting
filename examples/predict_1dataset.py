@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 import h5py 
@@ -20,6 +20,9 @@ dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
 normalize_method = '01range'
+channel_sep = True
+relu_last = True
+loss='CFSSS'
 
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
@@ -40,6 +43,9 @@ else:
     print(f'config file NOT found! config_path = {config_path}')
 
 config = load_config(config_path)
+config['loss'] = loss
+config['channel_sep'] = channel_sep
+config['relu_last'] = relu_last 
 
 print_log(f'config file at {config_path} logged')
 

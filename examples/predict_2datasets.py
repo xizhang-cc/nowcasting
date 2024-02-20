@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting'# "/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -28,15 +28,14 @@ data2_fname = 'wa_IR.h5'
 # new data name
 dataset_name = 'wa_imerg_IR'
 
-train_st = '2020-06-01' 
-train_ed = '2020-08-18' 
-val_st = '2020-08-18'
-val_ed = '2020-08-25'
+
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
 channel_sep = True
 relu_last = True
+loss='MSE'
+
 imerg_normalize_method = '01range'
 IR_normalize_method = '01range'
 
@@ -63,6 +62,9 @@ else:
 config = load_config(config_path)
 
 print(f'config file at {config_path} logged')
+config['loss'] = loss
+config['channel_sep'] = channel_sep
+config['relu_last'] = relu_last 
 
 # test run on local machine
 if base_path == '/home/cc/projects/nowcasting':
@@ -70,10 +72,6 @@ if base_path == '/home/cc/projects/nowcasting':
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    train_st = '2020-08-25'
-    train_ed = '2020-08-28' 
-    val_st = '2020-08-28'
-    val_ed = '2020-08-30' 
     test_st = '2020-08-30'
     test_ed = '2020-09-01'
 
