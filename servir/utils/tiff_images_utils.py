@@ -1,7 +1,7 @@
 
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" #
+base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -138,24 +138,29 @@ if __name__ == "__main__":
 
     # tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
 
-    with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'r') as hf:
+    with h5py.File(os.path.join(fPath, 'wa_imerg_temp.h5'), 'r') as hf:
         precipitation = hf['precipitations'][:]
         times = hf['timestamps'][:]
         # times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
-        mean = hf['mean'][()]
-        std = hf['std'][()]  
+        mean = precipitation.mean()
+        std = precipitation.std() 
+        max = precipitation.max()
+        min = precipitation.min()
 
     # # crop images
-    # precipitation = precipitation[:, :, 1:-1]
+    precipitation = precipitation[:, :, 1:-1]
 
-    # with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'w') as hf:
-    #     hf.create_dataset('precipitations', data=precipitation)
-    #     hf.create_dataset('timestamps', data=times)
-    #     hf.create_dataset('mean', data=mean)
-    #     hf.create_dataset('std', data=std)
-    #     hf.create_dataset('max', data =60.0)
+    with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'w') as hf:
+        hf.create_dataset('precipitations', data=precipitation)
+        hf.create_dataset('timestamps', data=times)
+        hf.create_dataset('mean', data=mean)
+        hf.create_dataset('std', data=std)
+        hf.create_dataset('max', data =max)
+        hf.create_dataset('min', data =min)
+
 
     print(precipitation.shape)
     print(precipitation.max())
+    print(precipitation.min())   
     print('stop for debugging')
     

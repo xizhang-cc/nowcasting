@@ -183,8 +183,8 @@ if config['channels'] > 1:
 with h5py.File(f1name, 'r') as hf:
     mean = hf['mean'][:]    
     std = hf['std'][:]
-    max_value = hf['max_value'][:]
-    min_value = hf['min_value'][:]
+    max_value = hf['max'][:]
+    min_value = hf['min'][:]
 
 # imerg convert to mm/hr (need to be updated)
 if imerg_normalize_method == 'gaussian':
