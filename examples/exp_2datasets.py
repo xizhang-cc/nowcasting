@@ -40,12 +40,12 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 channel_sep = True
-relu_last = False
-imerg_normalize_method = 'gaussian'
-IR_normalize_method = 'gaussian'
+relu_last = True
+imerg_normalize_method = '01range'
+IR_normalize_method = '01range'
 
 # file names
-base_fname = 'imerg_gtIR_gaussian_mse'
+base_fname = 'imerg_gtIR_01range_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
