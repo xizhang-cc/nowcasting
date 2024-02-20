@@ -21,10 +21,10 @@ max_epoch = 100
 early_stop_epoch= 10
 max_iter = 0
 no_display_method_info= False
-loss='CFSSS'
+loss='mse'
 # train optimizer
 opt = 'adam'
-lr = 5e-3
+lr = 5e-4
 sched = 'onecycle'
 opt_eps= None
 opt_betas= None
@@ -41,7 +41,7 @@ out_seq_length = 12
 pred_IR_length = 5
 img_height = 360
 img_width = 516
-channels = 1 # output channel number
+channels = 2 # output channel number
 channel_sep = False #True#
 input_channel = 2 # channel 1 is Imerg, channel 2 is IR
 # system
