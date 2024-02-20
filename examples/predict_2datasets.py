@@ -29,8 +29,10 @@ data2_fname = 'wa_IR.h5'
 dataset_name = 'wa_imerg_IR'
 
 
-test_st = '2020-08-25' 
-test_ed = '2020-09-01'
+st = '2020-08-25' 
+ed = '2020-09-01'
+# st = '2020-08-18'
+# ed = '2020-08-25'
 
 channel_sep = True
 relu_last = True
@@ -89,7 +91,7 @@ if base_path == '/home/cc/projects/nowcasting':
 f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
 f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
-testSet = waImergIRDatasetTr_withMeta(f1name, f2name, test_st, test_ed, \
+testSet = waImergIRDatasetTr_withMeta(f1name, f2name, st, ed, \
                         in_seq_length=config['in_seq_length'],  out_seq_length=config['out_seq_length'], \
                         imerg_normalize_method=imerg_normalize_method, IR_normalize_method=IR_normalize_method)
 

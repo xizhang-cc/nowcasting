@@ -6,10 +6,10 @@
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
 #SBATCH --mem=100GB
-#SBATCH --partition=gpu1
+#SBATCH --partition=gpu2
 
 #SBATCH --error=/home1/zhang2012/nowcasting/runs/job.%J.err 
 #SBATCH --output=/home1/zhang2012/nowcasting/runs/job.%J.out
 
-export CUDA_VISIBLE_DEVICES=1
-python /home1/zhang2012/nowcasting/examples/predict_1dataset.py
+export CUDA_VISIBLE_DEVICES=3
+python /home1/zhang2012/nowcasting/examples/predict_2datasets.py
