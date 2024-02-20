@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name r01
+#SBATCH --job-name gaussian
 
 
 #SBATCH --nodes 1
