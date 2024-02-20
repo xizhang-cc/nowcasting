@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -13,7 +13,7 @@ from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
 from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
 from servir.utils.config_utils import load_config
-from servir.utils.logger_utils import logging_setup, logging_env_info, logging_config_info, logging_method_info
+from servir.utils.logger_utils import logging_config_info, logging_method_info
 from servir.utils.main_utils import print_log
 
 from servir.methods.ConvLSTM import ConvLSTM
