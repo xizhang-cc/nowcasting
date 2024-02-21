@@ -144,5 +144,8 @@ imergs_transformed = imerg_log_normalize(imergs, threshold=0.1, zerovalue=zerova
 plt.figure()
 plt.hist(imergs_transformed[imergs_transformed>zerovalue].flatten(), bins=100)    
 
+imergs_recovered = np.where(imergs_transformed == zerovalue, 0.0, np.power(10, imergs_transformed))
 
-            
+plt.figure()
+plot_precip_field(imergs_recovered[imerg_idx]) 
+plt.title(f'imergs_recovered - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')

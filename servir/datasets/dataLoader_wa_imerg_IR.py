@@ -222,7 +222,18 @@ class waImergIRDataset_withMeta(Dataset):
 #===================================================================================================
 #===================================================================================================
 
+def IR_neg_scale(data, replacevalue=-2.0, threshold=240):
+    temp = np.where(data<=threshold, data, np.nan)
+    f_max = np.nanmax(temp)
+    f_min = np.nanmin(temp)
 
+    new = np.where(data<=threshold, -(2*(data-f_min)/(f_max-f_min)-1), replacevalue)
+    return new
+
+#
+def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
+    new = np.where(data < threshold, zerovalue, np.log10(data))
+    return new
 
 class waImergIRDatasetTr(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
@@ -239,16 +250,16 @@ class waImergIRDatasetTr(Dataset):
             self.imergs = (self.imergs - self.imerg_mean)/self.imerg_std
         elif imerg_normalize_method == '01range':
             self.imergs =  (self.imergs -self.imerg_min) / (self.imerg_max - self.imerg_min)
-        else:
-            self.imergs = self.imergs   
+        elif imerg_normalize_method == 'log_norm':
+            self.imergs = imerg_log_normalize(self.imergs)
 
                 # normalize the data
         if IR_normalize_method=='gaussian':
             self.IRs = (self.IRs - self.IR_mean)/self.IR_std
         elif IR_normalize_method=='01range':
             self.IRs =  1 -  (self.IRs - self.IR_min) / (self.IR_max - self.IR_min)
-        else:
-            self.IRs = self.IRs 
+        elif IR_normalize_method=='thresholded_scale':
+            self.IRs = IR_neg_scale(self.IRs)
 
     def __len__(self):
         return self.imergs.shape[0]-self.in_seq_length-self.out_seq_length

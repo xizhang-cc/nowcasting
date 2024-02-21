@@ -38,11 +38,11 @@ channel_sep = True
 relu_last = True
 loss='MSE'
 
-imerg_normalize_method = '01range'
-IR_normalize_method = '01range'
+imerg_normalize_method = 'log_norm'
+IR_normalize_method = 'thresholded_scale'
 
 # file names
-base_fname = 'imerg_gtIR_01range_mse'
+base_fname = 'imerg_gtIR_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -135,13 +135,20 @@ with h5py.File(f1name, 'r') as hf:
     max_value = hf['max'][()]
     min_value = hf['min'][()]
     
+zerovalue=-2.0
+threshold=0.1
+
+def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
+    new = np.where(data < threshold, zerovalue, np.log10(data))
+    return new
+
 # imerg convert to mm/hr (need to be updated)
 if imerg_normalize_method == 'gaussian':
     test_pred = test_pred * std + mean
 elif imerg_normalize_method == '01range':
     test_pred = test_pred * (max_value - min_value) + min_value
-else:
-    test_pred = test_pred 
+elif imerg_normalize_method == 'log_norm':
+    test_pred = np.where(test_pred == zerovalue, 0.0, np.power(10, test_pred))
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
