@@ -493,7 +493,7 @@ class ConvLSTM():
         return vali_loss
 
 
-    def test(self, data_loader, gather_pred=True, skip_frame_loss=False):
+    def test(self, data_loader, gather_pred=True, skip_frame_loss=False, channel_sep=False):
         """Evaluate the model with test_loader.
 
         Args:
@@ -502,7 +502,9 @@ class ConvLSTM():
         Returns:
             list(tensor, ...): The list of inputs and predictions.
         """
-        test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred, setName='test', withMeta=True, skip_frame_loss=skip_frame_loss)
+        test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
+                                                                                setName='test', withMeta=True, \
+                                                                                    skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
 
         return test_loss, test_results, test_meta 
 

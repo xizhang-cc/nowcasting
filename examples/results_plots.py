@@ -16,7 +16,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_gtIR_2c_01range_mse'
+base_fname = 'imerg_gtIR_gaussian_mse'
 pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
@@ -37,19 +37,6 @@ img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for
 withIR = True
 IR_norm = False
 
-def norm_IR(IRs, st_dt, end_dt, IR_max=336.0, IR_min=108.0):
-    st_dt = datetime.datetime.strptime('2020-08-25', '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime('2020-09-01', '%Y-%m-%d')
-
-    ind = (np.array(IR_times)>=st_dt) & (np.array(IR_times)<end_dt)
-
-    IRs = IRs[ind]
-    IR_times = np.array(IR_times)[ind]
-    IR_times = list(IR_times)
-
-    IRs_norm = 1 -  (IRs - IR_min) / (IR_max - IR_min)
-
-    return IRs_norm
 
 if withIR:
     # true ir data path
@@ -64,9 +51,6 @@ if withIR:
         IR_times = hf['timestamps'][:]
         IR_times = [datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in IR_times]
 
-    # if IR_norm:
-
-    #     IRs = norm_IR(IRs, st_dt, end_dt, IR_max, IR_min)
 
 
 in_seq_length = 12
@@ -91,7 +75,6 @@ wa_imerg_metadata = {'accutime': 30.0,
     'zerovalue': 0}
 
 timestep_min = 30.0
-
 
 
 # Load the predictions
@@ -126,15 +109,15 @@ for i, output_dt_i in enumerate(output_dts):
     in_dt_i = [img_datetimes[x] for x in input_ind_i]
     out_dt_i = [img_datetimes[x] for x in output_ind_i]
 
-    if dataset_name == 'wa_imerg_IR':
-        # locate IR images for sample i
-        output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
-        output_IRs_i = IRs[output_ind_IR_i, :, :]
-        for k in range(output_IRs_i.shape[0]):
+    # if dataset_name == 'wa_imerg_IR':
+    #     # locate IR images for sample i
+    #     output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
+    #     output_IRs_i = IRs[output_ind_IR_i, :, :]
+    #     for k in range(output_IRs_i.shape[0]):
 
-            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
-            plt.imshow(output_IRs_i[k], cmap='gray')
-            plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
+    #         tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
+    #         plt.imshow(output_IRs_i[k], cmap='gray')
+    #         plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
 
 
     # # locate the input images for sample i
@@ -144,8 +127,8 @@ for i, output_dt_i in enumerate(output_dts):
 
     # locate the ground truth images for sample i
     true_imgs_i = imgs[output_ind_i, :, :]
-    create_precipitation_plots(true_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata,\
-                            os.path.join(i_path, 'true'), title=f'{i} - true')
+    # create_precipitation_plots(true_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata,\
+    #                         os.path.join(i_path, 'true'), title=f'{i} - true')
     
     # locate the predicted images for sample i
     pred_imgs_i = pred_imgs[i, :, :, :]

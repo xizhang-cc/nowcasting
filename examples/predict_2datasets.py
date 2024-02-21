@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -38,11 +38,11 @@ channel_sep = True
 relu_last = True
 loss='MSE'
 
-imerg_normalize_method = 'log_norm'
-IR_normalize_method = 'thresholded_scale'
+imerg_normalize_method = '01range' #'log_norm'
+IR_normalize_method = '01range' #'thresholded_scale'
 
 # file names
-base_fname = 'imerg_gtIR_mse'
+base_fname = 'imerg_gtIR_2c_01range_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -123,7 +123,7 @@ else:
     method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, channel_sep=channel_sep)
 
 if config['channels'] > 1:
     test_pred = test_pred[:, :, 0:1, :, :]
@@ -137,10 +137,6 @@ with h5py.File(f1name, 'r') as hf:
     
 zerovalue=-2.0
 threshold=0.1
-
-def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
-    new = np.where(data < threshold, zerovalue, np.log10(data))
-    return new
 
 # imerg convert to mm/hr (need to be updated)
 if imerg_normalize_method == 'gaussian':

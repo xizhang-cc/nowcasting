@@ -40,13 +40,16 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 channel_sep = True
-relu_last = True
-imerg_normalize_method = '01range'
-IR_normalize_method = '01range'
+relu_last = False
+loss='MSE'
+channels = 1 # output channel number
+imerg_normalize_method = 'log_norm'
+IR_normalize_method = 'thresholded_scale'
+
 
 
 # file names
-base_fname = 'imerg_gtIR_01range_mse'
+base_fname = 'imerg_gtIR_mse'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -67,6 +70,8 @@ print(f'config file at {config_path} logged')
 
 config['channel_sep'] = channel_sep
 config['relu_last'] = relu_last 
+config['loss'] = loss   
+config['channels'] = channels   
 
 #================================================#
 # test run on local machine
@@ -175,7 +180,7 @@ else:
     method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, channel_sep=channel_sep)
 
 if config['channels'] > 1:
     test_pred = test_pred[:, :, 0:1, :, :]
@@ -187,13 +192,16 @@ with h5py.File(f1name, 'r') as hf:
     max_value = hf['max'][()]
     min_value = hf['min'][()]
     
+zerovalue=-2.0
+threshold=0.1
+
 # imerg convert to mm/hr (need to be updated)
 if imerg_normalize_method == 'gaussian':
     test_pred = test_pred * std + mean
 elif imerg_normalize_method == '01range':
     test_pred = test_pred * (max_value - min_value) + min_value
-else:
-    test_pred = test_pred 
+elif imerg_normalize_method == 'log_norm':
+    test_pred = np.where(test_pred == zerovalue, 0.0, np.power(10, test_pred))
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
