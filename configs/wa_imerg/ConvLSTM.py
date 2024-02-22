@@ -17,6 +17,7 @@ patch_size = 6
 layer_norm = 0
 relu_last = True
 channel_sep = False
+all_channel_loss = False
 # training
 max_epoch = 100 
 early_stop_epoch= 10 

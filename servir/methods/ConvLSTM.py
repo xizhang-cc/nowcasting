@@ -120,24 +120,11 @@ class ConvLSTM_Model(nn.Module):
                                    kernel_size=1, stride=1, padding=0, bias=False)
         
 
-
-        
-    
     def forward(self, frames_tensor, mask_true, **kwargs):
 
         # [batch, length, height, width, channel] -> [batch, length, channel, height, width]
         frames = frames_tensor.permute(0, 1, 4, 2, 3).contiguous()
         mask_true = mask_true.permute(0, 1, 4, 2, 3).contiguous()
-
-        input_channel_num = mask_true.shape[2]
-        input_frames = frames[:, :, :input_channel_num] 
-
-        extra_input_channels = frames.shape[2] - mask_true.shape[2]
-
-        if extra_input_channels > 0:
-            extra_frames = frames[:, :, input_channel_num:]
-        else:
-            extra_frames = None
 
         batch = frames.shape[0]
         height = frames.shape[3]
@@ -156,18 +143,15 @@ class ConvLSTM_Model(nn.Module):
             # reverse schedule sampling
             if self.config['reverse_scheduled_sampling'] == 1:
                 if t == 0:
-                    net = input_frames[:, t]
+                    net = frames[:, t]
                 else:
-                    net = mask_true[:, t - 1] * input_frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
+                    net = mask_true[:, t - 1] * frames[:, t] + (1 - mask_true[:, t - 1]) * x_gen
             else:
                 if t < self.config['in_seq_length']:
-                    net = input_frames[:, t]
+                    net = frames[:, t]
                 else:
-                    net = mask_true[:, t - self.config['in_seq_length']] * input_frames[:, t] + \
+                    net = mask_true[:, t - self.config['in_seq_length']] * frames[:, t] + \
                         (1 - mask_true[:, t - self.config['in_seq_length']]) * x_gen
-
-            if extra_frames is not None:
-                net = torch.cat([net, extra_frames[:, t]], dim=1)
 
             h_t[0], c_t[0] = self.cell_list[0](net, h_t[0], c_t[0])
 
@@ -179,28 +163,30 @@ class ConvLSTM_Model(nn.Module):
             if self.config['relu_last']:
                 x_gen = torch.relu(x_gen)
 
-
             next_frames.append(x_gen)
 
         # [length, batch, channel, height, width] -> [batch, length, height, width, channel]
         next_frames = torch.stack(next_frames, dim=0).permute(1, 0, 3, 4, 2).contiguous()
 
+        # if kwargs.get('skip_frame_loss')==True:
+        #     loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
+        #                             frames_tensor[:, -self.config['out_seq_length']::2, :, :, :input_channel_num])
+
+        # if self.config['loss'] == 'CFSSS':
+        #     img_frames_tensor = frames_tensor[:, :, :, :, :input_channel_num]
+        #     next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
+        #     next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'], self.config['channel_sep'])
+        #     frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'],self.config['channel_sep'])
+        #     loss = self.criterion(next_frames_img[:, :, :, :, 0],\
+        #                         frames_tensor_img[:, :, :, :, 0],\
+        #                         0, 1.0/60.0, g_func_log)
+
         if kwargs.get('return_loss')==True:
-            if kwargs.get('skip_frame_loss')==True:
-                loss = self.MSE_criterion(next_frames[:, -self.config['out_seq_length']::2],\
-                                        frames_tensor[:, -self.config['out_seq_length']::2, :, :, :input_channel_num])
-            else:
-                if self.config['loss'] == 'CFSSS':
-                    img_frames_tensor = frames_tensor[:, :, :, :, :input_channel_num]
-                    next_frames_prefix = torch.cat([img_frames_tensor[:, 0:1], next_frames], dim=1)
-                    next_frames_img = reshape_patch_back(next_frames_prefix, self.config['patch_size'], self.config['channel_sep'])
-                    frames_tensor_img = reshape_patch_back(img_frames_tensor, self.config['patch_size'],self.config['channel_sep'])
-                    loss = CFSSSurrogateLoss(next_frames_img[:, :, :, :, 0],\
-                                            frames_tensor_img[:, :, :, :, 0],\
-                                            0, 1.0/60.0, g_func_log)
-                    
-                elif self.config['loss'] == 'MSE':  
-                    loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :input_channel_num])
+            if 'loss_channels' in kwargs:
+                reshaped_channel_num = self.config['patch_size'] ** 2 * int(kwargs.get('loss_channels'))
+                loss = self.criterion(next_frames[:, :, :, :, :reshaped_channel_num], frames_tensor[:, 1:, :, :, :reshaped_channel_num])
+            else: # all losses
+                loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :])
         else:
             loss = None
 
@@ -322,25 +308,26 @@ class ConvLSTM():
             else:
                 batch_x, batch_y = batch
 
-            skip_frame_loss = kwargs.get('skip_frame_loss')
             channel_sep = kwargs.get('channel_sep') 
             st = time.time()
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device, dtype=torch.float32), batch_y.to(self.device, dtype=torch.float32)
                 pred_y = self._predict(batch_x, batch_y, channel_sep=channel_sep)
                 # self.config['channels']
-                if skip_frame_loss:
-                    loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
-                                        batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
-                else:
-                    if self.config['loss'] == 'CFSSS':
-                        img_batch_y = batch_y[:, :, 0, :, :]
-                        img_pred_y = pred_y[:, :, 0, :, :]
-                        loss = CFSSSurrogateLoss(img_pred_y, img_batch_y,0, 1.0/60.0, g_func_log).cpu().numpy().item()
-                    elif self.config['loss'] == 'MSE':
-                        # loss = self.criterion(pred_y, batch_y[:, :, 0:self.config['channels'], :, :]).cpu().numpy().item()
-                        loss = self.criterion(pred_y[:, :, 0:1, :, :], batch_y[:, :, 0:1, :, :]).cpu().numpy().item()
+                # if skip_frame_loss:
+                #     loss = self.criterion(pred_y[:, -self.config['out_seq_length']::2],\
+                #                         batch_y[:, -self.config['out_seq_length']::2]).cpu().numpy().item()
 
+                # if self.config['loss'] == 'CFSSS':
+                #     img_batch_y = batch_y[:, :, 0, :, :]
+                #     img_pred_y = pred_y[:, :, 0, :, :]
+                #     loss = CFSSSurrogateLoss(img_pred_y, img_batch_y,0, 1.0/60.0, g_func_log).cpu().numpy().item()
+                if 'loss_channels' in kwargs:
+                    loss_channels = kwargs.get('loss_channels')
+                    loss = self.criterion(pred_y[:, :, 0:loss_channels, :, :], batch_y[:, :, 0:loss_channels, :, :]).cpu().numpy().item()
+                else:
+                    loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                    
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
 
@@ -405,7 +392,7 @@ class ConvLSTM():
         else:
             assert False, f"Unknown clip mode ({self.clip_mode})."
 
-    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, return_loss = True, skip_frame_loss = False, channel_sep=False):
+    def train_one_epoch(self, train_loader, epoch, num_updates, eta=None, return_loss = True, channel_sep=False, loss_channels=1):
 
         """Train the model with train_loader."""
         data_time_m = AverageMeter()
@@ -438,7 +425,7 @@ class ConvLSTM():
                     eta, num_updates, ims.shape[0], self.config)
 
             with self.amp_autocast():
-                _, loss = self.model(ims, real_input_flag, return_loss=return_loss, skip_frame_loss=skip_frame_loss)
+                _, loss = self.model(ims, real_input_flag, return_loss=return_loss, loss_channels=loss_channels)
 
             if not self.dist:
                 losses_m.update(loss.item(), batch_x.size(0))
@@ -477,7 +464,7 @@ class ConvLSTM():
 
         return num_updates, losses_m.avg, eta
 
-    def vali(self, data_loader, gather_pred=False, skip_frame_loss=False, channel_sep=False):
+    def vali(self, data_loader, gather_pred=False,  channel_sep=False, loss_channels=1):
         """Evaluate the model with test_loader.
 
         Args:
@@ -487,13 +474,13 @@ class ConvLSTM():
             list(tensor, ...): The list of inputs and predictions.
         """
         vali_loss, _, _ = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
-                                                                        setName='vali', withMeta=False,\
-                                                                        skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
+                                                            setName='vali', withMeta=False,\
+                                                            channel_sep=channel_sep, loss_channels=loss_channels)
 
         return vali_loss
 
 
-    def test(self, data_loader, gather_pred=True, skip_frame_loss=False, channel_sep=False):
+    def test(self, data_loader, gather_pred=True, channel_sep=True, loss_channels=1):
         """Evaluate the model with test_loader.
 
         Args:
@@ -504,7 +491,7 @@ class ConvLSTM():
         """
         test_loss, test_results, test_meta = self._collect_evaluate_predictions(data_loader, gather_pred=gather_pred,\
                                                                                 setName='test', withMeta=True, \
-                                                                                    skip_frame_loss=skip_frame_loss, channel_sep=channel_sep)
+                                                                                channel_sep=channel_sep, loss_channels=loss_channels)
 
         return test_loss, test_results, test_meta 
 

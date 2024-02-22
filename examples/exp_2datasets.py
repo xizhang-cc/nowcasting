@@ -20,40 +20,18 @@ from servir.utils.main_utils import print_log
 from servir.methods.ConvLSTM import ConvLSTM
 
 
-#================Specification=========================#
-method_name = 'ConvLSTM'
-
-dataset1_name = 'wa_imerg'
-dataset2_name = 'wa_IR'
-
-data1_fname = 'wa_imerg.h5'
-data2_fname = 'wa_IR.h5'
-
-# new data name
-dataset_name = 'wa_imerg_IR'
-
-train_st = '2020-06-01' 
-train_ed = '2020-08-18' 
-val_st = '2020-08-18'
-val_ed = '2020-08-25'
-test_st = '2020-08-25' 
-test_ed = '2020-09-01'
-
 channel_sep = True
-relu_last = False
-loss='MSE'
-channels = 1 # output channel number
+loss_channels = 2
 imerg_normalize_method = 'log_norm'
 IR_normalize_method = 'thresholded_scale'
+relu_last = False
+
+# output base file name
+base_outfname = f'imerg{imerg_normalize_method[:3]}_gtIR{IR_normalize_method[:3]}_Sep{channel_sep}_L{loss_channels}ch'
 
 
-
-# file names
-base_fname = 'imerg_gtIR_mse'
-model_para_fname = f'{base_fname}_params.pth'
-checkpoint_fname = f'{base_fname}_checkpoint.pth'
-pred_fname = f'{base_fname}_predictions.h5'
-
+dataset_name = 'wa_imerg_IR'
+method_name = 'ConvLSTM'
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -68,10 +46,30 @@ config = load_config(config_path)
 
 print(f'config file at {config_path} logged')
 
+# reinforce the following configuration
 config['channel_sep'] = channel_sep
-config['relu_last'] = relu_last 
-config['loss'] = loss   
-config['channels'] = channels   
+config['loss_channels'] = loss_channels   
+config['relu_last'] = relu_last
+
+#================Specification=========================#
+
+dataset1_name = 'wa_imerg'
+dataset2_name = 'wa_IR'
+
+data1_fname = 'wa_imerg.h5'
+data2_fname = 'wa_IR.h5'
+
+train_st = '2020-06-01' 
+train_ed = '2020-08-18' 
+val_st = '2020-08-18'
+val_ed = '2020-08-25'
+test_st = '2020-08-25' 
+test_ed = '2020-09-01'
+
+model_para_fname = f'{base_outfname}_params.pth'
+checkpoint_fname = f'{base_outfname}_checkpoint.pth'
+pred_fname = f'{base_outfname}_predictions.h5'
+
 
 #================================================#
 # test run on local machine
@@ -102,16 +100,11 @@ if not os.path.exists(base_results_path):
     os.makedirs(base_results_path)
 
 
-# logging setup
+#================== logging setup =====================#
 logging_setup(base_results_path, fname=f'{method_name}.log')   
-print('logging file created')
-# log env info
+# log env and config info
 logging_env_info()
-print('env info logged')
-
-# log config
 logging_config_info(config)
-print('configuration file logged')
 
 ##==================Data Loading=====================##
 # where to load data
@@ -180,7 +173,8 @@ else:
     method.model.load_state_dict(torch.load(para_dict_fpath))
 
 
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, channel_sep=channel_sep)
+test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True,\
+                                            channel_sep=config['channel_sep'], loss_channels=config['loss_channels'])
 
 if config['channels'] > 1:
     test_pred = test_pred[:, :, 0:1, :, :]
@@ -192,7 +186,7 @@ with h5py.File(f1name, 'r') as hf:
     max_value = hf['max'][()]
     min_value = hf['min'][()]
     
-zerovalue=-2.0
+
 threshold=0.1
 
 # imerg convert to mm/hr (need to be updated)
@@ -201,7 +195,7 @@ if imerg_normalize_method == 'gaussian':
 elif imerg_normalize_method == '01range':
     test_pred = test_pred * (max_value - min_value) + min_value
 elif imerg_normalize_method == 'log_norm':
-    test_pred = np.where(test_pred == zerovalue, 0.0, np.power(10, test_pred))
+    test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

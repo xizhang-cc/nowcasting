@@ -15,7 +15,7 @@ filter_size = 5
 stride = 1
 patch_size = 6
 layer_norm = 0
-relu_last = True
+relu_last = False
 # training
 max_epoch = 100
 early_stop_epoch= 10
@@ -41,9 +41,9 @@ out_seq_length = 12
 pred_IR_length = 5
 img_height = 360
 img_width = 516
-channels = 1 # output channel number
-channel_sep = False #True#
-input_channel = 2 # channel 1 is Imerg, channel 2 is IR
+channels = 2 # channel 1 is Imerg, channel 2 is IR
+channel_sep = True #True#
+loss_channels = 1 # the first channel is used for calculating loss.
 # system
 use_gpu = True
 DataParallel = False

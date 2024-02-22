@@ -141,7 +141,7 @@ def reshape_patch_back(patch_tensor, patch_size, channel_sep=False):
     batch_size, seq_length, patch_height, patch_width, channels = patch_tensor.shape
     img_channels = channels // (patch_size*patch_size)
 
-    if (channel_sep) and (channels > 1) :
+    if (channel_sep) and (img_channels > 1):
         img_tensor_list = []
         for i in range(img_channels):
             patch_tensor_i = patch_tensor[:, :, :, :, i*patch_size*patch_size:(i+1)*patch_size*patch_size]
