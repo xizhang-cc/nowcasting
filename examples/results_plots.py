@@ -13,10 +13,10 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_imerg'
 
 # prediction file name
-base_fname = 'imerg_gtIR_gaussian_mse'
+base_fname = 'imerg_r01_mse'
 pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
