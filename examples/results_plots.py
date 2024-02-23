@@ -13,10 +13,10 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
+dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerg_r01_mse'
+base_fname = 'imerglog_gtIRthr_SepTrue_L2ch'
 pred_fname = f'{base_fname}_predictions.h5'
 
 # Results base path for logging, working dirs, etc. 
@@ -34,7 +34,7 @@ with h5py.File(data1_fname, 'r') as hf:
 
 img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
 
-withIR = True
+withIR = False
 IR_norm = False
 
 
@@ -127,8 +127,8 @@ for i, output_dt_i in enumerate(output_dts):
 
     # locate the ground truth images for sample i
     true_imgs_i = imgs[output_ind_i, :, :]
-    # create_precipitation_plots(true_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata,\
-    #                         os.path.join(i_path, 'true'), title=f'{i} - true')
+    create_precipitation_plots(true_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata,\
+                            os.path.join(i_path, 'true'), title=f'{i} - true')
     
     # locate the predicted images for sample i
     pred_imgs_i = pred_imgs[i, :, :, :]

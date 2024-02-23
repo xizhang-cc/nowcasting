@@ -23,7 +23,7 @@ dataset1_name = 'wa_imerg'
 dataset2_name = 'wa_IR'
 
 data1_fname = 'wa_imerg.h5'
-data2_fname = 'wa_IR.h5'
+data2_fname = 'wa_IR_08.h5'
 
 # new data name
 dataset_name = 'wa_imerg_IR'
@@ -31,18 +31,18 @@ dataset_name = 'wa_imerg_IR'
 
 st = '2020-08-25' 
 ed = '2020-09-01'
-# st = '2020-08-18'
-# ed = '2020-08-25'
 
 channel_sep = True
-relu_last = True
-loss='MSE'
+loss_channels = 2
+relu_last = False
 
-imerg_normalize_method = '01range' #'log_norm'
-IR_normalize_method = '01range' #'thresholded_scale'
+
+imerg_normalize_method = 'log_norm'
+IR_normalize_method = 'thresholded_scale'
 
 # file names
-base_fname = 'imerg_gtIR_2c_01range_mse'
+base_fname = f'imerg{imerg_normalize_method[:3]}_gtIR{IR_normalize_method[:3]}_Sep{channel_sep}_L{loss_channels}ch'
+
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -64,26 +64,29 @@ else:
 config = load_config(config_path)
 
 print(f'config file at {config_path} logged')
-config['loss'] = loss
+
 config['channel_sep'] = channel_sep
+config['loss_channels'] = loss_channels
 config['relu_last'] = relu_last 
 
-# test run on local machine
-if base_path == '/home/cc/projects/nowcasting':
-    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-    pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    test_st = '2020-08-30'
-    test_ed = '2020-09-01'
 
-    data2_fname = 'wa_IR_08.h5'
+# # test run on local machine
+# if base_path == '/home/cc/projects/nowcasting':
+#     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+#     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+#     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    config['batch_size'] = 2
-    config['val_batch_size'] = 2
-    config['num_hidden'] = '32, 32' 
-    config['max_epoch'] = 10
-    config['early_stop_epoch'] = 2
+#     test_st = '2020-08-30'
+#     test_ed = '2020-09-01'
+
+#     data2_fname = 'wa_IR_08.h5'
+
+#     config['batch_size'] = 2
+#     config['val_batch_size'] = 2
+#     config['num_hidden'] = '32, 32' 
+#     config['max_epoch'] = 10
+#     config['early_stop_epoch'] = 2
 
 
 ##==================Data Loading=====================##
@@ -135,7 +138,6 @@ with h5py.File(f1name, 'r') as hf:
     max_value = hf['max'][()]
     min_value = hf['min'][()]
     
-zerovalue=-2.0
 threshold=0.1
 
 # imerg convert to mm/hr (need to be updated)
@@ -144,7 +146,8 @@ if imerg_normalize_method == 'gaussian':
 elif imerg_normalize_method == '01range':
     test_pred = test_pred * (max_value - min_value) + min_value
 elif imerg_normalize_method == 'log_norm':
-    test_pred = np.where(test_pred == zerovalue, 0.0, np.power(10, test_pred))
+    test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
+
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

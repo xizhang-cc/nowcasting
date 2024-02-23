@@ -59,11 +59,6 @@ for i, output_dt_i in enumerate(output_dts):
 
 gt_array = np.concatenate(gt_list, axis=0)
 
-# save results to h5py file
-with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'),'w') as hf:
-    hf.create_dataset('precipitations', data=gt_array)
-    hf.create_dataset('timestamps', data=output_dts_s)
-
 
 
 
