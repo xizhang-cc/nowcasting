@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ='/home/cc/projects/nowcasting'# "/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -22,8 +22,8 @@ from servir.methods.ConvLSTM import ConvLSTM
 
 channel_sep = True
 loss_channels = 2
-imerg_normalize_method = 'log_norm'
-IR_normalize_method = 'thresholded_scale'
+imerg_normalize_method = '01range'
+IR_normalize_method = '01range'
 relu_last = False
 
 # output base file name
