@@ -3,10 +3,10 @@ import sys
 base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
-import h5py 
-import time
 import torch
+import h5py 
 import logging
+import numpy as np
 
 
 from servir.core.distribution import get_dist_info
@@ -24,7 +24,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-normalize_method = '01range'
+normalize_method = 'log_norm'
 
 train_st = '2020-06-01' 
 train_ed = '2020-08-18' 
@@ -34,7 +34,7 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_only_cfsss_log'
+base_fname = f'imerg{normalize_method[:3]}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -165,14 +165,16 @@ with h5py.File(fname, 'r') as hf:
     max_value = hf['max'][()]
     min_value = hf['min'][()]
     
+
+threshold=0.1
+
 # imerg convert to mm/hr (need to be updated)
 if normalize_method == 'gaussian':
     test_pred = test_pred * std + mean
 elif normalize_method == '01range':
     test_pred = test_pred * (max_value - min_value) + min_value
-else:
-    test_pred = test_pred 
-
+elif normalize_method == 'log_norm':
+    test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
 
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:

@@ -23,7 +23,7 @@ max_epoch = 100
 early_stop_epoch= 10 
 max_iter = 0
 no_display_method_info= False
-loss='CFSSS'
+loss='MSE'
 # train optimizer
 opt = 'adam'
 lr = 5e-4
@@ -43,9 +43,6 @@ in_seq_length = 12
 out_seq_length = 12 
 img_height = 360
 img_width = 516
-# for dataloader
-max_value = 60.0
-normalize = False
 # system
 use_gpu = True
 DataParallel = False

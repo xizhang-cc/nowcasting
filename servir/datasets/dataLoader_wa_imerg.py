@@ -40,6 +40,10 @@ def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
 
     return requested_precipitation, requested_times, mean, std, max, min
 
+def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
+    new = np.where(data < threshold, zerovalue, np.log10(data))
+    return new
+
 class waImergDataset(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
 
@@ -54,8 +58,9 @@ class waImergDataset(Dataset):
             self.precipitations = (self.precipitations - self.mean) / self.std
         elif normalize_method == '01range':
             self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
-        else:
-            self.precipitations = self.precipitations
+        elif normalize_method == 'log_norm':
+            self.precipitations = imerg_log_normalize(self.precipitations)
+
 
 
     def __len__(self):
@@ -99,8 +104,9 @@ class waImergDataset_withMeta(Dataset):
             self.precipitations = (self.precipitations - self.mean) / self.std
         elif normalize_method == '01range':
             self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
-        else:
-            self.precipitations = self.precipitations
+        elif normalize_method == 'log_norm':
+            self.precipitations = imerg_log_normalize(self.precipitations)
+
 
 
 
