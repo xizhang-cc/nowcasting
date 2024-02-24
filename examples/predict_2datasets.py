@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import h5py 
@@ -23,7 +23,7 @@ dataset1_name = 'wa_imerg'
 dataset2_name = 'wa_IR'
 
 data1_fname = 'wa_imerg.h5'
-data2_fname = 'wa_IR_08.h5'
+data2_fname = 'wa_IR.h5'
 
 # new data name
 dataset_name = 'wa_imerg_IR'
@@ -46,6 +46,7 @@ base_fname = f'imerg{imerg_normalize_method[:3]}_gtIR{IR_normalize_method[:3]}_S
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
+pred_fname_raw = f'{base_fname}_predictions_raw.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -71,22 +72,22 @@ config['relu_last'] = relu_last
 
 
 
-# # test run on local machine
-# if base_path == '/home/cc/projects/nowcasting':
-#     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-#     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-#     pred_fname = pred_fname.split('.')[0] + '_local.h5'
+# test run on local machine
+if base_path == '/home/cc/projects/nowcasting':
+    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+    pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-#     test_st = '2020-08-30'
-#     test_ed = '2020-09-01'
+    test_st = '2020-08-30'
+    test_ed = '2020-09-01'
 
-#     data2_fname = 'wa_IR_08.h5'
+    data2_fname = 'wa_IR.h5'
 
-#     config['batch_size'] = 2
-#     config['val_batch_size'] = 2
-#     config['num_hidden'] = '32, 32' 
-#     config['max_epoch'] = 10
-#     config['early_stop_epoch'] = 2
+    config['batch_size'] = 2
+    config['val_batch_size'] = 2
+    config['num_hidden'] = '32, 32' 
+    config['max_epoch'] = 10
+    config['early_stop_epoch'] = 2
 
 
 ##==================Data Loading=====================##
@@ -128,33 +129,39 @@ else:
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True, channel_sep=channel_sep)
 
-if config['channels'] > 1:
-    test_pred = test_pred[:, :, 0:1, :, :]
-    test_pred = np.squeeze(test_pred, axis=2)
-
-with h5py.File(f1name, 'r') as hf:
-    mean = hf['mean'][()]   
-    std = hf['std'][()]
-    max_value = hf['max'][()]
-    min_value = hf['min'][()]
-    
-threshold=0.1
-
-# imerg convert to mm/hr (need to be updated)
-if imerg_normalize_method == 'gaussian':
-    test_pred = test_pred * std + mean
-elif imerg_normalize_method == '01range':
-    test_pred = test_pred * (max_value - min_value) + min_value
-elif imerg_normalize_method == 'log_norm':
-    test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
-
-
 # save results to h5py file
-with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
+with h5py.File(os.path.join(base_results_path, pred_fname_raw),'w') as hf:
     hf.create_dataset('precipitations', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+
+# if config['channels'] > 1:
+#     test_pred = test_pred[:, :, 0:1, :, :]
+#     test_pred = np.squeeze(test_pred, axis=2)
+
+# with h5py.File(f1name, 'r') as hf:
+#     mean = hf['mean'][()]   
+#     std = hf['std'][()]
+#     max_value = hf['max'][()]
+#     min_value = hf['min'][()]
+    
+# threshold=0.1
+
+# # imerg convert to mm/hr (need to be updated)
+# if imerg_normalize_method == 'gaussian':
+#     test_pred = test_pred * std + mean
+# elif imerg_normalize_method == '01range':
+#     test_pred = test_pred * (max_value - min_value) + min_value
+# elif imerg_normalize_method == 'log_norm':
+#     test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
+
+
+# # save results to h5py file
+# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
+#     hf.create_dataset('precipitations', data=test_pred)
+#     hf.create_dataset('timestamps', data=test_meta)
+
+# print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
 
 
             
