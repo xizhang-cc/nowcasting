@@ -1,91 +1,93 @@
 import os
 import sys
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+sys.path.append(base_path)
+
+import torch
 import h5py
 import datetime
-
 import numpy as np  
 import pandas as pd
 from matplotlib import pyplot as plt
+import seaborn as sns
 
-import torch
+
+
+from servir.datasets.dataLoader_wa_imerg import load_wa_imerg_data_from_h5
 
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
-from servir.datasets.dataLoader_wa_imerg_IR import waImergIRDatasetTr_withMeta
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_imerg'
 
-add_naive = False
-metrics = ['mse', 'fss']
+add_naive = True
 
 
 st = '2020-08-25' 
 ed = '2020-09-01'
 
 # prediction file name
-pred_fnames = ['imerglog_gtIRthr_SepTrue_L2ch_predictions.h5',\
-                'imerglog_gtIRthr_SepTrue_L1ch_predictions.h5', \
-                'imerglog_gtIRthr_SepFalse_L2ch_predictions.h5', \
-                'imerglog_gtIRthr_SepFalse_L1ch_predictions.h5']
+# pred_fnames = ['imerglog_gtIRthr_SepTrue_L2ch_predictions.h5',\
+#                 'imerglog_gtIRthr_SepTrue_L1ch_predictions.h5', \
+#                 'imerglog_gtIRthr_SepFalse_L2ch_predictions.h5', \
+#                 'imerglog_gtIRthr_SepFalse_L1ch_predictions.h5']
 
-pred_labels = ['SepTrue_L2', 'SepTrue_L1', 'SepFalse_L2', 'SepFalse_L1']
+# pred_labels = ['SepTrue_L2', 'SepTrue_L1', 'SepFalse_L2', 'SepFalse_L1']
+
+pred_fnames = ['imerg01r_predictions.h5', 'imerggau_predictions.h5', 'imerglog_predictions.h5']
+pred_labels = [ '01r', 'gau', 'log']
 
 if add_naive:
-    pred_labels.append('naive') 
+    pred_fnames = ['imerg_naive.h5'] + pred_fnames
+    pred_labels = ['naive'] + pred_labels
 
+# load the predictions
+base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 
 in_seq_length = 12
 out_seq_length = 12 
 
-#  np.arange(0.5, 6.5, 0.5).tolist()
-results = pd.DataFrame(columns=['label', 'hours_ahead', 'mse', 'fss'])
+# true
+with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'), 'r') as hf:
+    true = hf['precipitations'][:]
 
-# true imerg data path
-dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
-data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
+results_list = []
+for pred_fname, pred_label in zip(pred_fnames, pred_labels):
 
-# Load the ground truth
-with h5py.File(data1_fname, 'r') as hf:
-    imgs = hf['precipitations'][:]
-    img_dts = hf['timestamps'][:]
-    img_dts = [x.decode('utf-8') for x in img_dts]
-
-img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
-
-gt_list = []
-# For each senario, match the input, true, and pred images.
-for i, output_dt_i in enumerate(output_dts):
-
-    # locate the index of output index for sample i
-    output_ind_i = np.array([img_dts.index(x) for x in output_dt_i])
-    # locate the ground truth images for sample i
-    true_imgs_i = imgs[output_ind_i, :, :]
-
-    gt_list.append(np.expand_dims(true_imgs_i, axis=0))
-
-gt_array = np.concatenate(gt_list, axis=0)
-
-
-
-
-
-# specify the results path
-results_path = os.path.join(base_path, 'results')
-
-if not os.path.exists(results_path):
-    os.mkdir(results_path)  
-
-
-for pred_fname in pred_fnames:
-    # Results base path for logging, working dirs, etc. 
-    base_results_path = os.path.join(base_path, f'results/{dataset_name}')
-    # Load the predictions
     with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
         pred_imgs = hf['precipitations'][:]
-        output_dts = hf['timestamps'][:]
-        output_dts = [x.decode('utf-8').split(',') for x in output_dts]
+
+    
+    # calculate mse
+    mse = np.mean((pred_imgs - true)**2, axis=(2,3))
+
+    c_list = []
+    for k in range(out_seq_length):
+        mse_k = mse[:, k]
+        temp_df = pd.DataFrame(data = mse_k, columns = ['value'])
+        temp_df['hours_ahead'] = (k+1)*0.5
+
+        c_list.append(temp_df)
+
+    c_df = pd.concat(c_list, ignore_index=True)
+    c_df['label'] = pred_label
+
+    results_list.append(c_df)   
+
+results_df = pd.concat(results_list, ignore_index=True)
+results_df['metric'] = 'mse'
+
+# box plot
+sns.boxplot(data=results_df, x='hours_ahead', y='value', hue='label')
+
+
+# ['label', 'hours_ahead', 'metric', 'value'] 
+
+#     fss = np.mean((np.sum(pred_imgs, axis=0) - np.sum(true, axis=0))**2) / (np.mean(np.sum(pred_imgs, axis=0)**2) + np.mean(np.sum(true, axis=0)**2))
+
+#     results = results.append({'label': pred_label, 'hours_ahead': out_seq_length, 'mse': mse, 'fss': fss}, ignore_index=True)
 
 
 

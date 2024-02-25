@@ -1,65 +1,68 @@
 import os
 import sys
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+sys.path.append(base_path)
+
 import h5py
 import datetime
-
 import numpy as np  
+import pandas as pd
+from matplotlib import pyplot as plt
+import torch
 
-base_path ='/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" 
+from servir.datasets.dataLoader_wa_imerg import load_wa_imerg_data_from_h5
+
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
-from servir.utils.config_utils import load_config
-from servir.visulizations.gif_creation import create_precipitation_gif
+
 
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 
-timestep_min = 30.0
+st = '2020-08-25' 
+ed = '2020-09-01'
 
-# Load configuration file
-config_path = os.path.join(base_path, f'configs/{dataset_name}', f'{method_name}.py') 
-config = load_config(config_path)
 
-# data path
-dataPath = os.path.join(base_path, 'data', dataset_name)
-data_fname = os.path.join(dataPath, 'wa_imerg.h5')
+in_seq_length = 12
+out_seq_length = 12 
 
-# Load the ground truth
-with h5py.File(data_fname, 'r') as hf:
-    imgs = hf['precipitations'][:]
-    img_dts = hf['timestamps'][:]
-    img_dts = [x.decode('utf-8') for x in img_dts]
+# true imerg data path
+dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
+data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
 
-img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
+imgs, img_dts, _, _, _, _ = load_wa_imerg_data_from_h5(data1_fname, start_date= st, end_date=ed)
 
-# Results base path for logging, working dirs, etc. 
+
+# get true and naive images
+trues = []
+naives = []
+meta = []
+for st_ind_i in range(imgs.shape[0]-in_seq_length-out_seq_length):
+
+    dts_i = img_dts[st_ind_i+in_seq_length:st_ind_i+in_seq_length+out_seq_length] 
+    # convert to list of str
+    dts_str_i = [x.strftime('%Y-%m-%d %H:%M:%S') for x in dts_i]
+    # For each sample, get the true images
+    true_imgs_i = imgs[st_ind_i+in_seq_length:st_ind_i+in_seq_length+out_seq_length] 
+
+    naive_imgs_i = np.stack([imgs[st_ind_i+in_seq_length-1] for _ in range(out_seq_length)], axis=0)
+
+
+    trues.append(true_imgs_i)
+    naives.append(naive_imgs_i)
+    meta.append(dts_str_i)
+
+trues_array = np.stack(trues, axis=0)
+naives_array = np.stack(naives, axis=0)
+
+# load the predictions
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
+# save results to h5py file
+with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'),'w') as hf:
+    hf.create_dataset('precipitations', data=trues_array)
+    hf.create_dataset('timestamps', data=meta)
 
-# Load the predictions
-with h5py.File(os.path.join(base_results_path, 'imerg_only_mse_predictions.h5'), 'r') as hf:
-    pred_imgs = hf['precipitations'][:]
-    output_dts_s = hf['timestamps'][:]
-    output_dts = [x.decode('utf-8').split(',') for x in output_dts_s]
-
-gt_list = []
-# For each senario, match the input, true, and pred images.
-for i, output_dt_i in enumerate(output_dts):
-
-    # locate the index of output index for sample i
-    output_ind_i = np.array([img_dts.index(x) for x in output_dt_i])
-    input_ind_i = output_ind_i - config['out_seq_length']  #[x - config['out_seq_length'] for x in output_ind_i]
-
-    out_dt_i = [img_datetimes[x] for x in output_ind_i]
-
-    # locate the ground truth images for sample i
-    true_imgs_i = imgs[output_ind_i, :, :]
-    # crop first and last column
-    true_imgs_i =  true_imgs_i[:, :, 1:-1]
-
-    gt_list.append(np.expand_dims(true_imgs_i, axis=0))
-
-gt_array = np.concatenate(gt_list, axis=0)
-
-
-
-
-
+# save results to h5py file
+with h5py.File(os.path.join(base_results_path, 'imerg_naive.h5'),'w') as hf:
+    hf.create_dataset('precipitations', data=naives_array)
+    hf.create_dataset('timestamps', data=meta)

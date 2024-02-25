@@ -13,26 +13,18 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_imerg'
 
 # prediction file name
-base_fname = 'imerglog_gtIRthr_SepTrue_L2ch'
-pred_fname = f'{base_fname}_predictions.h5'
+base_fname = 'imerglog'
+pred_fname = f'{base_fname}_predictions_raw.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 
-# true imerg data path
-dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
-data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
-
-# Load the ground truth
-with h5py.File(data1_fname, 'r') as hf:
-    imgs = hf['precipitations'][:]
-    img_dts = hf['timestamps'][:]
-    img_dts = [x.decode('utf-8') for x in img_dts]
-
-img_datetimes = np.array([datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in img_dts])
+# load true images
+with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'), 'r') as hf:
+    true = hf['precipitations'][:]
 
 withIR = False
 IR_norm = False
@@ -88,9 +80,12 @@ results_path = os.path.join(base_results_path, base_fname)
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
 
-losses = []
+
 # For each senario, match the input, true, and pred images.
 for i, output_dt_i in enumerate(output_dts):
+
+    output_dt_i = [datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in output_dt_i]
+
     # path to save the current sample images
     i_path = os.path.join(results_path, f'{i}')
     if not os.path.exists(i_path):
@@ -100,14 +95,6 @@ for i, output_dt_i in enumerate(output_dts):
         # os.mkdir(os.path.join(i_path, 'input'))
         if withIR == True:
             os.mkdir(os.path.join(i_path, 'IR'))
-
-    
-    # locate the index of output index for sample i
-    output_ind_i = np.array([img_dts.index(x) for x in output_dt_i])
-    input_ind_i = output_ind_i - out_seq_length  
-
-    in_dt_i = [img_datetimes[x] for x in input_ind_i]
-    out_dt_i = [img_datetimes[x] for x in output_ind_i]
 
     # if dataset_name == 'wa_imerg_IR':
     #     # locate IR images for sample i
@@ -126,21 +113,18 @@ for i, output_dt_i in enumerate(output_dts):
     #                         os.path.join(i_path, 'input'), title=f'{i} - input', gif_dur = 1000)
 
     # locate the ground truth images for sample i
-    true_imgs_i = imgs[output_ind_i, :, :]
-    create_precipitation_plots(true_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata,\
+    true_imgs_i = true[i]
+    create_precipitation_plots(true_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata,\
                             os.path.join(i_path, 'true'), title=f'{i} - true')
     
     # locate the predicted images for sample i
     pred_imgs_i = pred_imgs[i, :, :, :]
-    create_precipitation_plots(pred_imgs_i, out_dt_i, timestep_min, wa_imerg_metadata, \
+    create_precipitation_plots(pred_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata, \
                             os.path.join(i_path, 'pred'), f'{i} - pred')
 
-    mse_i = np.mean((true_imgs_i - pred_imgs_i)**2) 
-    losses.append(mse_i)
-    print(mse_i)
 
 
-print(np.mean(losses))
+
 
     
 
