@@ -19,19 +19,16 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-normalize_method = '01range'
-channel_sep = True
-relu_last = True
-loss='CFSSS'
+normalize_method = 'log_norm'
 
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
 
 # file names
-base_fname = 'imerg_only_cfsss_log'
+base_fname = f'imerg{normalize_method[:3]}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
-pred_fname = f'{base_fname}_predictions.h5'
+pred_fname = f'{base_fname}_predictions_raw.h5'
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -43,10 +40,6 @@ else:
     print(f'config file NOT found! config_path = {config_path}')
 
 config = load_config(config_path)
-config['loss'] = loss
-config['channel_sep'] = channel_sep
-config['relu_last'] = relu_last 
-
 print_log(f'config file at {config_path} logged')
 
 # test run on local machine
@@ -89,7 +82,6 @@ dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_ba
 # update config
 config['steps_per_epoch'] = 10
 
-
 # setup distribution
 config['rank'], config['world_size'] = get_dist_info()
 ##==================Setup Method=====================##
@@ -115,26 +107,34 @@ else:
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
 
-with h5py.File(fname, 'r') as hf:
-    mean = hf['mean'][()]   
-    std = hf['std'][()]
-    max_value = hf['max'][()]
-    min_value = hf['min'][()]
-    
-# imerg convert to mm/hr (need to be updated)
-if normalize_method == 'gaussian':
-    test_pred = test_pred * std + mean
-elif normalize_method == '01range':
-    test_pred = test_pred * (max_value - min_value) + min_value
-else:
-    test_pred = test_pred 
-
-
 # save results to h5py file
 with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
     hf.create_dataset('precipitations', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
-print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+# with h5py.File(fname, 'r') as hf:
+#     mean = hf['mean'][()]   
+#     std = hf['std'][()]
+#     max_value = hf['max'][()]
+#     min_value = hf['min'][()]
+    
+
+# threshold=0.1
+
+# # imerg convert to mm/hr (need to be updated)
+# if normalize_method == 'gaussian':
+#     test_pred = test_pred * std + mean
+# elif normalize_method == '01range':
+#     test_pred = test_pred * (max_value - min_value) + min_value
+# elif normalize_method == 'log_norm':
+#     test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
+
+
+# # save results to h5py file
+# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
+#     hf.create_dataset('precipitations', data=test_pred)
+#     hf.create_dataset('timestamps', data=test_meta)
+
+# print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
 
             

@@ -12,4 +12,4 @@
 #SBATCH --output=/home1/zhang2012/nowcasting/runs/job.%J.out
 
 export CUDA_VISIBLE_DEVICES=1
-python /home1/zhang2012/nowcasting/examples/predict_2datasets.py
+python /home1/zhang2012/nowcasting/examples/predict_1dataset.py
