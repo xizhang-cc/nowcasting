@@ -24,7 +24,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-normalize_method = 'log_norm'
+normalize_method = '01range'
 
 train_st = '2020-06-01' 
 train_ed = '2020-08-18' 
@@ -38,6 +38,8 @@ base_fname = f'imerg{normalize_method[:3]}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
+
+print(f'base file - {base_fname}')
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -158,6 +160,14 @@ else:
 
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+
+# save results to h5py file
+with h5py.File(os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5'),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
+    hf.create_dataset('timestamps', data=test_meta)
+
+logging.info(f"PREDICTION DONE! Raw Prediction file saved at {os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5')}")
+
 
 with h5py.File(fname, 'r') as hf:
     mean = hf['mean'][()]   
