@@ -13,17 +13,18 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
+dataset_name = 'wa_imerg_IR'
 
 # prediction file name
-base_fname = 'imerglog'
+base_fname = 'imerglog_gtIRthr_SepTrue_L2ch'
 pred_fname = f'{base_fname}_predictions_raw.h5'
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 
 # load true images
-with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'), 'r') as hf:
+imerg_true_path = os.path.join(base_path, 'results', 'wa_imerg')
+with h5py.File(os.path.join(imerg_true_path, 'imerg_true.h5'), 'r') as hf:
     true = hf['precipitations'][:]
 
 withIR = False
