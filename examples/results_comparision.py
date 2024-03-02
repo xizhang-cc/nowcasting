@@ -20,8 +20,6 @@ sys.path.append(base_path)
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
-
 add_naive = True
 
 
@@ -36,21 +34,24 @@ ed = '2020-09-01'
 
 # pred_labels = ['SepTrue_L2', 'SepTrue_L1', 'SepFalse_L2', 'SepFalse_L1']
 
-pred_fnames = ['imerg01r_predictions.h5', 'imerggau_predictions.h5', 'imerglog_predictions.h5']
-pred_labels = [ '01r', 'gau', 'log']
+pred_fnames = ['wa_imerg/imerg01r_predictions.h5',\
+            'wa_imerg_IR/imerg01r_gtIR01r_SepTrue_L1ch_predictions.h5',\
+            'wa_imerg_IR/imerg01r_gtIR01r_SepTrue_L2ch_predictions.h5', \
+            'wa_imerg_IR/imerg01r_gtIR01r_SepFalse_L2ch_predictions.h5']
+
+pred_labels = [ 'imerg', 'withIR_TL1', 'withIR_TL2', 'withIR_FL2']
 
 if add_naive:
-    pred_fnames = ['imerg_naive.h5'] + pred_fnames
+    pred_fnames = ['wa_imerg/imerg_naive.h5'] + pred_fnames
     pred_labels = ['naive'] + pred_labels
 
-# load the predictions
-base_results_path = os.path.join(base_path, f'results/{dataset_name}')
 
 in_seq_length = 12
 out_seq_length = 12 
 
+base_results_path = os.path.join(base_path, 'results')
 # true
-with h5py.File(os.path.join(base_results_path, 'imerg_true.h5'), 'r') as hf:
+with h5py.File(os.path.join(base_results_path, 'wa_imerg/imerg_true.h5'), 'r') as hf:
     true = hf['precipitations'][:]
 
 results_list = []
@@ -59,7 +60,7 @@ for pred_fname, pred_label in zip(pred_fnames, pred_labels):
     with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
         pred_imgs = hf['precipitations'][:]
 
-    
+
     # calculate mse
     mse = np.mean((pred_imgs - true)**2, axis=(2,3))
 

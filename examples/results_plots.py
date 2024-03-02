@@ -13,14 +13,21 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_imerg'
 
 # prediction file name
-base_fname = 'imerglog_gtIRthr_SepTrue_L2ch'
-pred_fname = f'{base_fname}_predictions_raw.h5'
-
+base_fname = 'imerg01r'#'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
+pred_fname = f'{base_fname}_predictions.h5'
+ 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
+# Load the predictions
+with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
+    pred_imgs = hf['precipitations'][:]
+    output_dts = hf['timestamps'][:]
+    output_dts = [x.decode('utf-8').split(',') for x in output_dts]
+
+pred_imgs[pred_imgs < 0] = 0
 
 # load true images
 imerg_true_path = os.path.join(base_path, 'results', 'wa_imerg')
@@ -70,11 +77,7 @@ wa_imerg_metadata = {'accutime': 30.0,
 timestep_min = 30.0
 
 
-# Load the predictions
-with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
-    pred_imgs = hf['precipitations'][:]
-    output_dts = hf['timestamps'][:]
-    output_dts = [x.decode('utf-8').split(',') for x in output_dts]
+
 
 # specify the gif output path
 results_path = os.path.join(base_results_path, base_fname)

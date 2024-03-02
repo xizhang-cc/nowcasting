@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import h5py 
@@ -19,7 +19,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 data_fname = 'wa_imerg.h5'
 
-normalize_method = 'log_norm'
+normalize_method = '01range'
 
 test_st = '2020-08-25' 
 test_ed = '2020-09-01'
@@ -28,7 +28,7 @@ test_ed = '2020-09-01'
 base_fname = f'imerg{normalize_method[:3]}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
-pred_fname = f'{base_fname}_predictions_raw.h5'
+pred_fname = f'{base_fname}_predictions.h5'
 
 ##=============Read In Configurations================##
 # Load configuration file
@@ -42,20 +42,20 @@ else:
 config = load_config(config_path)
 print_log(f'config file at {config_path} logged')
 
-# test run on local machine
-if base_path == '/home/cc/projects/nowcasting':
-    model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-    checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-    pred_fname = pred_fname.split('.')[0] + '_local.h5'
+# # test run on local machine
+# if base_path == '/home/cc/projects/nowcasting':
+#     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
+#     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
+#     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    test_st = '2020-08-30'
-    test_ed = '2020-09-01'
+#     test_st = '2020-08-30'
+#     test_ed = '2020-09-01'
 
-    config['batch_size'] = 2
-    config['val_batch_size'] = 2
-    config['num_hidden'] = '32, 32' 
-    config['max_epoch'] = 10
-    config['early_stop_epoch'] = 2 # test run on local machine
+#     config['batch_size'] = 2
+#     config['val_batch_size'] = 2
+#     config['num_hidden'] = '32, 32' 
+#     config['max_epoch'] = 10
+#     config['early_stop_epoch'] = 2 # test run on local machine
 
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
