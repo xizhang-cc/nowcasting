@@ -20,8 +20,8 @@ from servir.utils.main_utils import print_log
 from servir.methods.ConvLSTM import ConvLSTM
 
 
-channel_sep = True
-loss_channels = 2
+channel_sep = False
+loss_channels = 1
 imerg_normalize_method = '01range'
 IR_normalize_method = '01range'
 relu_last = False

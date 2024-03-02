@@ -37,8 +37,8 @@ loss_channels = 2
 relu_last = False
 
 
-imerg_normalize_method = 'log_norm'
-IR_normalize_method = 'thresholded_scale'
+imerg_normalize_method = '01range'
+IR_normalize_method = '01range'
 
 # file names
 base_fname = f'imerg{imerg_normalize_method[:3]}_gtIR{IR_normalize_method[:3]}_Sep{channel_sep}_L{loss_channels}ch'
