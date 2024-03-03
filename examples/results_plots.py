@@ -13,7 +13,7 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
+dataset_name = 'wa_IR'
 
 # prediction file name
 base_fname = 'imerg01r'#'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'

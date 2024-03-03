@@ -11,7 +11,8 @@ import numpy as np
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
+# from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
+from servir.datasets.dataLoader_wa_IR import IRDataset, IRDataset_withMeta
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_config_info, logging_method_info
 from servir.utils.main_utils import print_log
@@ -21,8 +22,12 @@ from servir.methods.ConvLSTM import ConvLSTM
 
 #================Specification=========================#
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg'
-data_fname = 'wa_imerg.h5'
+dataset_name = 'wa_IR'
+data_fname = 'wa_IR.h5'
+
+dataLoaderFunc = IRDataset
+dataLoaderFuncMeta = IRDataset_withMeta
+
 
 normalize_method = '01range'
 
@@ -34,7 +39,7 @@ test_st = '2020-08-25'
 test_ed = '2020-09-01'
 
 # file names
-base_fname = f'imerg{normalize_method[:3]}'
+base_fname = f'{dataset_name}_{normalize_method[:3]}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -56,6 +61,8 @@ print_log(f'config file at {config_path} logged')
 
 # test run on local machine
 if base_path == '/home/cc/projects/nowcasting':
+    data_fname = 'wa_IR_08.h5'
+
     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
     pred_fname = pred_fname.split('.')[0] + '_local.h5'
@@ -92,12 +99,12 @@ dataPath = os.path.join(base_path, 'data', dataset_name)
 fname = os.path.join(dataPath, data_fname)
 
 
-trainSet = waImergDataset(fname, start_date = train_st, end_date = train_ed,\
+trainSet = dataLoaderFunc(fname, start_date = train_st, end_date = train_ed,\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'],\
                         normalize_method=normalize_method)
 
 
-valSet = waImergDataset(fname, start_date = val_st, end_date = val_ed,\
+valSet = dataLoaderFunc(fname, start_date = val_st, end_date = val_ed,\
                         in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
                         normalize_method=normalize_method)
 
@@ -115,7 +122,7 @@ config['steps_per_epoch'] = len(dataloader_train)
 
 if (config['use_gpu']) and torch.cuda.is_available(): 
     device = torch.device('cuda:0')
-    gpu = torch.cuda.get_device_properties(device)
+    # gpu = torch.cuda.get_device_properties(device)
 else:
     device = torch.device('cpu')
 
@@ -140,12 +147,12 @@ print_log(f'model parameters saved at {para_dict_fpath}')
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
 logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
-train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
+# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 
 print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
 #======================================
-testSet = waImergDataset_withMeta(fname, start_date = test_st, end_date = test_ed,\
+testSet = dataLoaderFuncMeta(fname, start_date = test_st, end_date = test_ed,\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
                                 normalize_method=normalize_method)
 

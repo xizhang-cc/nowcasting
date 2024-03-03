@@ -442,7 +442,8 @@ class ConvLSTM():
                 self.clip_grads(self.model.parameters())
                 self.model_optim.step()
 
-            torch.cuda.synchronize()
+            if self.device.type == 'cuda':
+                torch.cuda.synchronize()
             num_updates += 1
 
             if self.dist:

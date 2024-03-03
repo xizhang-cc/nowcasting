@@ -24,7 +24,7 @@ data1_fname = 'wa_imerg.h5'
 data2_fname = 'wa_IR.h5'
 
 # new data name
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_IR'
 
 st = '2020-08-25' 
 ed = '2020-09-01'

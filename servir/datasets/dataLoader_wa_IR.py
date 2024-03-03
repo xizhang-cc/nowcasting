@@ -45,10 +45,16 @@ def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
 
     return imgs, times, mean, std, max, min
 
+def IR_neg_scale(data, replacevalue=-2.0, threshold=240):
+    temp = np.where(data<=threshold, data, np.nan)
+    f_max = np.nanmax(temp)
+    f_min = np.nanmin(temp)
 
+    new = np.where(data<=threshold, -(2*(data-f_min)/(f_max-f_min)-1), replacevalue)
+    return new
 
 class IRDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length ,normalize=True):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length , normalize_method='gaussian'):
 
         self.imgs, self.datetimes, self.mean, self.std, self.max, self.min = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
@@ -56,13 +62,12 @@ class IRDataset(Dataset):
         self.out_seq_length = out_seq_length    
 
         # normalize the data
-        if normalize:
+        if normalize_method=='gaussian':
             self.imgs = (self.imgs - self.mean)/self.std
-        else:
-            self.imgs =  self.imgs / self.max
-
-        # crop images
-        self.imgs = self.imgs[:, :, 1:-1]
+        elif normalize_method=='01range':
+            self.imgs =  1 -  (self.imgs - self.min) / (self.max - self.min)
+        elif normalize_method=='thresholded_scale':
+            self.imgs = IR_neg_scale(self.IRs)
 
         all_str_ind = self.datetimes[: -(self.in_seq_length+self.out_seq_length)]
         ind = [x.minute in [0, 30] for x in all_str_ind]
@@ -98,21 +103,20 @@ class IRDataset(Dataset):
 
 
 class IRDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length ,normalize=True):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length , normalize_method='gaussian'):
 
-        self.imgs, self.datetimes, self.mean, self.std, self.max = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.imgs, self.datetimes, self.mean, self.std, self.max, self.min = load_IR_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
         # normalize the data
-        if normalize:
+        if normalize_method=='gaussian':
             self.imgs = (self.imgs - self.mean)/self.std
-        else:
-            self.imgs =  self.imgs / self.max
-
-        # crop images
-        self.imgs = self.imgs[:, :, 1:-1]
+        elif normalize_method=='01range':
+            self.imgs =  1 -  (self.imgs - self.min) / (self.max - self.min)
+        elif normalize_method=='thresholded_scale':
+            self.imgs = IR_neg_scale(self.IRs)
 
         all_str_ind = self.datetimes[: -(self.in_seq_length+self.out_seq_length)]
         ind = [x.minute in [0, 30] for x in all_str_ind]
@@ -156,6 +160,9 @@ class IRDataset_withMeta(Dataset):
         Y_dt_str = ','.join(Y_str)
 
         return (X, Y, X_dt_str, Y_dt_str)
+    
+
+
 
 
 
