@@ -20,7 +20,7 @@ output_h5_fname = sys.argv[6]
 
 # config_path = '/home/cc/projects/nowcasting/temp/ConvLSTM_Config.py'
 # para_dict_fpath = '/home/cc/projects/nowcasting/temp/imerg_only_mse_params.pth'
-# use_gpu = True
+# use_gpu = False
 
 # input_h5_fname = '/home/cc/projects/nowcasting/temp/input_imerg.h5'
 # output_h5_fname = '/home/cc/projects/nowcasting/temp/output_imerg.h5'
@@ -45,12 +45,18 @@ else:
 
 config['device'] = device
 config['rank'], config['world_size'] = get_dist_info()
+config['relu_last'] = True
 
 
 # setup method
 method = ConvLSTM(config)
 # Loads best model’s parameter dictionary 
-method.model.load_state_dict(torch.load(para_dict_fpath))
+if device.type == 'cpu':
+    method.model.load_state_dict(torch.load(para_dict_fpath, map_location=torch.device('cpu')))
+else:
+    method.model.load_state_dict(torch.load(para_dict_fpath))
+
+# method.model.load_state_dict(torch.load(para_dict_fpath))
 
 # Load the predictions
 with h5py.File(input_h5_fname, 'r') as hf:
