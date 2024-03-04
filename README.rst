@@ -11,7 +11,6 @@ Pipeline
 ================
 To share an existing environment.yml file:
 1. Activate the environment to export
-
     $ conda activate myenv
 2. Export your active environment to a new file
 
