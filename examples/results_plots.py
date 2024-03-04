@@ -6,18 +6,18 @@ import datetime
 import numpy as np  
 from matplotlib import pyplot as plt
 
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 from servir.visulizations.gif_creation import create_precipitation_plots, create_precipitation_gif
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_IR'
+dataset_name = 'wa_imerg_IR'
 
 # prediction file name
 base_fname = 'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
-pred_fname = f'{base_fname}_predictions.h5'
+pred_fname = f'{base_fname}_predictions_raw.h5'
  
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -27,14 +27,22 @@ with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
     output_dts = hf['timestamps'][:]
     output_dts = [x.decode('utf-8').split(',') for x in output_dts]
 
-pred_imgs[pred_imgs < 0] = 0
+# get the IR channel
+test_pred = pred_imgs[:, :, 1:2, :, :]
+test_pred = np.squeeze(test_pred, axis=2)
+
+maxv = 336.4427574092979
+minv = 108.1460311660434
+
+# convert to original scale
+test_pred_ori = (1-test_pred)*(maxv-minv) + minv
 
 # load true images
 imerg_true_path = os.path.join(base_path, 'results', 'wa_imerg')
 with h5py.File(os.path.join(imerg_true_path, 'imerg_true.h5'), 'r') as hf:
     true = hf['precipitations'][:]
 
-withIR = False
+withIR = True
 IR_norm = False
 
 
@@ -80,7 +88,7 @@ timestep_min = 30.0
 
 
 # specify the gif output path
-results_path = os.path.join(base_results_path, base_fname)
+results_path = os.path.join(base_results_path, base_fname+'_IR')
 if not os.path.exists(results_path):
     os.mkdir(results_path)  
 
@@ -94,21 +102,30 @@ for i, output_dt_i in enumerate(output_dts):
     i_path = os.path.join(results_path, f'{i}')
     if not os.path.exists(i_path):
         os.mkdir(i_path)
-        os.mkdir(os.path.join(i_path, 'true'))
+        # os.mkdir(os.path.join(i_path, 'true'))
         os.mkdir(os.path.join(i_path, 'pred'))
         # os.mkdir(os.path.join(i_path, 'input'))
         if withIR == True:
             os.mkdir(os.path.join(i_path, 'IR'))
 
-    # if dataset_name == 'wa_imerg_IR':
-    #     # locate IR images for sample i
-    #     output_ind_IR_i = [IR_times.index(x) for x in out_dt_i]
-    #     output_IRs_i = IRs[output_ind_IR_i, :, :]
-    #     for k in range(output_IRs_i.shape[0]):
+    if dataset_name == 'wa_imerg_IR':
+        # locate IR images for sample i
+        output_ind_IR_i = [IR_times.index(x) for x in output_dt_i]
+        output_IRs_i = IRs[output_ind_IR_i, :, :]
+        for k in range(output_IRs_i.shape[0]):
 
-    #         tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
-    #         plt.imshow(output_IRs_i[k], cmap='gray')
-    #         plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
+            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
+            plt.imshow(output_IRs_i[k], cmap='gray')
+            plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
+
+    # locate the predicted images for sample i
+    pred_imgs_i = test_pred_ori[i, :, :, :]
+
+    for k in range(pred_imgs_i.shape[0]):
+
+        plt.imshow(pred_imgs_i[k], cmap='gray')
+        plt.savefig(os.path.join(i_path, 'pred', f'{output_dt_i[k]}.png'))
+
 
 
     # # locate the input images for sample i
@@ -116,15 +133,15 @@ for i, output_dt_i in enumerate(output_dts):
     # create_precipitation_gif(input_imgs_i, in_dt_i, timestep_min, wa_imerg_metadata, 
     #                         os.path.join(i_path, 'input'), title=f'{i} - input', gif_dur = 1000)
 
-    # locate the ground truth images for sample i
-    true_imgs_i = true[i]
-    create_precipitation_plots(true_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata,\
-                            os.path.join(i_path, 'true'), title=f'{i} - true')
+    # # locate the ground truth images for sample i
+    # true_imgs_i = true[i]
+    # create_precipitation_plots(true_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata,\
+    #                         os.path.join(i_path, 'true'), title=f'{i} - true')
     
-    # locate the predicted images for sample i
-    pred_imgs_i = pred_imgs[i, :, :, :]
-    create_precipitation_plots(pred_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata, \
-                            os.path.join(i_path, 'pred'), f'{i} - pred')
+    # # locate the predicted images for sample i
+    # pred_imgs_i = pred_imgs[i, :, :, :]
+    # create_precipitation_plots(pred_imgs_i, output_dt_i, timestep_min, wa_imerg_metadata, \
+    #                         os.path.join(i_path, 'pred'), f'{i} - pred')
 
 
 
