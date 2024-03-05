@@ -45,7 +45,7 @@ base_fname = f'imerg{imerg_normalize_method[:3]}_gtIR{IR_normalize_method[:3]}_S
 
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
-pred_fname = f'{base_fname}_predictions.h5'
+pred_fname = f'{base_fname}_predictions_IR.h5'
 pred_fname_raw = f'{base_fname}_predictions_raw.h5'
 
 # Results base path for logging, working dirs, etc. 
@@ -81,7 +81,7 @@ if base_path == '/home/cc/projects/nowcasting':
     test_st = '2020-08-30'
     test_ed = '2020-09-01'
 
-    data2_fname = 'wa_IR.h5'
+    data2_fname = 'wa_IR_08.h5'
 
     config['batch_size'] = 2
     config['val_batch_size'] = 2
@@ -134,34 +134,36 @@ with h5py.File(os.path.join(base_results_path, pred_fname_raw),'w') as hf:
     hf.create_dataset('precipitations', data=test_pred)
     hf.create_dataset('timestamps', data=test_meta)
 
+print(f"PREDICTION DONE! Raw Prediction file saved at {os.path.join(base_results_path, pred_fname_raw)}")
 
-# if config['channels'] > 1:
-#     test_pred = test_pred[:, :, 0:1, :, :]
-#     test_pred = np.squeeze(test_pred, axis=2)
 
-# with h5py.File(f1name, 'r') as hf:
-#     mean = hf['mean'][()]   
-#     std = hf['std'][()]
-#     max_value = hf['max'][()]
-#     min_value = hf['min'][()]
+if config['channels'] > 1:
+    test_pred = test_pred[:, :, 1:2, :, :]
+    test_pred = np.squeeze(test_pred, axis=2)
+
+with h5py.File(f1name, 'r') as hf:
+    mean = hf['mean'][()]   
+    std = hf['std'][()]
+    max_value = hf['max'][()]
+    min_value = hf['min'][()]
     
-# threshold=0.1
+threshold=0.1
 
-# # imerg convert to mm/hr (need to be updated)
-# if imerg_normalize_method == 'gaussian':
-#     test_pred = test_pred * std + mean
-# elif imerg_normalize_method == '01range':
-#     test_pred = test_pred * (max_value - min_value) + min_value
-# elif imerg_normalize_method == 'log_norm':
-#     test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
+# imerg convert to mm/hr (need to be updated)
+if imerg_normalize_method == 'gaussian':
+    test_pred = test_pred * std + mean
+elif imerg_normalize_method == '01range':
+    test_pred = test_pred * (max_value - min_value) + min_value
+elif imerg_normalize_method == 'log_norm':
+    test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
 
 
-# # save results to h5py file
-# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
-#     hf.create_dataset('precipitations', data=test_pred)
-#     hf.create_dataset('timestamps', data=test_meta)
+# save results to h5py file
+with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
+    hf.create_dataset('timestamps', data=test_meta)
 
-# print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
 
 
             
