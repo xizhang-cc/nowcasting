@@ -6,7 +6,7 @@ import datetime
 import numpy as np  
 from matplotlib import pyplot as plt
 
-base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 
 from servir.visulizations.gif_creation import create_precipitation_plots, create_precipitation_gif
@@ -16,7 +16,7 @@ method_name = 'ConvLSTM'
 dataset_name = 'wa_IR'
 
 # prediction file name
-base_fname = 'imerg01r'#'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
+base_fname = 'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
 pred_fname = f'{base_fname}_predictions.h5'
  
 # Results base path for logging, working dirs, etc. 
