@@ -147,9 +147,9 @@ print_log(f'model parameters saved at {para_dict_fpath}')
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
 logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
-train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
-
-print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
+# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
+# 
+# print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
 #======================================
 testSet = dataLoaderFuncMeta(fname, start_date = test_st, end_date = test_ed,\
@@ -168,12 +168,12 @@ else:
 
 test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
 
-# save results to h5py file
-with h5py.File(os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5'),'w') as hf:
-    hf.create_dataset('precipitations', data=test_pred)
-    hf.create_dataset('timestamps', data=test_meta)
+# # save results to h5py file
+# with h5py.File(os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5'),'w') as hf:
+#     hf.create_dataset('precipitations', data=test_pred)
+#     hf.create_dataset('timestamps', data=test_meta)
 
-logging.info(f"PREDICTION DONE! Raw Prediction file saved at {os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5')}")
+# logging.info(f"PREDICTION DONE! Raw Prediction file saved at {os.path.join(base_results_path, pred_fname.split('.')[0]+'_raw.h5')}")
 
 
 with h5py.File(fname, 'r') as hf:
@@ -189,7 +189,10 @@ threshold=0.1
 if normalize_method == 'gaussian':
     test_pred = test_pred * std + mean
 elif normalize_method == '01range':
-    test_pred = test_pred * (max_value - min_value) + min_value
+    if dataset_name == 'wa_IR':
+        test_pred = (1-test_pred) * (max_value - min_value) + min_value
+    else:
+        test_pred = test_pred * (max_value - min_value) + min_value
 elif normalize_method == 'log_norm':
     test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
 
