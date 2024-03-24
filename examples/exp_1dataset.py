@@ -148,9 +148,9 @@ print_log(f'model parameters saved at {para_dict_fpath}')
 checkpoint_fpath = os.path.join(base_results_path, checkpoint_fname)
 logging.info(f'model training checkpoint saved at {checkpoint_fpath}')
 
-# train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
+train(dataloader_train, dataloader_val, method, config, para_dict_fpath, checkpoint_fpath)    
 # 
-# print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
+print(f"TRAINING DONE! Best model parameters saved at {para_dict_fpath}")
 
 #======================================
 testSet = dataLoaderFuncMeta(fname, start_date = test_st, end_date = test_ed,\
