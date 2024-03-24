@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 
 
 # load data from h5 file
-def load_wa_imerg_data_from_h5(fPath, start_date, end_date):
+def load_imerg_data_from_h5(fPath, start_date, end_date):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -44,10 +44,10 @@ def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
     new = np.where(data < threshold, zerovalue, np.log10(data))
     return new
 
-class waImergDataset(Dataset):
+class imergDataset(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
 
-        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
 
         self.in_seq_length = in_seq_length
@@ -90,10 +90,10 @@ class waImergDataset(Dataset):
         return X, Y
 
 
-class waImergDataset_withMeta(Dataset):
+class imergDataset_withMeta(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
 
-        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_wa_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
+        self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
 
         self.in_seq_length = in_seq_length
@@ -154,16 +154,16 @@ class waImergDataset_withMeta(Dataset):
 if __name__=='__main__':
     
 
-    dataPath = "/home/cc/projects/nowcasting/data/wa_imerg/"
+    dataPath = "/home/cc/projects/nowcasting/data/ghana_imerg/"
 
-    # start_date = '2020-07-01'
-    # end_date = '2020-08-01' 
-    # fPath = dataPath+'wa_imerg.h5'
+    start_date = '2011-10-01'
+    end_date = '2018-11-01' 
+    fPath = dataPath+'ghana_imerg_2011_2020_oct.h5'
 
-    # a = waImergDataset(fPath, start_date, end_date, 12, 12)
-    # a.__getitem__(0)
+    a = imergDataset(fPath, start_date, end_date, 12, 12)
+    a.__getitem__(0)
 
-    # print('stop for debugging')
+    print('stop for debugging')
 
 
 

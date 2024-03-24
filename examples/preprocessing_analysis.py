@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from pysteps.utils import transformation
 from pysteps.visualization import plot_precip_field
 
-from servir.datasets.dataLoader_wa_imerg import load_wa_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg import load_imerg_data_from_h5
 from servir.datasets.dataLoader_wa_IR import load_IR_data_from_h5    
 
 #================Specification=========================#
@@ -43,7 +43,7 @@ if base_path == '/home/cc/projects/nowcasting':
 f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
 f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
-imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_wa_imerg_data_from_h5(f1name,start_date= st, end_date=ed)
+imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_imerg_data_from_h5(f1name,start_date= st, end_date=ed)
 IRs, IR_dts, IR_mean, IR_std, IR_max, IR_min = load_IR_data_from_h5(f2name, start_date= st, end_date=ed)
 
 # get the corresponding IRs for each imerg

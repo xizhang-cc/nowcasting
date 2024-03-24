@@ -8,7 +8,7 @@ import torch
 
 
 from servir.core.distribution import get_dist_info
-from servir.datasets.dataLoader_wa_imerg import waImergDataset_withMeta
+from servir.datasets.dataLoader_imerg import imergDataset_withMeta
 from servir.utils.config_utils import load_config
 from servir.methods.ConvLSTM import ConvLSTM
 from servir.utils.main_utils import print_log
@@ -72,7 +72,7 @@ fname = os.path.join(dataPath, data_fname)
 
 
 # testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = waImergDataset_withMeta(fname, start_date = test_st, end_date = test_ed,\
+testSet = imergDataset_withMeta(fname, start_date = test_st, end_date = test_ed,\
                                 in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
                                 normalize_method=normalize_method)
 

@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import torch
 
-from servir.datasets.dataLoader_wa_imerg import load_wa_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg import load_imerg_data_from_h5
 
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
@@ -30,7 +30,7 @@ out_seq_length = 12
 dataPath1 = os.path.join(base_path, 'data', 'wa_imerg')
 data1_fname = os.path.join(dataPath1, 'wa_imerg.h5')
 
-imgs, img_dts, _, _, _, _ = load_wa_imerg_data_from_h5(data1_fname, start_date= st, end_date=ed)
+imgs, img_dts, _, _, _, _ = load_imerg_data_from_h5(data1_fname, start_date= st, end_date=ed)
 
 
 # get true and naive images

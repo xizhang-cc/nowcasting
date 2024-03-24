@@ -1,7 +1,7 @@
 
 import os
 import sys
-base_path ="/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
+base_path ='/home/cc/projects/nowcasting' #
 sys.path.append(base_path)
 import glob
 import datetime
@@ -11,10 +11,14 @@ import h5py
 import numpy as np
 import pandas as pd
 
+import osgeo.gdal as gdal
+from osgeo.gdalconst import GA_ReadOnly
+from matplotlib import pyplot as plt
 
 
 
-def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
+
+def tiff2h5py(fPath, fname='wa_imerg.h5'):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -24,14 +28,12 @@ def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
         precipitation (np.array): np.array of precipitations (not sorted by time)
         times (np.array): np.array of date times that match 1:q with precipitation
     """
-    precipitation = []
+    precipitations = []
     times = []
-    files = glob.glob(os.path.join(fPath, 'IMERG_WA', 'IMERG_WA', 'imerg.2020*.tif'))
+    files = glob.glob(os.path.join(fPath, 'IMERG_WA', 'IMERG_WA', 'imerg*.tif'))
 
     if len(files)>0:
         for file in files:
-            tiff_data = gdal.Open(file, GA_ReadOnly)
-            imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
             date_str = file.split("/")[-1].split('.')[1]
             year = date_str[0:4]
             month = date_str[4:6]
@@ -40,13 +42,26 @@ def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
             minute = date_str[10:12]
             dt = datetime.datetime.strptime(year + '-'+ month + '-' + day + ' '+ hour + ':' + minute, '%Y-%m-%d %H:%M')
 
-            if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
+            years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020']
+            if year in years and month == '10':
+                tiff_data = gdal.Open(file, GA_ReadOnly)
+                imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+                # get ghana region (64 by 64)
+                ghana_region = imageArray[219:283, 174:238]
+
                 times.append(dt)
-                precipitation.append(imageArray)
+                precipitations.append(ghana_region)
+
+            # if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
+                # tiff_data = gdal.Open(file, GA_ReadOnly)
+                # imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+                # times.append(dt)
+                # precipitations.append(imageArray)
 
         times = np.array(times)
         # images in tensor [T, H, W]
-        precipitation = np.transpose(np.dstack(precipitation), (2, 0, 1))
+        precipitation = np.transpose(np.dstack(precipitations), (2, 0, 1))
 
         sorted_index_array = np.argsort(times)
         sorted_timestamps = times[sorted_index_array]
@@ -56,18 +71,19 @@ def tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5'):
         sorted_precipitation = None
         sorted_timestamps = None
 
-    # find the mean and std and save into h5py file
-    precipitation_mean = np.mean(sorted_precipitation)
-    precipitation_std = np.std(sorted_precipitation)
 
     sorted_timestamps_dt = [x.strftime('%Y-%m-%d %H:%M:%S') for x in sorted_timestamps]
     with h5py.File(os.path.join(fPath, fname), 'w') as hf:
         hf.create_dataset('precipitations', data=sorted_precipitation)
         hf.create_dataset('timestamps', data=sorted_timestamps_dt)
-        hf.create_dataset('mean', data=precipitation_mean)
-        hf.create_dataset('std', data=precipitation_std)
+        hf.create_dataset('mean', data=np.mean(sorted_precipitation))
+        hf.create_dataset('std', data=np.std(sorted_precipitation))
+        hf.create_dataset('max', data=sorted_precipitation.max())
+        hf.create_dataset('min', data=sorted_precipitation.min())
 
-    return sorted_precipitation, sorted_timestamps, precipitation_mean, precipitation_std
+
+    return sorted_precipitation, sorted_timestamps
+
 
 
 
@@ -132,35 +148,9 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    fPath = os.path.join(base_path, 'data', 'wa_imerg')
+    fPath = os.path.join(base_path, 'data')
     # start_date = '2020-06-01'
     # end_date = '2020-09-01'
 
-    # tiff2h5py(fPath, start_date, end_date, fname='wa_imerg.h5')
+    tiff2h5py(fPath, fname='ghana_imerg_2011_2020_Oct.h5')
 
-    with h5py.File(os.path.join(fPath, 'wa_imerg_temp.h5'), 'r') as hf:
-        precipitation = hf['precipitations'][:]
-        times = hf['timestamps'][:]
-        # times = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in times])
-        mean = precipitation.mean()
-        std = precipitation.std() 
-        max = precipitation.max()
-        min = precipitation.min()
-
-    # # crop images
-    precipitation = precipitation[:, :, 1:-1]
-
-    with h5py.File(os.path.join(fPath, 'wa_imerg.h5'), 'w') as hf:
-        hf.create_dataset('precipitations', data=precipitation)
-        hf.create_dataset('timestamps', data=times)
-        hf.create_dataset('mean', data=mean)
-        hf.create_dataset('std', data=std)
-        hf.create_dataset('max', data =max)
-        hf.create_dataset('min', data =min)
-
-
-    print(precipitation.shape)
-    print(precipitation.max())
-    print(precipitation.min())   
-    print('stop for debugging')
-    

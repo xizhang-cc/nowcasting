@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ="/home1/zhang2012/nowcasting/"# '/home/cc/projects/nowcasting'#
+base_path ='/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"# 
 sys.path.append(base_path)
 
 import torch
@@ -11,8 +11,8 @@ import numpy as np
 
 from servir.core.distribution import get_dist_info
 from servir.core.trainer import train
-# from servir.datasets.dataLoader_wa_imerg import waImergDataset, waImergDataset_withMeta
-from servir.datasets.dataLoader_wa_IR import IRDataset, IRDataset_withMeta
+from servir.datasets.dataLoader_imerg import imergDataset, imergDataset_withMeta
+# from servir.datasets.dataLoader_wa_IR import IRDataset, IRDataset_withMeta
 from servir.utils.config_utils import load_config
 from servir.utils.logger_utils import logging_config_info, logging_method_info
 from servir.utils.main_utils import print_log
@@ -22,21 +22,21 @@ from servir.methods.ConvLSTM import ConvLSTM
 
 #================Specification=========================#
 method_name = 'ConvLSTM'
-dataset_name = 'wa_IR'
-data_fname = 'wa_IR.h5'
+dataset_name = 'ghana_imerg'
+data_fname = 'ghana_imerg_2011_2020_oct.h5'
 
-dataLoaderFunc = IRDataset
-dataLoaderFuncMeta = IRDataset_withMeta
+dataLoaderFunc = imergDataset
+dataLoaderFuncMeta = imergDataset_withMeta
 
 
 normalize_method = '01range'
 
-train_st = '2020-06-01' 
-train_ed = '2020-08-18' 
-val_st = '2020-08-18'
-val_ed = '2020-08-25'
-test_st = '2020-08-25' 
-test_ed = '2020-09-01'
+train_st = '2011-10-01' 
+train_ed = '2018-11-01' 
+val_st = '2019-10-01'
+val_ed = '2019-11-01'
+test_st = '2020-10-01' 
+test_ed = '2020-11-01'
 
 # file names
 base_fname = f'{dataset_name}_{normalize_method[:3]}'
@@ -61,21 +61,22 @@ print_log(f'config file at {config_path} logged')
 
 # test run on local machine
 if base_path == '/home/cc/projects/nowcasting':
-    data_fname = 'wa_IR_08.h5'
+    # data_fname = 'wa_IR_08.h5'
 
     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    train_st = '2020-08-25'
-    train_ed = '2020-08-28' 
-    val_st = '2020-08-28'
-    val_ed = '2020-08-30' 
-    test_st = '2020-08-30'
-    test_ed = '2020-09-01'
+    train_st = '2018-10-01' 
+    train_ed = '2018-11-01' 
+    val_st = '2019-10-01'
+    val_ed = '2019-11-01'
+    test_st = '2020-10-01' 
+    test_ed = '2020-11-01'
 
-    config['batch_size'] = 2
-    config['val_batch_size'] = 2
+
+    config['batch_size'] = 8
+    config['val_batch_size'] = 8
     config['num_hidden'] = '32, 32' 
     config['max_epoch'] = 10
     config['early_stop_epoch'] = 2 # test run on local machine

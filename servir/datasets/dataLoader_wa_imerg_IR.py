@@ -9,7 +9,7 @@ import numpy as np
 
 from torch.utils.data import Dataset
 
-from servir.datasets.dataLoader_wa_imerg import load_wa_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg import load_imerg_data_from_h5
 from servir.datasets.dataLoader_wa_IR import load_IR_data_from_h5    
 
 
@@ -39,7 +39,7 @@ class waImergIRDataset(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, pred_IR_fPath, start_date, end_date, in_seq_length, out_seq_length, pred_IR_length, \
                   max_rainfall_intensity=60.0, imerg_normalize=False, IR_normalize=True, max_temp_in_kelvin=337.0):
 
-        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
+        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
         self.pred_IRs, self.pred_IR_metas = load_pred_IR_data_from_h5(pred_IR_fPath)
         # convert self.pred_IR_metas to list of datetime
@@ -239,7 +239,7 @@ class waImergIRDatasetTr(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
                 imerg_normalize_method='log_norm', IR_normalize_method='thresholded_scale'):
 
-        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max, self.imerg_min = load_wa_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
+        self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max, self.imerg_min = load_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max, self.IR_min = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
 
         self.in_seq_length = in_seq_length

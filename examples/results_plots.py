@@ -13,11 +13,11 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 
 
 method_name = 'ConvLSTM'
-dataset_name = 'wa_imerg_IR'
+dataset_name = 'wa_IR'
 
 # prediction file name
-base_fname = 'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
-pred_fname = f'{base_fname}_predictions_raw.h5'
+base_fname = 'wa_IR_01r'#'imerg01r_gtIR01r_SepTrue_L2ch'#'imerglog_gtIRthr_SepTrue_L2ch'
+pred_fname = f'{base_fname}_predictions.h5'
  
 # Results base path for logging, working dirs, etc. 
 base_results_path = os.path.join(base_path, f'results/{dataset_name}')
@@ -27,20 +27,20 @@ with h5py.File(os.path.join(base_results_path, pred_fname), 'r') as hf:
     output_dts = hf['timestamps'][:]
     output_dts = [x.decode('utf-8').split(',') for x in output_dts]
 
-# get the IR channel
-test_pred = pred_imgs[:, :, 1:2, :, :]
-test_pred = np.squeeze(test_pred, axis=2)
+# # get the IR channel
+# test_pred = pred_imgs[:, :, 1:2, :, :]
+# test_pred = np.squeeze(test_pred, axis=2)
 
-maxv = 336.4427574092979
-minv = 108.1460311660434
+# maxv = 336.4427574092979
+# minv = 108.1460311660434
 
 # convert to original scale
-test_pred_ori = (1-test_pred)*(maxv-minv) + minv
+# test_pred_ori = (1-test_pred)*(maxv-minv) + minv
 
-# load true images
-imerg_true_path = os.path.join(base_path, 'results', 'wa_imerg')
-with h5py.File(os.path.join(imerg_true_path, 'imerg_true.h5'), 'r') as hf:
-    true = hf['precipitations'][:]
+# # load true images
+# imerg_true_path = os.path.join(base_path, 'results', 'wa_imerg')
+# with h5py.File(os.path.join(imerg_true_path, 'imerg_true.h5'), 'r') as hf:
+#     true = hf['precipitations'][:]
 
 withIR = True
 IR_norm = False
@@ -108,18 +108,18 @@ for i, output_dt_i in enumerate(output_dts):
         if withIR == True:
             os.mkdir(os.path.join(i_path, 'IR'))
 
-    if dataset_name == 'wa_imerg_IR':
-        # locate IR images for sample i
-        output_ind_IR_i = [IR_times.index(x) for x in output_dt_i]
-        output_IRs_i = IRs[output_ind_IR_i, :, :]
-        for k in range(output_IRs_i.shape[0]):
+    # if dataset_name == 'wa_imerg_IR':
+    # locate IR images for sample i
+    output_ind_IR_i = [IR_times.index(x) for x in output_dt_i]
+    output_IRs_i = IRs[output_ind_IR_i, :, :]
+    for k in range(output_IRs_i.shape[0]):
 
-            tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
-            plt.imshow(output_IRs_i[k], cmap='gray')
-            plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
+        tstr = IR_times[output_ind_IR_i[k]].strftime('%Y%m%d%H%M')
+        plt.imshow(output_IRs_i[k], cmap='gray')
+        plt.savefig(os.path.join(i_path, 'IR', f'{tstr}.png'))
 
     # locate the predicted images for sample i
-    pred_imgs_i = test_pred_ori[i, :, :, :]
+    pred_imgs_i = pred_imgs[i, :, :, :]
 
     for k in range(pred_imgs_i.shape[0]):
 
