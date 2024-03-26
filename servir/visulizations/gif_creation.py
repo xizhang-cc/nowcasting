@@ -6,7 +6,7 @@ import datetime
 import imageio
 from pysteps.visualization.animations import animate
 
-def create_precipitation_plots(precipitations,timestamps_obs, timestep_min, geodata, path_outputs, title=''):
+def create_precipitation_plots(precipitations,timestamps_obs, timestep_min, path_outputs, title='',  geodata=None):
     """create gif file of precipitation. 
     This function contains two steps:
     1. create png files of precipitation using pysteps.visualization.animations.animate.
@@ -29,7 +29,7 @@ def create_precipitation_plots(precipitations,timestamps_obs, timestep_min, geod
 
 
 
-def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, geodata, path_outputs, title='', gif_dur = 1000):
+def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, path_outputs, title='', gif_dur = 1000,  geodata=None):
     """create gif file of precipitation. 
     This function contains two steps:
     1. create png files of precipitation using pysteps.visualization.animations.animate.

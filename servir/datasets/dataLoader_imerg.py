@@ -49,6 +49,7 @@ class imergDataset(Dataset):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
+        
 
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
@@ -64,7 +65,7 @@ class imergDataset(Dataset):
 
 
     def __len__(self):
-        return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length
+        return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length+1
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
