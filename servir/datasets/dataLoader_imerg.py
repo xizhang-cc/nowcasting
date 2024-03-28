@@ -45,12 +45,10 @@ def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
     return new
 
 class imergDataset(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
-        
-
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
@@ -62,10 +60,30 @@ class imergDataset(Dataset):
         elif normalize_method == 'log_norm':
             self.precipitations = imerg_log_normalize(self.precipitations)
 
-
+        # validate if the time delta is correct, i.e., the timesteps are continuous
+        validation = np.diff(self.datetimes).astype('timedelta64[m]') == time_delta
+        if not validation.all():
+            # if not consecutive, find the index of the first non-consecutive element
+            ind = np.where(~validation)[0]
+            # break into list of consecutive time steps
+            self.precipitations = np.split(self.precipitations, ind+1)
+            self.datetimes = np.split(self.datetimes, ind+1)
+        else:
+            self.precipitations = np.array([self.precipitations])
+            self.datetimes = np.array([self.datetimes]) 
 
     def __len__(self):
-        return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length+1
+        slen = 0
+        ind_list = []
+        for s in self.datetimes:
+            curr_len = len(s)-self.in_seq_length-self.out_seq_length+1
+            ind_list.append(slen + curr_len)
+
+            slen += curr_len
+
+        self.ind_list = ind_list
+
+        return slen
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
@@ -74,15 +92,24 @@ class imergDataset(Dataset):
             # C: channels, 1 if grayscale, 3 if RGB
             # H: height
             # W: width 
+        
+        # get the index of which sequence the sample belongs to
+        for i, ind in enumerate(self.ind_list):
+            if idx < ind:
+                break
 
-        in_ind = range(idx, idx+self.in_seq_length)
-        out_ind = range(idx+self.in_seq_length, idx+self.in_seq_length+self.out_seq_length)
+        new_idx = idx - self.ind_list[i-1] if i > 0 else idx  
+        curr_precipitations = self.precipitations[i]
+
+
+        in_ind = range(new_idx, new_idx+self.in_seq_length)
+        out_ind = range(new_idx+self.in_seq_length, new_idx+self.in_seq_length+self.out_seq_length)
 
 
         # input and output images for a sample
         # current shape: [T, H, W]
-        in_imgs = self.precipitations[in_ind]
-        out_imgs = self.precipitations[out_ind]
+        in_imgs = curr_precipitations[in_ind]
+        out_imgs = curr_precipitations[out_ind]
 
         # desired shape: [T, C, H, W]
         X = np.expand_dims(in_imgs, axis=(1))
@@ -92,11 +119,10 @@ class imergDataset(Dataset):
 
 
 class imergDataset_withMeta(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, normalize_method='01range'):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
-
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length    
 
@@ -108,11 +134,30 @@ class imergDataset_withMeta(Dataset):
         elif normalize_method == 'log_norm':
             self.precipitations = imerg_log_normalize(self.precipitations)
 
-
-
+        # validate if the time delta is correct, i.e., the timesteps are continuous
+        validation = np.diff(self.datetimes).astype('timedelta64[m]') == time_delta
+        if not validation.all():
+            # if not consecutive, find the index of the first non-consecutive element
+            ind = np.where(~validation)[0]
+            # break into list of consecutive time steps
+            self.precipitations = np.split(self.precipitations, ind+1)
+            self.datetimes = np.split(self.datetimes, ind+1)
+        else:
+            self.precipitations = np.array([self.precipitations])
+            self.datetimes = np.array([self.datetimes]) 
 
     def __len__(self):
-        return self.precipitations.shape[0]-self.in_seq_length-self.out_seq_length
+        slen = 0
+        ind_list = []
+        for s in self.datetimes:
+            curr_len = len(s)-self.in_seq_length-self.out_seq_length+1
+            ind_list.append(slen + curr_len)
+
+            slen += curr_len
+
+        self.ind_list = ind_list
+
+        return slen
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
@@ -121,27 +166,39 @@ class imergDataset_withMeta(Dataset):
             # C: channels, 1 if grayscale, 3 if RGB
             # H: height
             # W: width 
+        
+        # get the index of which sequence the sample belongs to
+        for i, ind in enumerate(self.ind_list):
+            if idx <= ind:
+                break
 
-        in_ind = range(idx, idx+self.in_seq_length)
-        out_ind = range(idx+self.in_seq_length, idx+self.in_seq_length+self.out_seq_length)
+
+        curr_precipitations = self.precipitations[i]
+        curr_datetimes = self.datetimes[i]
+
+        new_idx = idx - self.ind_list[i-1] if i > 0 else idx    
+
+
+        in_ind = range(new_idx, new_idx+self.in_seq_length)
+        out_ind = range(new_idx+self.in_seq_length, new_idx+self.in_seq_length+self.out_seq_length)
 
 
         # input and output images for a sample
         # current shape: [T, H, W]
-        in_imgs = self.precipitations[in_ind]
-        out_imgs = self.precipitations[out_ind]
+        in_imgs = curr_precipitations[in_ind]
+        out_imgs = curr_precipitations[out_ind]
 
         # desired shape: [T, C, H, W]
         X = np.expand_dims(in_imgs, axis=(1))
         Y = np.expand_dims(out_imgs, axis=(1))
 
         # metadata for a sample
-        X_dt = self.datetimes[in_ind]
+        X_dt = curr_datetimes[in_ind]
         X_str = [x.strftime('%Y-%m-%d %H:%M:%S') for x in X_dt] 
         X_dt_str = ','.join(X_str)
 
 
-        Y_dt = self.datetimes[out_ind]
+        Y_dt = curr_datetimes[out_ind]
         Y_dt_str = [y.strftime('%Y-%m-%d %H:%M:%S') for y in Y_dt]
         Y_dt_str = ','.join(Y_dt_str)
 

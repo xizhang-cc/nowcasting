@@ -67,7 +67,7 @@ if base_path == '/home/cc/projects/nowcasting':
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    train_st = '2018-10-01' 
+    train_st = '2017-10-01' 
     train_ed = '2018-11-01' 
     val_st = '2019-10-01'
     val_ed = '2019-11-01'
