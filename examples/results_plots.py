@@ -15,11 +15,15 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 method_name = 'ConvLSTM'
 dataset_name = 'ghana_imerg'
 
+loss= 'neg_exponential'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
+quantile = 0.95
+threshold = 2/53.2
+
 normalize_method = '01range'
 in_seq_length = 12
 out_seq_length = 12 
 # prediction file name
-base_fname = f'{dataset_name}_{normalize_method[:3]}'
+base_fname = f'{dataset_name}_{loss}'
 pred_fname = f'{base_fname}_predictions.h5'
  
 # Results base path for logging, working dirs, etc. 
