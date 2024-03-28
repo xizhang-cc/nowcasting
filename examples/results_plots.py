@@ -15,7 +15,7 @@ from servir.visulizations.gif_creation import create_precipitation_plots, create
 method_name = 'ConvLSTM'
 dataset_name = 'ghana_imerg'
 
-loss= 'neg_exponential'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
+loss= 'threshold_square_loss'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
 quantile = 0.95
 threshold = 2/53.2
 
