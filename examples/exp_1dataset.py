@@ -1,6 +1,6 @@
 import os
 import sys
-base_path ="/home1/zhang2012/nowcasting/"# '/home/cc/projects/nowcasting'#
+base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)
 
 import torch
@@ -30,6 +30,9 @@ dataLoaderFuncMeta = imergDataset_withMeta
 
 
 normalize_method = '01range'
+loss= 'neg_exponential'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
+quantile = 0.5
+threshold = 2/53.2
 
 train_st = '2011-10-01' 
 train_ed = '2018-11-01' 
@@ -39,7 +42,7 @@ test_st = '2020-10-01'
 test_ed = '2020-11-01'
 
 # file names
-base_fname = f'{dataset_name}_{normalize_method[:3]}'
+base_fname = f'{dataset_name}_{loss}' #  f'{dataset_name}_{loss}_q{quantile*100}'
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
@@ -56,6 +59,10 @@ else:
     print(f'config file NOT found! config_path = {config_path}')
 
 config = load_config(config_path)
+# make sure config matches
+config['loss'] = loss
+config['quantile'] = quantile
+config['threshold'] = threshold
 
 print_log(f'config file at {config_path} logged')
 
@@ -67,7 +74,7 @@ if base_path == '/home/cc/projects/nowcasting':
     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
     pred_fname = pred_fname.split('.')[0] + '_local.h5'
 
-    train_st = '2017-10-01' 
+    train_st = '2018-10-01' 
     train_ed = '2018-11-01' 
     val_st = '2019-10-01'
     val_ed = '2019-11-01'
@@ -132,9 +139,9 @@ config['device'] = device
 # setup method
 method = ConvLSTM(config)
 
-# # log method info
-logging_method_info(config, method, device)
-print('method setup')
+# # # log method info
+# logging_method_info(config, method, device)
+# print('method setup')
 #==============Distribution=========================##
 
 # setup distribution

@@ -1,11 +1,27 @@
 import numpy as np
 import torch 
 
+def threshold_square_loss(gt, pred, threshold):
+    # if ground truth gt below threshold, loss is predicted value 
+    loss = torch.where(gt <= threshold, pred, torch.square(gt - pred))
+    
+    return loss.mean()
+
+def threshold_quantile_loss(gt, pred, threshold, quantile):
+    # if ground truth gt below threshold, loss is predicted value 
+    loss = torch.where(gt <= threshold, pred, quantile * torch.relu(gt - pred) + (1-quantile)*torch.relu(pred - gt))
+    
+    return loss.mean()
+
+def neg_exponential(gt, pred, threshold):
+    loss = torch.exp( -(gt-threshold) * (pred-threshold) )
+
+    return loss.mean()
+
 """
 Complementary FSS Surrogate Loss
 This function computes an upper bound to the complementary FSS (Fraction Skill Score) 
-and outputs the loss value as a torch variable.
-Inputs:
+and outputs the loss value as a torch variable.Inputs:
     gt: (torch.tensor) ground truth image sequence of shape (batch size, time_instances,  image_length, image_width)
     pred: (torch.tensor) predicted image sequence of shape (batch size, time_instances, image_length, image_width)
     avg_kernel_half_width: (int) value used to construct the averaging kernel (0 <= n < (min(image_length,image_width)/2))

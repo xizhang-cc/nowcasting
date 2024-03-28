@@ -13,7 +13,7 @@ from contextlib import suppress
 from servir.core.optimizor import get_optim_scheduler
 from servir.utils.convLSTM_utils import reshape_patch, reshape_patch_back, schedule_sampling, reserve_schedule_sampling_exp
 from servir.utils.distributed_utils import reduce_tensor
-from servir.core.losses import CFSSSurrogateLoss, g_func_relu, g_func_log 
+from servir.core.losses import *
 
 
 
@@ -98,15 +98,12 @@ class ConvLSTM_Model(nn.Module):
         self.output_channel = config['patch_size'] * config['patch_size'] * config['channels']
         self.num_layers = num_layers
         self.num_hidden = num_hidden
+
         cell_list = []
 
         height = H // config['patch_size']
         width = W // config['patch_size']
 
-        if config['loss'] == 'MSE':
-            self.criterion = nn.MSELoss()
-        elif config['loss'] == 'CFSSS':
-            self.criterion = CFSSSurrogateLoss
 
         for i in range(num_layers):
             in_channel = self.frame_channel if i == 0 else num_hidden[i - 1]
@@ -182,11 +179,28 @@ class ConvLSTM_Model(nn.Module):
         #                         0, 1.0/60.0, g_func_log)
 
         if kwargs.get('return_loss')==True:
+            
             if 'loss_channels' in kwargs:
                 reshaped_channel_num = self.config['patch_size'] ** 2 * int(kwargs.get('loss_channels'))
-                loss = self.criterion(next_frames[:, :, :, :, :reshaped_channel_num], frames_tensor[:, 1:, :, :, :reshaped_channel_num])
+
+                pred = next_frames[:, :, :, :, :reshaped_channel_num]
+                gt = frames_tensor[:, 1:, :, :, :reshaped_channel_num]
             else: # all losses
-                loss = self.criterion(next_frames, frames_tensor[:, 1:, :, :, :])
+                pred = next_frames
+                gt = frames_tensor[:, 1:, :, :, :]
+
+            if self.config['loss'] == 'threshold_square_loss':
+                loss = threshold_square_loss(gt, pred, self.config['threshold'])
+            elif self.config['loss'] == 'threshold_quantile_loss':
+                loss = threshold_quantile_loss(gt, pred, self.config['threshold'], self.config['quantile'])
+            elif self.config['loss'] == 'neg_exponential':
+                loss = neg_exponential(gt, pred, self.config['threshold'])
+            elif self.config['loss'] == 'MSE':
+                loss = nn.MSELoss(gt, pred)
+            else:
+                raise ValueError(f"Loss {self.config['loss']} not supported.")
+
+
         else:
             loss = None
 
@@ -208,14 +222,22 @@ class ConvLSTM():
         self.dist = config['distributed']
         self.config = config
 
+        # if self.config['loss'] == 'MSE':
+        #     self.criterion = nn.MSELoss()
+        # elif self.config['loss'] == 'CFSSS':
+        #     self.criterion = CFSSSurrogateLoss
+        # elif self.config['loss'] == 'threshold_square_loss':
+        #     self.criterion = threshold_square_loss
+        # elif self.config['loss'] == 'threshold_quantile_loss':
+        #     self.criterion = threshold_quantile_loss
+        # elif self.config['loss'] == 'neg_exponential':
+        #     self.criterion = neg_exponential
+        # else:
+        #     raise ValueError(f"Loss {self.config['loss']} not supported.")
+
         self.model = self._build_model()
 
         self.model_optim, self.scheduler, self.by_epoch = self._init_optimizer()
-
-        if self.config['loss'] == 'MSE':
-            self.criterion = nn.MSELoss()
-        elif self.config['loss'] == 'CFSSS':
-            self.criterion = CFSSSurrogateLoss
 
 
         self.clip_value = self.config['clip_grad']
@@ -324,9 +346,25 @@ class ConvLSTM():
                 #     loss = CFSSSurrogateLoss(img_pred_y, img_batch_y,0, 1.0/60.0, g_func_log).cpu().numpy().item()
                 if 'loss_channels' in kwargs:
                     loss_channels = kwargs.get('loss_channels')
-                    loss = self.criterion(pred_y[:, :, 0:loss_channels, :, :], batch_y[:, :, 0:loss_channels, :, :]).cpu().numpy().item()
+
+                    pred = pred_y[:, :, 0:loss_channels, :, :]
+                    gt = batch_y[:, :, 0:loss_channels, :, :]
                 else:
-                    loss = self.criterion(pred_y, batch_y).cpu().numpy().item()
+                    pred = pred_y
+                    gt = batch_y
+                
+                if self.config['loss'] == 'threshold_square_loss':
+                    loss = threshold_square_loss(gt, pred, self.config['threshold']).cpu().numpy().item()
+                elif self.config['loss'] == 'threshold_quantile_loss':
+                    loss = threshold_quantile_loss(gt, pred, self.config['threshold'], self.config['quantile']).cpu().numpy().item()
+                elif self.config['loss'] == 'neg_exponential':
+                    loss = neg_exponential(gt, pred, self.config['threshold']).cpu().numpy().item()
+                elif self.config['loss'] == 'MSE':
+                    loss = nn.MSELoss(gt, pred).cpu().numpy().item()
+                else:
+                    raise ValueError(f"Loss {self.config['loss']} not supported.")
+
+
                     
                 data_loss.update(loss, batch_x.size(0)) 
                 data_time_m.update(time.time() - st)
