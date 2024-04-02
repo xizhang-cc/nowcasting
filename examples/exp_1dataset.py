@@ -31,7 +31,7 @@ dataLoaderFuncMeta = imergDataset_withMeta
 
 normalize_method = '01range'
 loss= 'threshold_quantile_loss'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
-quantile = 0.95
+quantile = 0.75
 threshold = 2/53.2
 
 train_st = '2011-10-01' 
