@@ -1,6 +1,6 @@
 import os
 import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
+base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting'#
 sys.path.append(base_path)
 
 import torch
@@ -31,7 +31,7 @@ dataLoaderFuncMeta = imergDataset_withMeta
 
 normalize_method = '01range'
 loss= 'threshold_quantile_loss'  #['MSE','threshold_square_loss','threshold_quantile_loss', 'neg_exponential']
-quantile = 0.75
+quantile = 0.95
 threshold = 0/53.2
 
 train_st = '2011-10-01' 
@@ -42,7 +42,7 @@ test_st = '2020-10-01'
 test_ed = '2020-11-01'
 
 # file names
-base_fname =  f'{dataset_name}_{loss}_q{quantile*100}_zeroThresh'# f'{dataset_name}_{loss}' # 
+base_fname =  f'{dataset_name}_{loss}_q{quantile*100}_zeroThreshold'# f'{dataset_name}_{loss}' # 
 model_para_fname = f'{base_fname}_params.pth'
 checkpoint_fname = f'{base_fname}_checkpoint.pth'
 pred_fname = f'{base_fname}_predictions.h5'
