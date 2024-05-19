@@ -29,14 +29,14 @@ def resample_Tb(old_lat, old_lon, old_data, lat_R, lon_R):
 def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
 ##==================Data Loading=====================##
     # find all .nc files
-    files = glob.glob(dataPath+'/*.nc')
+    files = glob.glob(dataPath+'/raw/*.nc')
 
     # load the first file to get the lat and lon
     nc_data_t = nc.Dataset(os.path.join(dataPath, files[0]),'r')
     lat_t= nc_data_t.variables['lat'][:]
     lon_t= nc_data_t.variables['lon'][:]
-    lat_R= np.arange(4.85, 11.15, 0.1)
-    lon_R = np.arange(-3.95, 2.35, 0.1)
+    lat_R= np.arange(-2.9, 33.1, 0.1)
+    lon_R = np.arange(-21.4, 30.4, 0.1)
 
 
     lambda_val = 10.8
@@ -134,31 +134,33 @@ def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
     with h5py.File(os.path.join(dataPath, fname), 'w') as hf:
         hf.create_dataset('IRs', data=sorted_IR)
         hf.create_dataset('timestamps', data=sorted_timestamps_dt)
-        hf.create_dataset('mean', data = sorted_IR.mean())
-        hf.create_dataset('std', data = sorted_IR.std())
-        hf.create_dataset('max', data = sorted_IR.max())
-        hf.create_dataset('min', data = sorted_IR.min()) 
+        # hf.create_dataset('mean', data=IR_mean)
+        # hf.create_dataset('std', data=IR_std)
+
 
 
 
 if __name__ == "__main__":
 
-    dataPath = os.path.join(base_path, 'data', 'ghana_IR', '2011')
-    fname = 'ghana_2011_oct.h5'
+    dataPath = os.path.join(base_path, 'data', 'wa_IR')
     start_date = '2011-10-01'
     end_date = '2011-11-01'
-    nc2h5py(dataPath, start_date, end_date, fname='ghana_2011_oct.h5')
+    nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
 
-    print('stop for debugging')
+    # # print('stop for debugging')
 
-
-    # with h5py.File(os.path.join(dataPath, fname.split('.')[0]+'_ori.h5'), 'r') as hf:
+    # with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'r') as hf:
     #     imgs = hf['IRs'][:]
     #     img_dts = hf['timestamps'][:]
     #     mean = imgs.mean()
     #     std = imgs.std()
     #     max = imgs.max()
     #     min = imgs.min()
+
+    # print(f'mean = {mean}')
+    # print(f'std = {std}')
+    # print(f'max = {max}')
+    # print(f'min = {min}')
 
         
 
