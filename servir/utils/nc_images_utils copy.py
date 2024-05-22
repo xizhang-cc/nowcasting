@@ -184,4 +184,3 @@ if __name__ == "__main__":
     #     hf.create_dataset('timestamps', data=img_IR_dts)
     #     hf.create_dataset('mean', data = imgs_IR.mean())
     #     hf.create_dataset('std', data = imgs_IR.std())
-

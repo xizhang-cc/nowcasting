@@ -190,6 +190,66 @@ def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
 
 if __name__ == "__main__":
 
+    dataPath = os.path.join(base_path, 'data', 'ghana_IR')
+
+    with h5py.File(os.path.join(dataPath, 'ghana_IR_2011_2020_oct.h5'), 'r') as hf:
+        imgs = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+
+    print(f'imgs shape: {imgs.shape}')
+    # print(f'mean = {np.nanmean(imgs)}')
+    # print(f'std = {np.nanstd(imgs)}')
+    # print(f'max = {np.nanmax(imgs)}')
+    # print(f'min = {np.nanmin(imgs)}')
+
+    # # fill nan values with the nearest value
+    # stats = 0
+    # for i in range(20000, imgs.shape[0]):
+    #     if i % 1000 == 0:
+    #         print(f'processing image: {i}')
+    #     # for this image, fill in the nan value with nearest value
+
+    #     if np.isnan(imgs[i]).all():
+    #         print(f'all nan values at index: {i}')
+    #         imgs[i] = imgs[i-1]
+    #         continue
+
+    #     for j in range(imgs[i].shape[0]):
+    #         for k in range(imgs[i].shape[1]):
+    #             if np.isnan(imgs[i, j, k]):
+    #                 stats = stats+1
+    #                 if ~np.isnan(imgs[i, j-1, k]):
+    #                     imgs[i, j, k] = imgs[i, j-1, k]
+    #                 elif ~np.isnan(imgs[i, j+1, k]):
+    #                     imgs[i, j, k] = imgs[i, j+1, k]
+    #                 elif ~np.isnan(imgs[i, j, k-1]):
+    #                     imgs[i, j, k] = imgs[i, j, k-1]
+    #                 elif ~np.isnan(imgs[i, j, k+1]):
+    #                     imgs[i, j, k] = imgs[i, j, k+1]
+    #                 else:
+    #                     print(f'no value to fill at index: {i, j, k}')
+
+
+
+
+    # print(f'number of nan values: {stats}')
+
+
+    # with h5py.File(os.path.join(dataPath, 'ghana_IR_2011_2020_oct.h5'), 'w') as hf:
+    #     hf.create_dataset('IRs', data=imgs)
+    #     hf.create_dataset('timestamps', data=img_dts)
+    #     hf.create_dataset('mean', data = imgs.mean())
+    #     hf.create_dataset('std', data = imgs.std())
+    #     hf.create_dataset('max', data = imgs.max())
+    #     hf.create_dataset('min', data = imgs.min())
+
+
+
+
+
+
+
+
     # year = 2020
     # dataPath = os.path.join(base_path, 'data', 'ghana_IR', str(year))
     # fname = f'ghana_{year}_oct.h5'
@@ -199,35 +259,35 @@ if __name__ == "__main__":
     # nc2h5py(dataPath, start_date, end_date, fname=f'ghana_{year}_oct.h5')
 
 
-    dataPath = os.path.join(base_path, 'data', 'ghana_IR')
+    # dataPath = os.path.join(base_path, 'data', 'ghana_IR')
 
-    imgs_list = []
-    imgs_dts_list = []
-    for year in range(2011, 2021):
+    # imgs_list = []
+    # imgs_dts_list = []
+    # for year in range(2011, 2021):
 
-        fname = f'ghana_{year}_oct.h5'
+    #     fname = f'ghana_{year}_oct.h5'
 
-        with h5py.File(os.path.join(dataPath,  fname), 'r') as hf:
-            imgs = hf['IRs'][:]
-            img_dts = hf['timestamps'][:]
+    #     with h5py.File(os.path.join(dataPath,  fname), 'r') as hf:
+    #         imgs = hf['IRs'][:]
+    #         img_dts = hf['timestamps'][:]
 
-        # convert to float32 precision
-        # imgs.dtype = np.float32
-        imgs_list.append(imgs)
+    #     # convert to float32 precision
+    #     # imgs.dtype = np.float32
+    #     imgs_list.append(imgs)
 
-        img_dts = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in img_dts])
-        imgs_dts_list = imgs_dts_list + img_dts.tolist()
+    #     img_dts = np.array([datetime.datetime.strptime(x.decode('utf-8'), '%Y-%m-%d %H:%M:%S') for x in img_dts])
+    #     imgs_dts_list = imgs_dts_list + img_dts.tolist()
 
-    imgs = np.concatenate(imgs_list, axis=0)
-    imgs_dts_str = [x.strftime('%Y-%m-%d %H:%M:%S') for x in imgs_dts_list]
+    # imgs = np.concatenate(imgs_list, axis=0)
+    # imgs_dts_str = [x.strftime('%Y-%m-%d %H:%M:%S') for x in imgs_dts_list]
 
-    with h5py.File(os.path.join(dataPath, 'ghana_IR_2011_2020_oct.h5'), 'w') as hf:
-        hf.create_dataset('IRs', data=imgs)
-        hf.create_dataset('timestamps', data=imgs_dts_str)
-        hf.create_dataset('mean', data = np.nanmean(imgs))
-        hf.create_dataset('std', data = np.nanstd(imgs))
-        hf.create_dataset('max', data = np.nanmax(imgs))
-        hf.create_dataset('min', data = np.nanmin(imgs))
+    # with h5py.File(os.path.join(dataPath, 'ghana_IR_2011_2020_oct.h5'), 'w') as hf:
+    #     hf.create_dataset('IRs', data=imgs)
+    #     hf.create_dataset('timestamps', data=imgs_dts_str)
+    #     hf.create_dataset('mean', data = np.nanmean(imgs))
+    #     hf.create_dataset('std', data = np.nanstd(imgs))
+    #     hf.create_dataset('max', data = np.nanmax(imgs))
+    #     hf.create_dataset('min', data = np.nanmin(imgs))
 
     
 
