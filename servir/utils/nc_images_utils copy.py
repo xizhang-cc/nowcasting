@@ -143,19 +143,19 @@ def nc2h5py(dataPath, start_date, end_date, fname='wa_nc.h5'):
 if __name__ == "__main__":
 
     dataPath = os.path.join(base_path, 'data', 'wa_IR')
-    start_date = '2011-10-01'
-    end_date = '2011-11-01'
-    nc2h5py(dataPath, start_date, end_date, fname='wa_IR_08.h5')
+    start_date = '2020-10-01'
+    end_date = '2020-11-01'
+    nc2h5py(dataPath, start_date, end_date, fname='wa_IR_10.h5')
 
     # # print('stop for debugging')
 
-    # with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'r') as hf:
-    #     imgs = hf['IRs'][:]
-    #     img_dts = hf['timestamps'][:]
-    #     mean = imgs.mean()
-    #     std = imgs.std()
-    #     max = imgs.max()
-    #     min = imgs.min()
+    with h5py.File(os.path.join(dataPath, 'wa_IR.h5'), 'r') as hf:
+        imgs = hf['IRs'][:]
+        img_dts = hf['timestamps'][:]
+        mean = imgs.mean()
+        std = imgs.std()
+        max = imgs.max()
+        min = imgs.min()
 
     # print(f'mean = {mean}')
     # print(f'std = {std}')
@@ -175,7 +175,6 @@ if __name__ == "__main__":
     # print(f'imgs_IR shape: {imgs_IR.shape}')
     # img_IR_dts = img_dts_06 + img_dts_07 + img_dts_08
     # print(f'len(img_IR_dts): {len(img_IR_dts)}')
-
     # print(f'img_IR_dts[0]: {img_IR_dts[0]}')
     # print(f'img_IR_dts[-1]: {img_IR_dts[-1]}')
 

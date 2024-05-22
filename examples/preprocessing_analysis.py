@@ -19,11 +19,11 @@ dataset1_name = 'ghana_imerg'
 dataset2_name = 'ghana_IR'
 
 data1_fname = 'ghana_imerg_2011_2020_oct.h5'
-data2_fname = 'ghana_2011_oct.h5'
+data2_fname = 'ghana_2018_oct.h5'
 
 
-st = '2011-10-01' 
-ed = '2011-11-01'
+st = '2018-10-01' 
+ed = '2018-11-01'
 
 imerg_normalize_method = None #'log-normal'
 IR_normalize_method = None #'normal'
@@ -55,7 +55,7 @@ IR_dts = IR_dts[IRs_ind]
 # check the images of a sample
 # sample_dt = datetime.datetime(2020, 8, 25, 11, 0)
 
-sample_dt = datetime.datetime(2011, 10, 1, 0, 0)
+sample_dt = datetime.datetime(2018, 10, 22, 6, 0)
 
 imerg_idx = list(imerg_dts).index(sample_dt)
 IR_idx = list(IR_dts).index(sample_dt)
@@ -63,9 +63,9 @@ IR_idx = list(IR_dts).index(sample_dt)
 imerg = imergs[imerg_idx]
 IR = IRs[IR_idx]    
 
-plt.figure()
-plt.imshow(imerg, cmap='gray')
-plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
+# plt.figure()
+# plt.imshow(imerg, cmap='gray')
+# plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
 plt.figure()
 plot_precip_field(imerg) 
 plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
