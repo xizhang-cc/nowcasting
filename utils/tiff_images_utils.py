@@ -146,7 +146,7 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    base_path ='/home/cc/projects/nowcasting' #
+    base_path = '/home1/zhang2012/nowcasting' #'/home/cc/projects/nowcasting' # 
 
     fPath = os.path.join(base_path, 'data/wa_imerg/')
     # start_date = '2020-06-01'
