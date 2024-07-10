@@ -9,7 +9,7 @@ import numpy as np
 
 from torch.utils.data import Dataset
 
-from servir.datasets.dataLoader_imerg import load_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg_from_h5 import load_imerg_data_from_h5
 from servir.datasets.dataLoader_wa_IR import load_IR_data_from_h5    
 
 

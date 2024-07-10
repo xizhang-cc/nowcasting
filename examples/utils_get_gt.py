@@ -1,8 +1,4 @@
 import os
-import sys
-base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
-sys.path.append(base_path)
-
 import h5py
 import datetime
 import numpy as np  
@@ -10,10 +6,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import torch
 
-from servir.datasets.dataLoader_imerg import load_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg_from_h5 import load_imerg_data_from_h5
 
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
-sys.path.append(base_path)
 
 
 method_name = 'ConvLSTM'
@@ -23,7 +18,7 @@ st = '2020-08-25'
 ed = '2020-09-01'
 
 
-in_seq_length = 12
+in_seq_length = 4
 out_seq_length = 12 
 
 # true imerg data path

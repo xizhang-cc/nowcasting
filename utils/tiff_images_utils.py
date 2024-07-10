@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 
 
 
-def tiff2h5py(fPath, fname='wa_imerg.h5'):
+def tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2011-10-01', end_date='2020-10-01'):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -30,7 +30,7 @@ def tiff2h5py(fPath, fname='wa_imerg.h5'):
     """
     precipitations = []
     times = []
-    files = glob.glob(os.path.join(fPath, 'IMERG_WA', 'IMERG_WA', 'imerg*.tif'))
+    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
 
     if len(files)>0:
         for file in files:
@@ -42,22 +42,22 @@ def tiff2h5py(fPath, fname='wa_imerg.h5'):
             minute = date_str[10:12]
             dt = datetime.datetime.strptime(year + '-'+ month + '-' + day + ' '+ hour + ':' + minute, '%Y-%m-%d %H:%M')
 
-            years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020']
-            if year in years and month == '10':
+            # years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020']
+            # if year in years and month == '10':
+            #     tiff_data = gdal.Open(file, GA_ReadOnly)
+            #     imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+            #     # get ghana region (64 by 64)
+            #     ghana_region = imageArray[219:283, 174:238]
+
+            #     times.append(dt)
+            #     precipitations.append(ghana_region)
+
+            if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
                 tiff_data = gdal.Open(file, GA_ReadOnly)
                 imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
-                # get ghana region (64 by 64)
-                ghana_region = imageArray[219:283, 174:238]
 
                 times.append(dt)
-                precipitations.append(ghana_region)
-
-            # if dt >= datetime.datetime.strptime(start_date, '%Y-%m-%d') and dt < datetime.datetime.strptime(end_date, '%Y-%m-%d'):
-                # tiff_data = gdal.Open(file, GA_ReadOnly)
-                # imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
-
-                # times.append(dt)
-                # precipitations.append(imageArray)
+                precipitations.append(imageArray)
 
         times = np.array(times)
         # images in tensor [T, H, W]
@@ -83,6 +83,7 @@ def tiff2h5py(fPath, fname='wa_imerg.h5'):
 
 
     return sorted_precipitation, sorted_timestamps
+    
 
 
 
@@ -148,9 +149,9 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    fPath = os.path.join(base_path, 'data')
+    fPath = os.path.join(base_path, 'data/IMERG_WA/')
     # start_date = '2020-06-01'
     # end_date = '2020-09-01'
 
-    tiff2h5py(fPath, fname='ghana_imerg_2011_2020_Oct.h5')
+    tiff2h5py(fPath, fname='wa_imerg.h5', start_date='1999-01-01', end_date='2026-01-01')
 

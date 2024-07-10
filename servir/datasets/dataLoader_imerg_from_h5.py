@@ -44,7 +44,7 @@ def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
     new = np.where(data < threshold, zerovalue, np.log10(data))
     return new
 
-class imergDataset(Dataset):
+class imergDataset_h5(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
@@ -101,10 +101,8 @@ class imergDataset(Dataset):
         new_idx = idx - self.ind_list[i-1] if i > 0 else idx  
         curr_precipitations = self.precipitations[i]
 
-
         in_ind = range(new_idx, new_idx+self.in_seq_length)
         out_ind = range(new_idx+self.in_seq_length, new_idx+self.in_seq_length+self.out_seq_length)
-
 
         # input and output images for a sample
         # current shape: [T, H, W]
@@ -118,7 +116,7 @@ class imergDataset(Dataset):
         return X, Y
 
 
-class imergDataset_withMeta(Dataset):
+class imergDataset_h5_withMeta(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
@@ -218,7 +216,7 @@ if __name__=='__main__':
     end_date = '2018-11-01' 
     fPath = dataPath+'ghana_imerg_2011_2020_oct.h5'
 
-    a = imergDataset(fPath, start_date, end_date, 12, 12)
+    a = imergDataset_h5(fPath, start_date, end_date, 12, 12)
     a.__getitem__(0)
 
     print('stop for debugging')

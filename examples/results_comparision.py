@@ -13,7 +13,7 @@ import seaborn as sns
 
 
 
-from servir.datasets.dataLoader_imerg import load_wa_imerg_data_from_h5
+from servir.datasets.dataLoader_imerg_from_h5 import load_wa_imerg_data_from_h5
 
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 sys.path.append(base_path)

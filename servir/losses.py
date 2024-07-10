@@ -291,6 +291,53 @@ def grid_cell_regularizer(generated_samples, batch_targets):
     return loss
 
 
+def threshold_square_loss(gt, pred, threshold):
+    # if ground truth gt below threshold, loss is predicted value 
+    loss = torch.where(gt <= threshold, pred, torch.square(gt - pred))
+    
+    return loss.mean()
+
+def threshold_quantile_loss(gt, pred, threshold, quantile):
+    # if ground truth gt below threshold, loss is predicted value 
+    loss = torch.where(gt <= threshold, pred, quantile * torch.relu(gt - pred) + (1-quantile)*torch.relu(pred - gt))
+    
+    return loss.mean()
+
+def neg_exponential(gt, pred, threshold):
+    loss = torch.exp( -(gt-threshold) * (pred-threshold) )
+
+    return loss.mean()
+
+def g_func_relu(tensor):
+    return torch.relu(torch.ones_like(tensor) - tensor)
+
+def g_func_log(tensor):
+    return torch.log(torch.ones_like(tensor) + torch.exp(-tensor))
+
+
+"""
+Complementary FSS Surrogate Loss
+This function computes an upper bound to the complementary FSS (Fraction Skill Score) 
+and outputs the loss value as a torch variable.Inputs:
+    gt: (torch.tensor) ground truth image sequence of shape (batch size, time_instances,  image_length, image_width)
+    pred: (torch.tensor) predicted image sequence of shape (batch size, time_instances, image_length, image_width)
+    avg_kernel_half_width: (int) value used to construct the averaging kernel (0 <= n < (min(image_length,image_width)/2))
+    threshold: (float64) threshold used for FSS calculations (for "significant" precipitation)
+"""
+def CFSSSurrogateLoss(gt, pred, avg_kernel_half_width, threshold, g_func):
+    # averaging kernel with no padding
+    averaging_kernel = torch.nn.AvgPool2d(kernel_size=(2*avg_kernel_half_width+1, 2*avg_kernel_half_width+1), stride=1)
+    
+    # g(x, \hat{x} )
+    gt_thresholded = gt - torch.ones_like(gt)*threshold
+    pred_thresholded = pred - torch.ones_like(pred)*threshold
+    
+    prod_gt_pred_thresholded = g_func(torch.mul(gt_thresholded, pred_thresholded))
+    
+    return averaging_kernel(prod_gt_pred_thresholded).mean()
+
+    
+
 def get_loss(loss: str = "mse", **kwargs) -> torch.nn.Module:
     if isinstance(loss, torch.nn.Module):
         return loss
@@ -310,7 +357,11 @@ def get_loss(loss: str = "mse", **kwargs) -> torch.nn.Module:
         "gradient_difference_loss",
     ]
     if loss == "mse":
-        criterion = F.mse_loss
+        criterion = torch.nn.MSELoss()
+    elif loss in ["l1", 'mae']:
+        criterion = torch.nn.L1Loss()
+    elif loss in ["CFSSS"]:
+        criterion = CFSSSurrogateLoss(avg_kernel_half_width=3, threshold=1.0, g_func=g_func_relu)
     elif loss in ["bce", "binary_crossentropy", "crossentropy"]:
         criterion = F.nll_loss
     elif loss in ["focal"]:
@@ -321,8 +372,6 @@ def get_loss(loss: str = "mse", **kwargs) -> torch.nn.Module:
         criterion = MS_SSIMLoss(data_range=1.0, size_average=True, **kwargs)
     elif loss in ["ssim_dynamic"]:
         criterion = SSIMLossDynamic(data_range=1.0, size_average=True, **kwargs)
-    elif loss in ["l1"]:
-        criterion = torch.nn.L1Loss()
     elif loss in ["tv", "total_variation"]:
         criterion = TotalVariationLoss(tv_weight=kwargs.get("tv_weight", 1))
     elif loss in ["gdl", "gradient_difference_loss"]:

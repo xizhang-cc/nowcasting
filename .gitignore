@@ -7,8 +7,9 @@ results/
 # run files returned from HPC system
 runs/
 
-# 
-imlr_results/
+# logs from tensorboard logging
+lightning_logs/
+
 
 # Ignore temporary files
 temp/

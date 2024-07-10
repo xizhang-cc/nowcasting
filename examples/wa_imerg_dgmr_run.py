@@ -7,10 +7,9 @@ from pytorch_lightning import (
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
-import os
-import sys
+
 base_path = '/home/cc/projects/nowcasting'#"/home1/zhang2012/nowcasting/"#
-sys.path.append(base_path)
+
 
 from servir.methods.dgmr.dgmr import DGMR
 
