@@ -152,43 +152,43 @@ if __name__ == "__main__":
     # start_date = '2020-06-01'
     # end_date = '2020-09-01'
 
-    # tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2020-01-01', end_date='2020-07-01')
+    tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2020-06-01', end_date='2020-07-01')
 
-    cur_mean = 0.0
-    cur_max = 0.0
+    # cur_mean = 0.0
+    # cur_max = 0.0
 
-    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
+    # files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
 
-    for k, file in enumerate(files):
+    # for k, file in enumerate(files):
 
-        if k % 1000 == 0:
-            print(f'Processing {k} of {len(files)}')
+    #     if k % 1000 == 0:
+    #         print(f'Processing {k} of {len(files)}')
 
-        tiff_data = gdal.Open(file, GA_ReadOnly)
-        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+    #     tiff_data = gdal.Open(file, GA_ReadOnly)
+    #     imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
 
-        cur_mean += np.mean(imageArray)
-        cur_max = max(cur_max, np.max(imageArray))
+    #     cur_mean += np.mean(imageArray)
+    #     cur_max = max(cur_max, np.max(imageArray))
 
-    all_mean = cur_mean/len(files)
+    # all_mean = cur_mean/len(files)
 
-    square_sum = 0.0
+    # square_sum = 0.0
     
-    # find the standard deviation
-    for k, file in enumerate(files):
+    # # find the standard deviation
+    # for k, file in enumerate(files):
 
-        if k % 1000 == 0:
-            print(f'Processing {k} of {len(files)}')
+    #     if k % 1000 == 0:
+    #         print(f'Processing {k} of {len(files)}')
 
-        tiff_data = gdal.Open(file, GA_ReadOnly)
-        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+    #     tiff_data = gdal.Open(file, GA_ReadOnly)
+    #     imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
 
-        square_sum += np.sum((imageArray - all_mean)**2)
+    #     square_sum += np.sum((imageArray - all_mean)**2)
 
-    std = np.sqrt(square_sum/(len(files)*360*518))
+    # std = np.sqrt(square_sum/(len(files)*360*518))
 
 
-    print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
+    # print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
 
 
 
