@@ -1,15 +1,17 @@
 #!/bin/bash
 
-#SBATCH --job-name q95
+#SBATCH --job-name convLSTM_l1_loss
 
-
-#SBATCH --nodes 1
-#SBATCH --ntasks 1
-#SBATCH --mem=200GB
 #SBATCH --partition=gpu1
+#SBATCH --nodes 4
+
+#SBATCH --gres=gpu:4
+#SBATCH --ntasks-per-node=4   # This needs to match Trainer(devices=#) in the code
+
+#SBATCH --mem=200GB
 
 #SBATCH --error=/home1/zhang2012/nowcasting/runs/job.%J.err 
 #SBATCH --output=/home1/zhang2012/nowcasting/runs/job.%J.out
 
-export CUDA_VISIBLE_DEVICES=2
-python /home1/zhang2012/nowcasting/examples/exp_1dataset.py
+
+srun python /home1/zhang2012/nowcasting/examples/wa_imerg_train.py

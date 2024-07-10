@@ -76,28 +76,25 @@ class ConvLSTM_Model(nn.Module):
 
     def __init__(self, 
                 num_hiddens: tuple = (128,128,128,128),
-                img_input_channels: int = 1,
-                img_output_channels: int = 1,
+                img_channels: int = 1,
                 image_shape: tuple = (360, 516),
                 patch_size: int = 6,
                 filter_size: int = 5,
                 stride: int = 1,
-                layer_norm: bool = True,
                 in_seq_length: int = 4,
                 out_seq_length: int = 12,
-                reverse_scheduled_sampling: int = 0,
+
+                layer_norm: bool = True,
                 relu_last: bool=True,
                 ):
         super(ConvLSTM_Model, self).__init__()
 
-        self.img_input_channels = img_input_channels
-        self.img_output_channels = img_output_channels
+        self.img_channels = img_channels
 
         self.H, self.W = image_shape[0], image_shape[1]
         self.patch_size = patch_size    
 
-        self.frame_channel = patch_size* patch_size * img_input_channels
-        self.output_channel = patch_size * patch_size * img_output_channels
+        self.frame_channel = patch_size* patch_size * img_channels
         self.num_layers = len(num_hiddens)
         self.num_hiddens = num_hiddens
 
@@ -109,7 +106,6 @@ class ConvLSTM_Model(nn.Module):
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length
 
-        self.reverse_scheduled_sampling = reverse_scheduled_sampling
         self.relu_last = relu_last
         
         self.space2depth = nn.PixelUnshuffle(patch_size)
@@ -123,7 +119,7 @@ class ConvLSTM_Model(nn.Module):
             )
         self.cell_list = nn.ModuleList(cell_list)
 
-        self.conv_last = nn.Conv2d(self.num_hiddens[self.num_layers - 1], self.output_channel,
+        self.conv_last = nn.Conv2d(self.num_hiddens[self.num_layers - 1], self.frame_channel,
                                    kernel_size=1, stride=1, padding=0, bias=False)
         
 
@@ -182,9 +178,15 @@ class ConvLSTM(L.LightningModule):
             patch_size: int = 6,
             in_seq_length: int = 4,
             out_seq_length: int = 12,
-            img_channel: int = 1,
-            loss: str = 'mse',
+            loss: str = 'l1',
             eta: float = 1.0,
+            layer_norm: bool = True,
+            relu_last: bool=True,
+
+            img_channels: int = 1,
+            image_shape: tuple = (360, 516),
+            filter_size: int = 5,
+            stride: int = 1,
             ):
         super().__init__()
         self.num_hiddens = num_hiddens
@@ -194,13 +196,25 @@ class ConvLSTM(L.LightningModule):
         self.patch_size = patch_size
         self.in_seq_length = in_seq_length
         self.out_seq_length = out_seq_length
-        self.img_channel = img_channel
+        self.img_channels = img_channels
         
-        self.model = ConvLSTM_Model(self.num_hiddens)
+        self.model = ConvLSTM_Model(num_hiddens = self.num_hiddens, 
+                                    img_channels=img_channels,
+                                    image_shape=image_shape,
+                                    patch_size=patch_size,
+                                    filter_size=filter_size,
+                                    stride=stride,
+                                    in_seq_length=in_seq_length,
+                                    out_seq_length=out_seq_length,
+                                    layer_norm=layer_norm, 
+                                    relu_last=relu_last,
+                                    )
         self.space2depth = nn.PixelUnshuffle(patch_size)
         self.depth2space = nn.PixelShuffle(patch_size)
 
         self.criterion = get_loss(loss)
+
+        self.mse_loss = get_loss('mse')
         self.l1_loss = get_loss('l1')
 
         self.global_iteration = 0
@@ -281,11 +295,11 @@ class ConvLSTM(L.LightningModule):
 
         true_frames = self.space2depth(images)[:, 1:, :, :, :]
 
-        loss = self.l1_loss(true_frames, pred_frames)
+        loss = self.criterion(true_frames, pred_frames)
 
         self.log_dict(
             {
-                "train/frames_l1_loss": self.criterion(true_frames, pred_frames),
+                "train/criterion_loss": loss,
             },
             prog_bar=True,
         )
@@ -306,9 +320,9 @@ class ConvLSTM(L.LightningModule):
 
         self.log_dict(
             {
-                "val/frames_mse_loss": self.criterion(true_frames, pred_frames),
+                "val/frames_mse_loss": self.mse_loss(true_frames, pred_frames),
                 "val/frames_l1_loss": self.l1_loss(true_frames, pred_frames),
-                "val/images_mse_loss": self.criterion(out_images, pred_images),
+                "val/images_mse_loss": self.mse_loss(out_images, pred_images),
                 "val/images_l1_loss": self.l1_loss(out_images, pred_images),
             },
             prog_bar=True,

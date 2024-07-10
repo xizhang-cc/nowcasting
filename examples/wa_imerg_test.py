@@ -7,40 +7,15 @@ import h5py
 import torch
 
 
-from servir.core.distribution import get_dist_info
-from servir.datasets.dataLoader_imerg_from_h5 import imergDataset_withMeta
-from servir.utils.config_utils import load_config
-from servir.methods.ConvLSTM import ConvLSTM
-from servir.utils.utils import print_log
+
 
 
 #================Specification=========================#
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
-data_fname = 'wa_imerg.h5'
 
-normalize_method = '01range'
-
-test_st = '2020-08-25' 
-test_ed = '2020-09-01'
-
-# file names
-base_fname = f'imerg{normalize_method[:3]}'
-model_para_fname = f'{base_fname}_params.pth'
-checkpoint_fname = f'{base_fname}_checkpoint.pth'
-pred_fname = f'{base_fname}_predictions.h5'
-
-##=============Read In Configurations================##
-# Load configuration file
-config_path = os.path.join(base_path, f'configs/{dataset_name}', f'{method_name}.py') 
-
-if os.path.isfile(config_path):
-    print('config file found')
-else:
-    print(f'config file NOT found! config_path = {config_path}')
-
-config = load_config(config_path)
-print_log(f'config file at {config_path} logged')
+self.imergTest = imergDataset_tif(dataPath, test_start_date, test_end_date, in_seq_length, out_seq_length,\
+                                sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape)
 
 # # test run on local machine
 # if base_path == '/home/cc/projects/nowcasting':

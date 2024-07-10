@@ -1,8 +1,5 @@
 
 import os
-import sys
-base_path ='/home/cc/projects/nowcasting' #
-sys.path.append(base_path)
 import glob
 import datetime
 import h5py
@@ -149,9 +146,51 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    fPath = os.path.join(base_path, 'data/IMERG_WA/')
+    base_path ='/home/cc/projects/nowcasting' #
+
+    fPath = os.path.join(base_path, 'data/wa_imerg/')
     # start_date = '2020-06-01'
     # end_date = '2020-09-01'
 
-    tiff2h5py(fPath, fname='wa_imerg.h5', start_date='1999-01-01', end_date='2026-01-01')
+    # tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2020-01-01', end_date='2020-07-01')
+
+    cur_mean = 0.0
+    cur_max = 0.0
+
+    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
+
+    for k, file in enumerate(files):
+
+        if k % 1000 == 0:
+            print(f'Processing {k} of {len(files)}')
+
+        tiff_data = gdal.Open(file, GA_ReadOnly)
+        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+        cur_mean += np.mean(imageArray)
+        cur_max = max(cur_max, np.max(imageArray))
+
+    all_mean = cur_mean/len(files)
+
+    square_sum = 0.0
+    
+    # find the standard deviation
+    for k, file in enumerate(files):
+
+        if k % 1000 == 0:
+            print(f'Processing {k} of {len(files)}')
+
+        tiff_data = gdal.Open(file, GA_ReadOnly)
+        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+        square_sum += np.sum((imageArray - all_mean)**2)
+
+    std = np.sqrt(square_sum/(len(files)*360*518))
+
+
+    print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
+
+
+
+    # write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, model_config) 
 

@@ -10,8 +10,15 @@ from osgeo.gdalconst import GA_ReadOnly
 
 
 class imergDataset_tif(Dataset):
-    def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length, sampling_freq = timedelta(hours=2), normalize_method='01range', \
-                 **kwargs):
+    def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length,\
+                sampling_freq: timedelta = timedelta(hours=2),
+                normalize_method: str = '01range',
+                precip_mean: float = 0.04963324009442847,
+                precip_std: float = 0.5011062947027829,
+                precip_max: float = 60.0,
+                precip_min: float = 0.0,
+                img_shape: tuple = (360, 518),
+                ):
         
         self.fPath = fPath
         # convert str to datetime
@@ -24,25 +31,15 @@ class imergDataset_tif(Dataset):
         self.sampling_freq = sampling_freq # sliding window sampling frequency
         self.normalize_method = normalize_method
 
-        if normalize_method == 'gaussian':
-            assert 'precip_mean' in kwargs.keys(), 'mean value is required for gaussian normalization'
-            assert 'precip_std' in kwargs.keys(), 'std value is required for gaussian normalization'
-            self.mean = kwargs['precip_mean']
-            self.std = kwargs['precip_std']
-        elif normalize_method == '01range':
-            assert 'precip_max' in kwargs.keys(), 'max value is required for 01range normalization'
-            assert 'precip_min' in kwargs.keys(), 'min value is required for 01range normalization'
-            self.max = kwargs['precip_max']
-            self.min = kwargs['precip_min']    
+        self.mean = precip_mean
+        self.std = precip_std
 
-        if 'img_shape' in kwargs.keys():
-            img_shape = kwargs['img_shape']
+        self.max = precip_max
+        self.min = precip_min
 
-            self.img_height = img_shape[0]
-            self.img_width = img_shape[1]
-        else: # original IMERG data shape
-            self.img_height = 360
-            self.img_width = 518
+        self.img_height = img_shape[0]
+        self.img_width = img_shape[1]
+
 
 
     def __len__(self):
@@ -110,8 +107,15 @@ class imergDataset_tif(Dataset):
 
 
 class imergDataset_tif_withMeta(Dataset):
-    def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length, sampling_freq = timedelta(hours=2), normalize_method='01range', \
-                 **kwargs):
+    def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length,\
+                sampling_freq: timedelta = timedelta(hours=2),
+                normalize_method: str = '01range',
+                precip_mean: float = 0.04963324009442847,
+                precip_std: float = 0.5011062947027829,
+                precip_max: float = 60.0,
+                precip_min: float = 0.0,
+                img_shape: tuple = (360, 518),
+                ):
         
         self.fPath = fPath
         # convert str to datetime
@@ -123,17 +127,15 @@ class imergDataset_tif_withMeta(Dataset):
         self.time_delta = timedelta(minutes=30) # this is fixed for IMERG data
         self.sampling_freq = sampling_freq # sliding window sampling frequency
         self.normalize_method = normalize_method
+        self.mean = precip_mean
+        self.std = precip_std
 
-        if normalize_method == 'gaussian':
-            assert 'precip_mean' in kwargs.keys(), 'mean value is required for gaussian normalization'
-            assert 'precip_std' in kwargs.keys(), 'std value is required for gaussian normalization'
-            self.mean = kwargs['precip_mean']
-            self.std = kwargs['precip_std']
-        elif normalize_method == '01range':
-            assert 'precip_max' in kwargs.keys(), 'max value is required for 01range normalization'
-            assert 'precip_min' in kwargs.keys(), 'min value is required for 01range normalization'
-            self.max = kwargs['precip_max']
-            self.min = kwargs['precip_min']    
+        self.max = precip_max
+        self.min = precip_min
+        
+        self.img_height = img_shape[0]
+        self.img_width = img_shape[1]
+
 
 
     def __len__(self):
@@ -175,7 +177,6 @@ class imergDataset_tif_withMeta(Dataset):
         precipitations = np.stack(precipitations, axis=0)
         # add channel dimension
         precipitations = np.expand_dims(precipitations, axis=(1))
-    
 
         # normalize the data
         if self.normalize_method == 'gaussian':
@@ -206,15 +207,13 @@ class WAImergDataModule(LightningDataModule):
         train_end_date: str = '2020-07-31 23:30:00',
         val_start_date: str = '2020-08-01 00:00:00',
         val_end_date: str = '2020-09-30 23:30:00',
-        test_start_date: str = '2020-10-01 00:00:00',
-        test_end_date: str = '2020-10-31 23:30:00',
         in_seq_length: int = 4,
         out_seq_length: int = 12,
         sampling_freq: timedelta = timedelta(hours=2),
         normalize_method: str = '01range',
-        precip_mean: float = 0.0,
-        precip_std: float = 1.0,
-        precip_max: float = 1.0,
+        precip_mean: float = 0.04963324009442847,
+        precip_std: float = 0.5011062947027829,
+        precip_max: float = 60.0,
         precip_min: float = 0.0,
         img_shape: tuple = (360, 518)
     ):
@@ -226,9 +225,7 @@ class WAImergDataModule(LightningDataModule):
         self.imergVal = imergDataset_tif(dataPath, val_start_date, val_end_date, in_seq_length, out_seq_length,\
                                         sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
                                         precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
-        self.imergTest = imergDataset_tif(dataPath, test_start_date, test_end_date, in_seq_length, out_seq_length,\
-                                        sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
-                                        precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+
 
 
     def train_dataloader(self):
@@ -236,9 +233,7 @@ class WAImergDataModule(LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.imergVal, batch_size=2, pin_memory=True, shuffle=False, num_workers=4)
-    
-    def test_dataloader(self):
-        return DataLoader(self.imergTest, batch_size=2, pin_memory=True, shuffle=False,num_workers=4)
+
     
 
 #===================================================================================================
