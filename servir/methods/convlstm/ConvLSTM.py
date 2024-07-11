@@ -221,9 +221,10 @@ class ConvLSTM(L.LightningModule):
         self.eta  = eta
 
     
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         """Forward the model"""
-
+        if mask is None:
+            mask = self.get_true_mask(x)
         y, next_frames = self.model(x, mask)
         
         return y, next_frames

@@ -2,7 +2,7 @@ import os
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 from pytorch_lightning import Trainer
-from servir.datasets.dataLoader_imerg_from_tif import WAImergDataModule
+from servir.datasets.dataLoader_imerg_from_tif import WAImergDataRSModule
 
 from servir.methods.convlstm.ConvLSTM import ConvLSTM
 from servir.utils import create_folder
@@ -12,7 +12,7 @@ def main():
     method_name = 'ConvLSTM'
     dataset_name = 'wa_imerg'
 
-    base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
+    base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
     # file names
     result_path = os.path.join(base_path, 'results', dataset_name, method_name)
     create_folder(result_path, level=3)
@@ -26,25 +26,22 @@ def main():
     model = ConvLSTM(loss=loss, layer_norm= True, relu_last=True)
 
     early_stop_callback = EarlyStopping(monitor="val/frames_l1_loss", min_delta=0.00, patience=2, verbose=False, mode="min")
-    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=f'loss:{loss}--{normalize_method}')# '{epoch:02d}-{val_loss:.2f}'
+    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=f'{loss}_loss--{normalize_method}')# '{epoch:02d}-{val_loss:.2f}'
 
 
     # data module
-    train_st = '2017-01-00 00:00:00' 
-    train_ed = '2018-12-31 23:30:00' 
-    val_st = '2019-01-00 00:00:00'
-    val_ed = '2019-12-31 23:30:00'
-
+    train_st = '2020-10-01 00:00:00' 
+    train_ed = '2020-10-03 23:30:00' 
 
     # get the data module
     dataPath = os.path.join(base_path, 'data', dataset_name)
-    data_module = WAImergDataModule(dataPath, train_st, train_ed, val_st, val_ed, \
+    data_module = WAImergDataRSModule(dataPath, train_st, train_ed, \
                                     in_seq_length=4, out_seq_length=12, normalize_method=normalize_method,\
-                                    img_shape = (360, 516))
+                                    img_shape = (360, 516), batch_size=2)
 
 
     trainer = Trainer(
-        max_epochs=10,
+        max_epochs=100,
         callbacks=[early_stop_callback, checkpoint_callback],
         accelerator="gpu",
         devices=4, 
@@ -57,9 +54,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
 
 

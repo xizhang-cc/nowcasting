@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timedelta
 import numpy as np
 
-from torch.utils.data import Dataset, DataLoader
+import torch    
+from torch.utils.data import Dataset, DataLoader, random_split
 from pytorch_lightning import LightningDataModule
 
 import osgeo.gdal as gdal
@@ -127,12 +128,13 @@ class imergDataset_tif_withMeta(Dataset):
         self.time_delta = timedelta(minutes=30) # this is fixed for IMERG data
         self.sampling_freq = sampling_freq # sliding window sampling frequency
         self.normalize_method = normalize_method
+
         self.mean = precip_mean
         self.std = precip_std
 
         self.max = precip_max
         self.min = precip_min
-        
+
         self.img_height = img_shape[0]
         self.img_width = img_shape[1]
 
@@ -175,8 +177,18 @@ class imergDataset_tif_withMeta(Dataset):
         # desired shape: [T, C, H, W]
         # concatenate the images along the time axis
         precipitations = np.stack(precipitations, axis=0)
-        # add channel dimension
+        # add channel dimension, resulting [B, C, H, W]
         precipitations = np.expand_dims(precipitations, axis=(1))
+
+        # crop the image to the desired shape(centor crop)
+        if self.img_height != 360:
+            h_start = (360 - self.img_height) // 2
+            precipitations = precipitations[:, :, h_start:h_start+self.img_height, :]
+
+        if self.img_width != 518:
+            w_start = (518 - self.img_width) // 2
+            precipitations = precipitations[:, :, :, w_start:w_start+self.img_width]
+
 
         # normalize the data
         if self.normalize_method == 'gaussian':
@@ -234,6 +246,50 @@ class WAImergDataModule(LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.imergVal, batch_size=2, pin_memory=True, shuffle=False, num_workers=4)
 
+
+
+class WAImergDataRSModule(LightningDataModule):
+   
+
+    def __init__(
+        self,
+        dataPath: str = "/home/cc/projects/nowcasting/data/wa_imerg/",
+        start_date: str = '2019-01-01 00:00:00',
+        end_date: str = '2020-07-31 23:30:00',
+        in_seq_length: int = 4,
+        out_seq_length: int = 12,
+        sampling_freq: timedelta = timedelta(hours=2),
+        normalize_method: str = '01range',
+        precip_mean: float = 0.04963324009442847,
+        precip_std: float = 0.5011062947027829,
+        precip_max: float = 60.0,
+        precip_min: float = 0.0,
+        img_shape: tuple = (360, 518),
+        batch_size: int = 12
+    ):
+        super().__init__()
+
+        self.imergFull = imergDataset_tif(dataPath, start_date, end_date, in_seq_length, out_seq_length,\
+                                    sampling_freq=sampling_freq, normalize_method=normalize_method, img_shape = img_shape,\
+                                    precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+        
+        self.batch_size = batch_size
+
+
+    def setup(self, stage=None):
+        imergFull = self.imergFull
+        self.imergTrain, self.imergVal = random_split(
+            imergFull, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
+        )
+
+
+    def train_dataloader(self):
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=False, num_workers=20)
+
+    def val_dataloader(self):
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=False, num_workers=20)
+
+    
     
 
 #===================================================================================================
@@ -246,12 +302,12 @@ if __name__=='__main__':
 
 
 
-    a = imergDataset_tif(dataPath, '2019-03-01 00:00:00', '2019-03-31 23:30:00',\
-                                   4, 12,normalize_method=None)
-    l = a.__len__()
-    a.__getitem__(368)
+    # a = imergDataset_tif(dataPath, '2019-03-01 00:00:00', '2019-03-31 23:30:00',\
+    #                                4, 12,normalize_method=None)
+    # l = a.__len__()
+    # a.__getitem__(368)
 
-    print('stop for debugging')
+    # print('stop for debugging')
 
 
 

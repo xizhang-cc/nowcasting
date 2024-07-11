@@ -1,91 +1,77 @@
 import os
-import sys
-base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
-sys.path.append(base_path)
-
-import h5py 
 import torch
 
+from servir.datasets.dataLoader_imerg_from_tif import imergDataset_tif_withMeta
+from servir.methods.convlstm.ConvLSTM import ConvLSTM
 
 
-
-
-#================Specification=========================#
 method_name = 'ConvLSTM'
 dataset_name = 'wa_imerg'
 
-self.imergTest = imergDataset_tif(dataPath, test_start_date, test_end_date, in_seq_length, out_seq_length,\
-                                sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape)
+# data module
+test_st = '2020-10-04 00:00:00' 
+test_ed = '2020-10-04 23:30:00' 
+in_seq_length = 4
+out_seq_length = 12
+normalize_method = '01range'
+use_gpu = True
+loss='l1'
 
-# # test run on local machine
-# if base_path == '/home/cc/projects/nowcasting':
-#     model_para_fname = model_para_fname.split('.')[0] + '_local.pth'
-#     checkpoint_fname = checkpoint_fname.split('.')[0] + '_local.pth' 
-#     pred_fname = pred_fname.split('.')[0] + '_local.h5'
-
-#     test_st = '2020-08-30'
-#     test_ed = '2020-09-01'
-
-#     config['batch_size'] = 2
-#     config['val_batch_size'] = 2
-#     config['num_hidden'] = '32, 32' 
-#     config['max_epoch'] = 10
-#     config['early_stop_epoch'] = 2 # test run on local machine
-
-# Results base path for logging, working dirs, etc. 
-base_results_path = os.path.join(base_path, f'results/{dataset_name}')
-if not os.path.exists(base_results_path):
-    os.makedirs(base_results_path)
-
-print_log(f'results path : {base_results_path}')
-
-
-##==================Data Loading=====================##
-# where to load data
+base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 dataPath = os.path.join(base_path, 'data', dataset_name)
-fname = os.path.join(dataPath, data_fname)
+ 
+result_path = os.path.join(base_path, 'results', dataset_name, method_name)
+
+testSet = imergDataset_tif_withMeta(dataPath, test_st, test_ed, in_seq_length, out_seq_length,\
+                                normalize_method=normalize_method,img_shape = (360, 516))
+
+dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=2, shuffle=False, pin_memory=True, num_workers = 20)   
 
 
-# testing data from 2020-08-25 to 2020-09-01, meta data is included for saving results
-testSet = imergDataset_withMeta(fname, start_date = test_st, end_date = test_ed,\
-                                in_seq_length = config['in_seq_length'], out_seq_length=config['out_seq_length'], \
-                                normalize_method=normalize_method)
-
-
-dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=config['val_batch_size'], shuffle=False, pin_memory=True)   
-
-# update config
-config['steps_per_epoch'] = 10
-
-# setup distribution
-config['rank'], config['world_size'] = get_dist_info()
 ##==================Setup Method=====================##
 
-if (config['use_gpu']) and torch.cuda.is_available(): 
+if use_gpu and torch.cuda.is_available(): 
     device = torch.device('cuda:0')
 else:
     device = torch.device('cpu')
 
-config['device'] = device
-
+checkpoint_fname = os.path.join(result_path, f'{loss}_loss--{normalize_method}.ckpt')
 # setup method
-method = ConvLSTM(config)
+model = ConvLSTM.load_from_checkpoint(checkpoint_fname)
 
-##==================Testing==========================## 
-# # path and name of best model
-para_dict_fpath = os.path.join(base_results_path, model_para_fname)
-# Loads best model’s parameter dictionary 
-if device.type == 'cpu':
-    method.model.load_state_dict(torch.load(para_dict_fpath, map_location=torch.device('cpu')))
-else:
-    method.model.load_state_dict(torch.load(para_dict_fpath))
+# disable randomness, dropout, etc...
+model.eval()
 
-test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+# predict with the model
+for batch in dataloader_test:
+    batch_x, batch_y, batch_x_dt, batch_y_dt = batch
+    images = torch.cat([batch_x, batch_y], dim=1)
+    
+    # move to device and predict
+    images = images.to(device)
+    pred_images,_ = model(images)
 
-# save results to h5py file
-with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
-    hf.create_dataset('precipitations', data=test_pred)
-    hf.create_dataset('timestamps', data=test_meta)
+    # move to cpu and convert to numpy array
+    pred_images = pred_images.cpu().detach().numpy()
+
+
+
+
+# ##==================Testing==========================## 
+# # # path and name of best model
+# para_dict_fpath = os.path.join(base_results_path, model_para_fname)
+# # Loads best model’s parameter dictionary 
+# if device.type == 'cpu':
+#     method.model.load_state_dict(torch.load(para_dict_fpath, map_location=torch.device('cpu')))
+# else:
+#     method.model.load_state_dict(torch.load(para_dict_fpath))
+
+# test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
+
+# # save results to h5py file
+# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
+#     hf.create_dataset('precipitations', data=test_pred)
+#     hf.create_dataset('timestamps', data=test_meta)
 
 # with h5py.File(fname, 'r') as hf:
 #     mean = hf['mean'][()]   
