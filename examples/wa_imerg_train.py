@@ -32,6 +32,8 @@ def main():
     # data module
     train_st = '2017-01-01 00:00:00' 
     train_ed = '2019-12-31 23:30:00' 
+    # val_st = ''
+    # val_ed = 
 
     # get the data module
     dataPath = os.path.join(base_path, 'data', dataset_name)
