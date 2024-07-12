@@ -26,31 +26,30 @@ def main():
     model = ConvLSTM(loss=loss, layer_norm= True, relu_last=True)
 
     early_stop_callback = EarlyStopping(monitor="val/frames_l1_loss", min_delta=0.00, patience=2, verbose=False, mode="min")
-    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=f'{loss}_loss--{normalize_method}')# '{epoch:02d}-{val_loss:.2f}'
+    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=f'{method_name}-{loss}-{normalize_method}')# '{epoch:02d}-{val_loss:.2f}'
 
 
     # data module
-    train_st = '2020-10-01 00:00:00' 
-    train_ed = '2020-10-03 23:30:00' 
+    train_st = '2017-01-01 00:00:00' 
+    train_ed = '2019-12-31 23:30:00' 
 
     # get the data module
     dataPath = os.path.join(base_path, 'data', dataset_name)
     data_module = WAImergDataRSModule(dataPath, train_st, train_ed, \
                                     in_seq_length=4, out_seq_length=12, normalize_method=normalize_method,\
-                                    img_shape = (360, 516), batch_size=2)
+                                    img_shape = (360, 516), batch_size=12)
 
 
     trainer = Trainer(
         max_epochs=100,
         callbacks=[early_stop_callback, checkpoint_callback],
         accelerator="gpu",
-        devices=4, 
+        devices=2, 
         strategy="ddp", 
-        num_nodes=4
+        num_nodes=2
     )
 
     trainer.fit(model, data_module)
-
 
 if __name__ == "__main__":
     main()
