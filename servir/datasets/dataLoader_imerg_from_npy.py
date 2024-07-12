@@ -10,7 +10,7 @@ import osgeo.gdal as gdal
 from osgeo.gdalconst import GA_ReadOnly
 
 
-class imergDataset_tif(Dataset):
+class imergDataset_npy(Dataset):
     def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length,\
                 sampling_freq: timedelta = timedelta(hours=2),
                 normalize_method: str = '01range',
@@ -63,7 +63,7 @@ class imergDataset_tif(Dataset):
         # get all datetime from item_st to item_ed every time_delta
         item_dts = [item_st + k*self.time_delta for k in range(self.in_seq_length + self.out_seq_length)]
         # get all file paths
-        item_files = [os.path.join(self.fPath, f'imerg.{x.strftime("%Y%m%d%H%M")}.30minAccum.tif') for x in item_dts]
+        item_files = [os.path.join(self.fPath, f'imerg.{x.strftime("%Y%m%d%H%M")}.30minAccum.npy') for x in item_dts]
 
         precipitations = []
         for file in item_files:
@@ -72,8 +72,8 @@ class imergDataset_tif(Dataset):
                 # use the last image if the file does not exist
                 imageArray = precipitations[-1]
             else:
-                tiff_data = gdal.Open(file, GA_ReadOnly)
-                imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+                with open(file, 'rb') as f:
+                    imageArray = np.load(f)
 
             precipitations.append(imageArray)
 
@@ -107,9 +107,9 @@ class imergDataset_tif(Dataset):
         return in_imgs, out_imgs
 
 
-class imergDataset_tif_withMeta(Dataset):
+class imergDataset_npy_withMeta(Dataset):
     def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length,\
-                sampling_freq: timedelta = timedelta(hours=2),
+                sampling_freq: timedelta = timedelta(minutes=30),
                 normalize_method: str = '01range',
                 precip_mean: float = 0.04963324009442847,
                 precip_std: float = 0.5011062947027829,
@@ -160,7 +160,7 @@ class imergDataset_tif_withMeta(Dataset):
         # get all datetime from item_st to item_ed every time_delta
         item_dts = [item_st + k*self.time_delta for k in range(self.in_seq_length + self.out_seq_length)]
         # get all file paths
-        item_files = [os.path.join(self.fPath, f'imerg.{x.strftime("%Y%m%d%H%M")}.30minAccum.tif') for x in item_dts]
+        item_files = [os.path.join(self.fPath, f'imerg.{x.strftime("%Y%m%d%H%M")}.30minAccum.npy') for x in item_dts]
 
         precipitations = []
         for file in item_files:
@@ -169,8 +169,8 @@ class imergDataset_tif_withMeta(Dataset):
                 # use the last image if the file does not exist
                 imageArray = precipitations[-1]
             else:
-                tiff_data = gdal.Open(file, GA_ReadOnly)
-                imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+                with open(file, 'rb') as f:
+                    imageArray = np.load(f)
 
             precipitations.append(imageArray)
 
@@ -209,7 +209,7 @@ class imergDataset_tif_withMeta(Dataset):
         return (in_imgs, out_imgs, in_dt_str, out_dt_str)
 
 
-class WAImergTifDataModule(LightningDataModule):
+class WAImergNpyDataModule(LightningDataModule):
    
 
     def __init__(
@@ -219,61 +219,83 @@ class WAImergTifDataModule(LightningDataModule):
         train_end_date: str = '2020-07-31 23:30:00',
         val_start_date: str = '2020-08-01 00:00:00',
         val_end_date: str = '2020-09-30 23:30:00',
+        # test_start_date: str = '2020-10-01 00:00:00',
+        # test_end_date: str = '2020-10-31 23:30:00',
         in_seq_length: int = 4,
         out_seq_length: int = 12,
-        sampling_freq: timedelta = timedelta(hours=2),
-        normalize_method: str = '01range',
-        precip_mean: float = 0.04963324009442847,
-        precip_std: float = 0.5011062947027829,
-        precip_max: float = 60.0,
-        precip_min: float = 0.0,
-        img_shape: tuple = (360, 518)
-    ):
-        super().__init__()
-
-        self.imergTrain = imergDataset_tif(dataPath, train_start_date, train_end_date, in_seq_length, out_seq_length,\
-                                        sampling_freq=sampling_freq, normalize_method=normalize_method, img_shape = img_shape,\
-                                        precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
-        self.imergVal = imergDataset_tif(dataPath, val_start_date, val_end_date, in_seq_length, out_seq_length,\
-                                        sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
-                                        precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
-
-
-
-    def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=2, pin_memory=True, shuffle=False, num_workers=4)
-
-    def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=2, pin_memory=True, shuffle=False, num_workers=4)
-
-
-
-class WAImergTifDataRSModule(LightningDataModule):
-   
-
-    def __init__(
-        self,
-        dataPath: str = "/home/cc/projects/nowcasting/data/wa_imerg/",
-        start_date: str = '2019-01-01 00:00:00',
-        end_date: str = '2020-07-31 23:30:00',
-        in_seq_length: int = 4,
-        out_seq_length: int = 12,
-        sampling_freq: timedelta = timedelta(hours=2),
+        sampling_freq: timedelta = timedelta(minutes=30),#timedelta(hours=2),
         normalize_method: str = '01range',
         precip_mean: float = 0.04963324009442847,
         precip_std: float = 0.5011062947027829,
         precip_max: float = 60.0,
         precip_min: float = 0.0,
         img_shape: tuple = (360, 518),
-        batch_size: int = 12
+        batch_size: int = 12,
+        shuffle: bool=False # shuffle must set to False when using recurrent models
     ):
         super().__init__()
 
-        self.imergFull = imergDataset_tif(dataPath, start_date, end_date, in_seq_length, out_seq_length,\
+        self.imergTrain = imergDataset_npy(dataPath, train_start_date, train_end_date, in_seq_length, out_seq_length,\
+                                        sampling_freq=sampling_freq, normalize_method=normalize_method, img_shape = img_shape,\
+                                        precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+        
+        self.imergVal = imergDataset_npy(dataPath, val_start_date, val_end_date, in_seq_length, out_seq_length,\
+                                        sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
+                                        precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+        
+        # self.imergTest = imergDataset_npy(dataPath, test_start_date, test_end_date, in_seq_length, out_seq_length,\
+        #                                 sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
+        #                                 precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+
+
+    def train_dataloader(self):
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+
+    def val_dataloader(self):
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+    
+    # def test_dataloader(self):
+    #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+
+
+
+class WAImergNpyDataRSModule(LightningDataModule):
+
+
+    def __init__(
+        self,
+        dataPath: str = "/home/cc/projects/nowcasting/data/wa_imerg/",
+        train_start_date: str = '2020-08-01 00:00:00',
+        train_end_date: str = '2020-09-30 23:30:00',
+        # test_start_date: str = '2020-10-01 00:00:00',
+        # test_end_date: str = '2020-10-31 23:30:00',
+        in_seq_length: int = 4,
+        out_seq_length: int = 12,
+        sampling_freq: timedelta = timedelta(minutes=30),
+        normalize_method: str = '01range',
+        precip_mean: float = 0.04963324009442847,
+        precip_std: float = 0.5011062947027829,
+        precip_max: float = 60.0,
+        precip_min: float = 0.0,
+        img_shape: tuple = (360, 518),
+        batch_size: int = 12,
+        shuffle: bool=False,
+    ):
+        super().__init__()
+
+        self.imergFull = imergDataset_npy(dataPath, train_start_date, train_end_date, in_seq_length, out_seq_length,\
                                     sampling_freq=sampling_freq, normalize_method=normalize_method, img_shape = img_shape,\
                                     precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
         
+        # self.imergTest = imergDataset_npy(dataPath, test_start_date, test_end_date, in_seq_length, out_seq_length,\
+        #                         sampling_freq=sampling_freq, normalize_method=normalize_method,img_shape = img_shape,\
+        #                         precip_mean=precip_mean, precip_std=precip_std, precip_max=precip_max, precip_min=precip_min)
+        
         self.batch_size = batch_size
+        self.shuffle = shuffle
 
 
     def setup(self, stage=None):
@@ -284,14 +306,18 @@ class WAImergTifDataRSModule(LightningDataModule):
 
 
     def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=False, num_workers=20)
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
 
     def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=False, num_workers=20)
-
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+    
+    # def test_dataloader(self):
+    #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
     
     
 
+    
+    
 #===================================================================================================
 #===================================================================================================
 #===================================================================================================

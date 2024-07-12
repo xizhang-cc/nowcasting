@@ -1,7 +1,9 @@
 import os
+import h5py
+import numpy as np
 import torch
 
-from servir.datasets.dataLoader_imerg_from_tif import imergDataset_tif_withMeta
+from servir.datasets.dataLoader_imerg_from_npy import imergDataset_npy_withMeta
 from servir.methods.convlstm.ConvLSTM import ConvLSTM
 
 
@@ -22,8 +24,8 @@ dataPath = os.path.join(base_path, 'data', dataset_name)
  
 result_path = os.path.join(base_path, 'results', dataset_name, method_name)
 
-testSet = imergDataset_tif_withMeta(dataPath, test_st, test_ed, in_seq_length, out_seq_length,\
-                                normalize_method=normalize_method,img_shape = (360, 516))
+testSet = imergDataset_npy_withMeta(dataPath, test_st, test_ed, in_seq_length, out_seq_length,\
+                                    normalize_method=normalize_method,img_shape = (360, 516))
 
 dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=2, shuffle=False, pin_memory=True, num_workers = 20)   
 
@@ -42,60 +44,53 @@ model = ConvLSTM.load_from_checkpoint(checkpoint_fname)
 # disable randomness, dropout, etc...
 model.eval()
 
+pred_results = []
+pred_meta = []
 # predict with the model
 for batch in dataloader_test:
-    batch_x, batch_y, batch_x_dt, batch_y_dt = batch
-    images = torch.cat([batch_x, batch_y], dim=1)
+    in_images, out_images, in_images_dt, out_images_dt = batch
+    images = torch.cat([in_images, out_images], dim=1)
     
     # move to device and predict
     images = images.to(device)
-    pred_images,_ = model(images)
+    pred_out_images,_ = model(images)
 
     # move to cpu and convert to numpy array
-    pred_images = pred_images.cpu().detach().numpy()
+    pred_out_images = pred_out_images.cpu().detach().numpy()
+
+    # save the results
+    pred_results.append(pred_out_images)
 
 
+    pred_meta = pred_meta + [dt for dt in out_images_dt]
+
+if len(pred_results)>0:
+    pred_results = np.concatenate(pred_results, axis=0)
 
 
-# ##==================Testing==========================## 
-# # # path and name of best model
-# para_dict_fpath = os.path.join(base_results_path, model_para_fname)
-# # Loads best model’s parameter dictionary 
-# if device.type == 'cpu':
-#     method.model.load_state_dict(torch.load(para_dict_fpath, map_location=torch.device('cpu')))
-# else:
-#     method.model.load_state_dict(torch.load(para_dict_fpath))
-
-# test_loss, test_pred, test_meta = method.test(dataloader_test, gather_pred = True)
-
-# # save results to h5py file
-# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
-#     hf.create_dataset('precipitations', data=test_pred)
-#     hf.create_dataset('timestamps', data=test_meta)
-
-# with h5py.File(fname, 'r') as hf:
-#     mean = hf['mean'][()]   
-#     std = hf['std'][()]
-#     max_value = hf['max'][()]
-#     min_value = hf['min'][()]
-    
-
-# threshold=0.1
-
-# # imerg convert to mm/hr (need to be updated)
-# if normalize_method == 'gaussian':
-#     test_pred = test_pred * std + mean
-# elif normalize_method == '01range':
-#     test_pred = test_pred * (max_value - min_value) + min_value
-# elif normalize_method == 'log_norm':
-#     test_pred = np.where(test_pred < np.log10(threshold), 0.0, np.power(10, test_pred))
+if pred_results.shape[2] == 1: # if grayscale, remove the channel dimension. [S, T, 1, H, W] --> [S, T, H, W]
+    pred_results = np.squeeze(pred_results, axis=2)
 
 
-# # save results to h5py file
-# with h5py.File(os.path.join(base_results_path, pred_fname),'w') as hf:
-#     hf.create_dataset('precipitations', data=test_pred)
-#     hf.create_dataset('timestamps', data=test_meta)
+imerg_mean: float = 0.04963324009442847
+imerg_std: float = 0.5011062947027829
+imerg_max: float = 60.0
+imerg_min: float = 0.0
 
-# print(f"PREDICTION DONE! Prediction file saved at {os.path.join(base_results_path, pred_fname)}")
+# imerg convert to mm/hr 
+if normalize_method == '01range':
+    test_pred = pred_results * (imerg_max - imerg_min) + imerg_min
+elif normalize_method == 'norm':
+    test_pred = pred_results * imerg_std + imerg_mean
+
+result_path = os.path.join(base_path, 'results', dataset_name, method_name)
+pred_fname = f'{method_name}-{loss}-{normalize_method}.h5'
+# save results to h5py file
+with h5py.File(os.path.join(result_path, pred_fname),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
+    hf.create_dataset('timestamps', data=pred_meta)
+
+
+print('Prediction results saved to:', os.path.join(result_path, pred_fname))
 
             

@@ -146,10 +146,10 @@ def write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, mode
 
 if __name__ == "__main__":
 
-    base_path = '/home1/zhang2012/nowcasting' #'/home/cc/projects/nowcasting' # 
+    base_path = '/home/cc/projects/nowcasting' # '/home1/zhang2012/nowcasting' #
 
     fPath = os.path.join(base_path, 'data/wa_imerg_tif/')
-    dPath = os.path.join(base_path, 'data/wa_imerg/')
+    dPath = os.path.join(base_path, 'data/wa_imerg_1/')
     # start_date = '2020-06-01'
     # end_date = '2020-09-01'
 
@@ -159,44 +159,50 @@ if __name__ == "__main__":
     # cur_max = 0.0
 
     files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
+    sorted_files = sorted(files)
 
-    for k, file in enumerate(files):
+    part1 = sorted_files[:len(sorted_files)//2]
+    part2 = sorted_files[len(sorted_files)//2:]
 
-        # new_fname = files.split('/')[]
+    for k, file in enumerate(part1):
+
+        new_fname = file.split('/')[-1].rsplit('.',1)[0] + '.npy'
+        new_f = os.path.join(dPath, new_fname)
 
         if k % 1000 == 0:
-            print(f'Processing {k} of {len(files)}')
+            print(f'Processing {k} of {len(part1)}')
 
         tiff_data = gdal.Open(file, GA_ReadOnly)
         imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
 
-        with open('test.npy', 'wb') as f:
-            np.save(f, np.array([1, 2]))
+        with open(new_f, 'wb') as f:
+            np.save(f, imageArray)
+
+
 
         # cur_mean += np.mean(imageArray)
         # cur_max = max(cur_max, np.max(imageArray))
 
     # all_mean = cur_mean/len(files)
 
-    square_sum = 0.0
+    # square_sum = 0.0
     
-    # find the standard deviation
-    for k, file in enumerate(files):
+    # # find the standard deviation
+    # for k, file in enumerate(files):
 
-        if k % 1000 == 0:
-            print(f'Processing {k} of {len(files)}')
+    #     if k % 1000 == 0:
+    #         print(f'Processing {k} of {len(files)}')
 
-        tiff_data = gdal.Open(file, GA_ReadOnly)
-        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+    #     tiff_data = gdal.Open(file, GA_ReadOnly)
+    #     imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
 
-        square_sum += np.sum((imageArray - all_mean)**2)
+    #     square_sum += np.sum((imageArray - all_mean)**2)
 
-    std = np.sqrt(square_sum/(len(files)*360*518))
-
-
-    print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
+    # std = np.sqrt(square_sum/(len(files)*360*518))
 
 
+    # print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
 
-    write_forcasts_to_geotiff(output_fPath, output_meta_fPath, resultsPath, model_config) 
+
+
 
