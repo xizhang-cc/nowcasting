@@ -3,6 +3,7 @@ import os
 import glob
 import datetime
 import h5py
+import shutil
 
 
 import numpy as np
@@ -82,13 +83,83 @@ def tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2011-10-01', end_date='202
     return sorted_precipitation, sorted_timestamps
     
 
+def save_as_npy(fPath, dPath):
+
+    fPath = os.path.join(base_path, 'data/wa_imerg_tif/')
+    dPath = os.path.join(base_path, 'data/wa_imerg/')
+
+    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
+    sorted_files = sorted(files)
+
+    # part1 = sorted_files[:len(sorted_files)//2]
+    # part2 = sorted_files[len(sorted_files)//2:]
+
+    for k, file in enumerate(sorted_files):
+
+        new_fname = file.split('/')[-1].rsplit('.',1)[0] + '.npy'
+        new_f = os.path.join(dPath, new_fname)
+
+        if k % 1000 == 0:
+            print(f'Processing {k} of {len(sorted_files)}')
+
+        tiff_data = gdal.Open(file, GA_ReadOnly)
+        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+        with open(new_f, 'wb') as f:
+            np.save(f, imageArray)
+
+def get_stats(fPath):
+    base_path = '/home/cc/projects/nowcasting' 
+
+    fPath = os.path.join(base_path, 'data/wa_imerg_tif/')
+
+    cur_mean = 0.0
+    cur_max = 0.0
+
+    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
+    sorted_files = sorted(files)
 
 
+    for k, file in enumerate(sorted_files):
+
+        new_fname = file.split('/')[-1].rsplit('.',1)[0] + '.npy'
+
+        if k % 1000 == 0:
+            print(f'Processing {k} of {len(sorted_files)}')
+
+        tiff_data = gdal.Open(file, GA_ReadOnly)
+        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+
+        cur_mean += np.mean(imageArray)
+        cur_max = max(cur_max, np.max(imageArray))
+
+    all_mean = cur_mean/len(files)
+
+    square_sum = 0.0
+    
+    # find the standard deviation
+    for k, file in enumerate(sorted_files):
+
+        if k % 1000 == 0:
+            print(f'Processing {k} of {len(sorted_files)}')
+
+        tiff_data = gdal.Open(file, GA_ReadOnly)
+        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
+
+        square_sum += np.sum((imageArray - all_mean)**2)
+
+    std = np.sqrt(square_sum/(len(files)*360*518))
+
+
+    print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
+
+    return all_mean, std, cur_max
 
 # ===============================================================================
 # ===========================Load GeoTiff format data============================
 # =============================================================================== 
-import json
+
 def get_EF5_geotiff_metadata(fPath='/home/cc/projects/nowcasting/data/wa_imerg/imerg_giotiff_meta.json'):
 
     with open(fPath, "r") as outfile:
@@ -148,60 +219,33 @@ if __name__ == "__main__":
 
     base_path = '/home/cc/projects/nowcasting' # '/home1/zhang2012/nowcasting' #
 
-    fPath = os.path.join(base_path, 'data/wa_imerg_tif/')
-    dPath = os.path.join(base_path, 'data/wa_imerg_1/')
-    # start_date = '2020-06-01'
-    # end_date = '2020-09-01'
-
-    # tiff2h5py(fPath, fname='wa_imerg.h5', start_date='2020-01-01', end_date='2021-01-01')
-
-    # cur_mean = 0.0
-    # cur_max = 0.0
-
-    files = glob.glob(os.path.join(fPath, 'imerg*.tif'))
-    sorted_files = sorted(files)
-
-    part1 = sorted_files[:len(sorted_files)//2]
-    part2 = sorted_files[len(sorted_files)//2:]
-
-    for k, file in enumerate(part1):
-
-        new_fname = file.split('/')[-1].rsplit('.',1)[0] + '.npy'
-        new_f = os.path.join(dPath, new_fname)
-
-        if k % 1000 == 0:
-            print(f'Processing {k} of {len(part1)}')
-
-        tiff_data = gdal.Open(file, GA_ReadOnly)
-        imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
-
-        with open(new_f, 'wb') as f:
-            np.save(f, imageArray)
+    fPath = os.path.join(base_path, 'data/wa_imerg/')
 
 
+    files = glob.glob(os.path.join(fPath, 'imerg*.npy'))
 
-        # cur_mean += np.mean(imageArray)
-        # cur_max = max(cur_max, np.max(imageArray))
+    start_dt =  datetime.datetime.strptime('2017-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+    end_dt = datetime.datetime.strptime('2023-06-01 00:00:00', '%Y-%m-%d %H:%M:%S')
 
-    # all_mean = cur_mean/len(files)
+    time_delta = datetime.timedelta(minutes=30) # this is fixed for IMERG data
 
-    # square_sum = 0.0
+    # get all datetimes between start and end with 30 minutes interval
+    all_datetimes = [start_dt + i*time_delta for i in range(int((end_dt-start_dt)/time_delta))]
+
+    # get all files coreesponding to the datetimes
+    all_files = [os.path.join(fPath, f'imerg.{x.strftime("%Y%m%d%H%M")}.30minAccum.npy') for x in all_datetimes]
     
-    # # find the standard deviation
-    # for k, file in enumerate(files):
+    count = 0
+    for k, file in enumerate(all_files):
 
-    #     if k % 1000 == 0:
-    #         print(f'Processing {k} of {len(files)}')
+        # if k % 1000 == 0:
+        #     print(f'Processing {k} of {len(all_files)}')
 
-    #     tiff_data = gdal.Open(file, GA_ReadOnly)
-    #     imageArray = np.array(tiff_data.GetRasterBand(1).ReadAsArray())
-
-    #     square_sum += np.sum((imageArray - all_mean)**2)
-
-    # std = np.sqrt(square_sum/(len(files)*360*518))
-
-
-    # print(f'All mean: {all_mean}, std: {std}, max: {cur_max}')
+        if not os.path.exists(file):
+            print(f'File {file} does not exist')
+            count += 1
+            # make a copy of the previous file and save it as the current file
+            shutil.copy(all_files[k-1], file)
 
 
 
