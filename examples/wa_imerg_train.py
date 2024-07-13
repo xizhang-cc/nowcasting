@@ -13,7 +13,7 @@ def main():
     method_name = 'ConvLSTM'
     dataset_name = 'wa_imerg'
 
-    base_path = "/home1/zhang2012/nowcasting/"#'/home/cc/projects/nowcasting' #
+    base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
     # file names
     result_path = os.path.join(base_path, 'results', dataset_name, method_name)
     create_folder(result_path, level=3)
@@ -21,7 +21,7 @@ def main():
     # loss to use and normalization method of data
     loss = 'l1'
     normalize_method ='01range'
-    best_model_fname = f'{method_name}-{loss}-{normalize_method}.ckpt'
+    best_model_fname = f'{method_name}-{loss}-{normalize_method}' # no need to add .ckpt extension
 
 
     # set relu_last to True when using 01range or no normalization, as all pixel values are positive.
@@ -32,11 +32,18 @@ def main():
     checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=best_model_fname)# '{epoch:02d}-{val_loss:.2f}'
 
 
-    # data module
-    train_st = '2017-01-01 00:00:00' 
-    train_ed = '2019-12-31 23:30:00' 
+    # # data module
+    # train_st = '2017-01-01 00:00:00' 
+    # train_ed = '2018-12-31 23:30:00' 
 
-    val_st = '2017-01-01 00:00:00' 
+    # val_st = '2019-01-01 00:00:00' 
+    # val_ed = '2019-12-31 23:30:00' 
+
+    # data module
+    train_st = '2019-12-10 00:00:00' 
+    train_ed = '2019-12-20 23:30:00' 
+
+    val_st = '2019-12-21 00:00:00' 
     val_ed = '2019-12-31 23:30:00' 
 
 

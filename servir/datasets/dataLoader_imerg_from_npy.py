@@ -252,10 +252,10 @@ class WAImergNpyDataModule(LightningDataModule):
 
 
     def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
 
     def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
     
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
@@ -306,10 +306,10 @@ class WAImergNpyDataRSModule(LightningDataModule):
 
 
     def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
 
     def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
     
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
