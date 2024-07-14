@@ -188,7 +188,8 @@ class ConvLSTM(L.LightningModule):
             filter_size: int = 5,
             stride: int = 1,
             ):
-        super().__init__()
+        # super().__init__()
+        super(ConvLSTM,self).__init__()
         self.num_hiddens = num_hiddens
         self.num_layers = len(self.num_hiddens)
         self.lr = lr
@@ -326,6 +327,7 @@ class ConvLSTM(L.LightningModule):
                 "val/images_mse_loss": self.mse_loss(out_images, pred_images),
                 "val/images_l1_loss": self.l1_loss(out_images, pred_images),
             },
+            sync_dist=True,
             prog_bar=True,
         )
 
@@ -334,9 +336,9 @@ class ConvLSTM(L.LightningModule):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1e-3, total_steps=self.trainer.estimated_stepping_batches),
-            },
+            # "lr_scheduler": {
+            #     "scheduler": torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1e-3, total_steps=self.trainer.estimated_stepping_batches),
+            # },
         }
     
 

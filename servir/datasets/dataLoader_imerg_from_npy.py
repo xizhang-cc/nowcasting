@@ -6,10 +6,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 from pytorch_lightning import LightningDataModule
 
-import osgeo.gdal as gdal
-from osgeo.gdalconst import GA_ReadOnly
-
-
 class imergDataset_npy(Dataset):
     def __init__(self, fPath, start_datetime, end_datetime, in_seq_length, out_seq_length,\
                 sampling_freq: timedelta = timedelta(hours=2),
@@ -231,7 +227,8 @@ class WAImergNpyDataModule(LightningDataModule):
         precip_min: float = 0.0,
         img_shape: tuple = (360, 518),
         batch_size: int = 12,
-        shuffle: bool=False # shuffle must set to False when using recurrent models
+        shuffle: bool=False, # shuffle must set to False when using recurrent models
+        pin_memory: bool=False,
     ):
         super().__init__()
 
@@ -249,13 +246,14 @@ class WAImergNpyDataModule(LightningDataModule):
 
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.pin_memory = pin_memory
 
 
     def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
 
     def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
     
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
@@ -306,10 +304,10 @@ class WAImergNpyDataRSModule(LightningDataModule):
 
 
     def train_dataloader(self):
-        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle)
 
     def val_dataloader(self):
-        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle, num_workers=20)
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle)
     
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)

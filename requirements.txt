@@ -1,16 +1,18 @@
 tqdm
 netCDF4
 
-torch
-torchaudio
-torchvision
+# tensorflow
+# torch
+# torchaudio
+# torchvision
+# huggingface_hub==0.21.4
+
 pytorch_msssim
+
 pytorch_lightning
-huggingface_hub==0.21.4
 datasets
 wandb
 timm
-tensorflow
 
 h5py
 numpy
@@ -23,4 +25,4 @@ pysteps
 fvcore
 antialiased_cnns
 einops
-cchardet
+# cchardet
