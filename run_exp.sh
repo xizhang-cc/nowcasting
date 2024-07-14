@@ -2,7 +2,7 @@
 
 #SBATCH --job-name convLSTM_l1_loss
 
-#SBATCH --partition=gpu1
+#SBATCH --partition=gpu2
 #SBATCH --nodes 4
 
 #SBATCH --gres=gpu:4
