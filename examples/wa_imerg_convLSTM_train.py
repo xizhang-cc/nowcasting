@@ -30,7 +30,7 @@ def main():
     model = ConvLSTM(loss=loss, layer_norm= True, relu_last=True)
 
     early_stop_callback = EarlyStopping(monitor="val/frames_l1_loss", min_delta=0.00, patience=3, verbose=False, mode="min")
-    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=best_model_fname)# '{epoch:02d}-{val_loss:.2f}'
+    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=best_model_fname, save_last=True)# '{epoch:02d}-{val_loss:.2f}'
 
 
     # data module
@@ -39,14 +39,6 @@ def main():
 
     val_st = '2019-01-01 00:00:00' 
     val_ed = '2019-12-31 23:30:00' 
-
-    # # data module
-    # train_st = '2019-12-10 00:00:00' 
-    # train_ed = '2019-12-20 23:30:00' 
-
-    # val_st = '2019-12-21 00:00:00' 
-    # val_ed = '2019-12-31 23:30:00' 
-
 
     # get the data module
     dataPath = os.path.join(base_path, 'data', dataset_name)

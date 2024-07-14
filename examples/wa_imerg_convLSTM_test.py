@@ -27,7 +27,7 @@ result_path = os.path.join(base_path, 'results', dataset_name, method_name)
 testSet = imergDataset_npy_withMeta(dataPath, test_st, test_ed, in_seq_length, out_seq_length,\
                                     normalize_method=normalize_method,img_shape = (360, 516))
 
-dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=2, shuffle=False, pin_memory=True, num_workers = 20)   
+dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=2, shuffle=False, pin_memory=False, num_workers = 20)   
 
 
 ##==================Setup Method=====================##

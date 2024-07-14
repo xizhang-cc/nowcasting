@@ -272,6 +272,7 @@ class WAImergNpyDataRSModule(LightningDataModule):
         # test_end_date: str = '2020-10-31 23:30:00',
         in_seq_length: int = 4,
         out_seq_length: int = 12,
+        train_val_split: list=[0.9, 0.1],
         sampling_freq: timedelta = timedelta(minutes=30),
         normalize_method: str = '01range',
         precip_mean: float = 0.04963324009442847,
@@ -294,12 +295,12 @@ class WAImergNpyDataRSModule(LightningDataModule):
         
         self.batch_size = batch_size
         self.shuffle = shuffle
-
+        self.train_val_split = train_val_split  
 
     def setup(self, stage=None):
         imergFull = self.imergFull
         self.imergTrain, self.imergVal = random_split(
-            imergFull, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
+            imergFull, self.train_val_split, generator=torch.Generator().manual_seed(42)
         )
 
 
