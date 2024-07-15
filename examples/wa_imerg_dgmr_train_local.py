@@ -27,7 +27,7 @@ def main():
     batch_size = 2
     in_seq_length = 4
     out_seq_length = 12
-    img_shape = (360, 516)
+    img_shape = (352, 512)
     sampling_freq = datetime.timedelta(hours=2)
 
     model = DGMR(
@@ -40,9 +40,7 @@ def main():
             num_input_frames = in_seq_length,
         )
 
-    early_stop_callback = EarlyStopping(monitor="val/frames_l1_loss", min_delta=0.00, patience=3, verbose=False, mode="min")
-    checkpoint_callback = ModelCheckpoint(monitor='val/frames_l1_loss', dirpath=result_path, filename=best_model_fname)# '{epoch:02d}-{val_loss:.2f}'
-
+    checkpoint_callback = ModelCheckpoint(monitor="train/g_loss", dirpath=result_path, filename=best_model_fname, save_last=True)# '{epoch:02d}-{val_loss:.2f}'
 
     # data module
     train_st = '2019-12-22 00:00:00' 
@@ -56,7 +54,7 @@ def main():
 
     trainer = Trainer(
         max_epochs=100,
-        callbacks=[early_stop_callback, checkpoint_callback],
+        callbacks=[checkpoint_callback],
         precision=32,
         accelerator="gpu",
     )

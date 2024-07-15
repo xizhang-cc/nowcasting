@@ -57,7 +57,7 @@ def main():
     )
 
     trainer.fit(model, data_module,
-                # ckpt_path='last',
+                ckpt_path='last',
                 )
 
 if __name__ == "__main__":
