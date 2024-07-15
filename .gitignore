@@ -8,7 +8,7 @@ results/
 runs/
 
 # logs from tensorboard logging
-lightning_logs/
+# lightning_logs/
 
 
 # Ignore temporary files
