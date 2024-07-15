@@ -20,7 +20,6 @@ normalize_method = '01range'
 use_gpu = True
 loss='l1'
 
-metrics = ['mse', 'l1', 'fss']
 
 base_path = "/home1/zhang2012/nowcasting/"
 dataPath = os.path.join(base_path, 'data', dataset_name)
@@ -30,8 +29,7 @@ result_path = os.path.join(base_path, 'results', dataset_name, method_name)
 testSet = imergDataset_npy_withMeta(dataPath, test_st, test_ed, in_seq_length, out_seq_length,\
                                     normalize_method=normalize_method,img_shape = (360, 516))
 
-# batch size should be 1
-dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=1, shuffle=False, pin_memory=False)   
+dataloader_test = torch.utils.data.DataLoader(testSet, batch_size=6, shuffle=False, pin_memory=False)   
 
 
 ##==================Setup Method=====================##
@@ -63,15 +61,38 @@ for batch in pbar:
     # move to cpu and convert to numpy array
     pred_out_images = pred_out_images.cpu().detach().numpy()
 
-    # caclulate metrics per prediction steps
-    for metric in metrics:
-        if metric == 'mse':
-            mse = np.mean((pred_out_images - out_images.numpy())**2)
-        elif metric == 'l1':
-            l1 = np.mean(np.abs(pred_out_images - out_images.numpy()))
-        elif metric == 'fss':
-            # calculate fss
-            pass
+    # save the results
+    pred_results.append(pred_out_images)
 
 
+    pred_meta = pred_meta + [dt for dt in out_images_dt]
+
+if len(pred_results)>0:
+    pred_results = np.concatenate(pred_results, axis=0)
+
+
+if pred_results.shape[2] == 1: # if grayscale, remove the channel dimension. [S, T, 1, H, W] --> [S, T, H, W]
+    pred_results = np.squeeze(pred_results, axis=2)
+
+
+imerg_mean: float = 0.04963324009442847
+imerg_std: float = 0.5011062947027829
+imerg_max: float = 60.0
+imerg_min: float = 0.0
+
+# imerg convert to mm/hr 
+if normalize_method == '01range':
+    test_pred = pred_results * (imerg_max - imerg_min) + imerg_min
+elif normalize_method == 'norm':
+    test_pred = pred_results * imerg_std + imerg_mean
+
+
+pred_fname = f'{method_name}-{loss}-{normalize_method}-predictions.h5'
+# save results to h5py file
+with h5py.File(os.path.join(result_path, pred_fname),'w') as hf:
+    hf.create_dataset('precipitations', data=test_pred)
+    hf.create_dataset('timestamps', data=pred_meta)
+
+
+print('Prediction results saved to:', os.path.join(result_path, pred_fname))
 
