@@ -55,7 +55,7 @@ def main():
         accelerator="gpu",
         devices=4, 
         strategy="ddp_find_unused_parameters_true", 
-        num_nodes=4
+        num_nodes=2
     )
 
     trainer.fit(model, data_module)
