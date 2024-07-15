@@ -2,11 +2,11 @@ import pytorch_lightning as pl
 import torch
 import torchvision
 
-from dgmr.common import ContextConditioningStack, LatentConditioningStack
-from dgmr.discriminators import Discriminator
-from dgmr.generators import Generator, Sampler
-from dgmr.hub import NowcastingModelHubMixin
-from dgmr.losses import (
+from servir.methods.dgmr.common import ContextConditioningStack, LatentConditioningStack
+from servir.methods.dgmr.discriminators import Discriminator
+from servir.methods.dgmr.generators import Generator, Sampler
+from servir.methods.dgmr.hub import NowcastingModelHubMixin
+from servir.losses import (
     GridCellLoss,
     NowcastingLoss,
     grid_cell_regularizer,

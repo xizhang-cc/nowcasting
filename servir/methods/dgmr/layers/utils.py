@@ -1,6 +1,6 @@
 import torch
 
-from dgmr.layers import CoordConv
+from servir.methods.dgmr.layers import CoordConv
 
 
 def get_conv_layer(conv_type: str = "standard") -> torch.nn.Module:

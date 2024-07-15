@@ -8,8 +8,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from torch.nn.modules.pixelshuffle import PixelShuffle
 from torch.nn.utils.parametrizations import spectral_norm
 
-from dgmr.common import GBlock, UpsampleGBlock
-from dgmr.layers import ConvGRU
+from servir.methods.dgmr.common import GBlock, UpsampleGBlock
+from servir.methods.dgmr.layers import ConvGRU
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
