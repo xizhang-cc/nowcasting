@@ -24,7 +24,7 @@ def main():
     normalize_method ='01range'
     best_model_fname = f'{method_name}-{loss}-{normalize_method}' # no need to add .ckpt extension
 
-    batch_size = 2
+    batch_size = 6
     in_seq_length = 4
     out_seq_length = 12
     img_shape = (352, 512)
@@ -34,8 +34,8 @@ def main():
             forecast_steps=out_seq_length,
             input_channels=1,
             output_shape=img_shape,
-            latent_channels=768,
-            context_channels=384,
+            latent_channels=384,
+            context_channels=192,
             generation_steps = 2,
             num_input_frames = in_seq_length,
         )
@@ -61,7 +61,7 @@ def main():
         accelerator="gpu",
         devices=4, 
         strategy="ddp_find_unused_parameters_true", 
-        num_nodes=4,
+        num_nodes=2,
     )
 
     trainer.fit(model, data_module,

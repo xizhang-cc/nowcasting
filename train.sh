@@ -3,7 +3,7 @@
 #SBATCH --job-name wa_imerg
 
 #SBATCH --partition=gpu1
-#SBATCH --nodes 4
+#SBATCH --nodes 2
 
 #SBATCH --gres=gpu:4
 #SBATCH --ntasks-per-node=4   # This needs to match Trainer(devices=#) in the code
