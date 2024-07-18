@@ -253,6 +253,7 @@ class DGMR(pl.LightningModule, NowcastingModelHubMixin):
                 "val/grid_loss": grid_cell_reg,
             },
             prog_bar=True,
+            sync_dist=True,
         )
 
         # generate images
