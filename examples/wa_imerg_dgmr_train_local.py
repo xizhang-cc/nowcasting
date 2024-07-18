@@ -34,9 +34,9 @@ def main():
             forecast_steps=out_seq_length,
             input_channels=1,
             output_shape=img_shape,
-            latent_channels=768,
-            context_channels=384,
-            num_samples=2,
+            latent_channels=384,
+            context_channels=192,
+            generation_steps = 2,
             num_input_frames = in_seq_length,
         )
 

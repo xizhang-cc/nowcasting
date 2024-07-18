@@ -36,7 +36,7 @@ def main():
             output_shape=img_shape,
             latent_channels=768,
             context_channels=384,
-            num_samples=2,
+            generation_steps = 2,
             num_input_frames = in_seq_length,
         )
 
