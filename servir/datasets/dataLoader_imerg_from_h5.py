@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 
 
 # load data from h5 file
-def load_imerg_data_from_h5(fPath, start_date, end_date):
+def load_imerg_data_from_h5(fPath, start_date=None, end_date=None):
     """Function to load IMERG tiff data from the associate event folder
 
     Args:
@@ -30,15 +30,16 @@ def load_imerg_data_from_h5(fPath, start_date, end_date):
         max = hf['max'][()]
         min = hf['min'][()]
 
-    st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    if (start_date is not None) and (end_date is not None):
+        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
-    ind = (times>=st_dt) & (times<end_dt)
+        ind = (times>=st_dt) & (times<end_dt)
 
-    requested_precipitation = precipitation[ind]
-    requested_times = times[ind]
+        precipitation = precipitation[ind]
+        times = times[ind]
 
-    return requested_precipitation, requested_times, mean, std, max, min
+    return precipitation, times, mean, std, max, min
 
 def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
     new = np.where(data < threshold, zerovalue, np.log10(data))

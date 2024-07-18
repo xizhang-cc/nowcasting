@@ -19,61 +19,106 @@ dataset1_name = 'ghana_imerg'
 dataset2_name = 'ghana_IR'
 
 data1_fname = 'ghana_imerg_2011_2020_oct.h5'
-data2_fname = 'ghana_2018_oct.h5'
-
-
-st = '2018-10-01' 
-ed = '2018-11-01'
-
-imerg_normalize_method = None #'log-normal'
-IR_normalize_method = None #'normal'
-
+data2_fname = 'ghana_IR_2011_2020_oct.h5'
 
 ##==================Data Loading=====================##
 # where to load data
 f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
 f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 
-imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_imerg_data_from_h5(f1name,start_date= st, end_date=ed)
-IRs, IR_dts, IR_mean, IR_std, IR_max, IR_min = load_IR_data_from_h5(f2name, start_date= st, end_date=ed)
+imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_imerg_data_from_h5(f1name)
+IRs, IR_dts, IR_mean, IR_std, IR_max, IR_min = load_IR_data_from_h5(f2name)
 
-# get the corresponding IRs for each imerg
-IRs_ind = [list(IR_dts).index(t) for t in imerg_dts]
-IRs = IRs[IRs_ind]
-IR_dts = IR_dts[IRs_ind]
+# 01 range normalization of imerg data
+# imergs = (imergs - imerg_min) / (imerg_max - imerg_min)
+
+# 01 range normalization of IR data 
+IRs = 1 - ((IRs - IR_min) / (IR_max - IR_min))
+
+# get the top 12% of the IR data
+IRs_threshold = np.percentile(IRs, 90)
+
+IRs_p = np.where(IRs>=IRs_threshold, IRs, 0) 
 
 
-# # look at the histogram of the data
-# plt.figure()
-# plt.hist(imergs.flatten(), bins=100)
-# plt.title('imergs histogram')
+# plot one sample
 
-# plt.figure()
-# plt.hist(IRs.flatten(), bins=100)
-# plt.title('IRs histogram')
+sample_dt = datetime.datetime(2020, 10, 9, 16, 0)
 
-# check the images of a sample
-# sample_dt = datetime.datetime(2020, 8, 25, 11, 0)
-
-sample_dt = datetime.datetime(2018, 10, 22, 6, 0)
 
 imerg_idx = list(imerg_dts).index(sample_dt)
 IR_idx = list(IR_dts).index(sample_dt)
 
 imerg = imergs[imerg_idx]
-IR = IRs[IR_idx]    
+IR = IRs_p[IR_idx]    
 
 # plt.figure()
 # plt.imshow(imerg, cmap='gray')
 # plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
 plt.figure()
 plot_precip_field(imerg) 
+# plt.imshow(imerg, cmap='gray')
 plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
 
 
 plt.figure()    
 plt.imshow(IR, cmap='gray')
 plt.title(f'IR - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
+
+
+# find a threshold for the IR data
+st = '2018-10-01' 
+# ed = '2018-11-01'
+
+# imerg_normalize_method = None #'log-normal'
+# IR_normalize_method = None #'normal'
+
+
+# ##==================Data Loading=====================##
+# # where to load data
+# f1name = os.path.join(base_path, 'data', dataset1_name, data1_fname)
+# f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
+
+# imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_imerg_data_from_h5(f1name,start_date= st, end_date=ed)
+# IRs, IR_dts, IR_mean, IR_std, IR_max, IR_min = load_IR_data_from_h5(f2name, start_date= st, end_date=ed)
+
+# # get the corresponding IRs for each imerg
+# IRs_ind = [list(IR_dts).index(t) for t in imerg_dts]
+# IRs = IRs[IRs_ind]
+# IR_dts = IR_dts[IRs_ind]
+
+
+# # # look at the histogram of the data
+# # plt.figure()
+# # plt.hist(imergs.flatten(), bins=100)
+# # plt.title('imergs histogram')
+
+# # plt.figure()
+# # plt.hist(IRs.flatten(), bins=100)
+# # plt.title('IRs histogram')
+
+# # check the images of a sample
+# # sample_dt = datetime.datetime(2020, 8, 25, 11, 0)
+
+# sample_dt = datetime.datetime(2018, 10, 22, 6, 0)
+
+# imerg_idx = list(imerg_dts).index(sample_dt)
+# IR_idx = list(IR_dts).index(sample_dt)
+
+# imerg = imergs[imerg_idx]
+# IR = IRs[IR_idx]    
+
+# # plt.figure()
+# # plt.imshow(imerg, cmap='gray')
+# # plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
+# plt.figure()
+# plot_precip_field(imerg) 
+# plt.title(f'imerg - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
+
+
+# plt.figure()    
+# plt.imshow(IR, cmap='gray')
+# plt.title(f'IR - {datetime.datetime.strftime(sample_dt, "%Y-%m-%d %H:%M:%S")}')
 
 
 # # find a threshold for the IR data

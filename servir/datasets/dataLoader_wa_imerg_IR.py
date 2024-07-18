@@ -13,27 +13,6 @@ from servir.datasets.dataLoader_imerg_from_h5 import load_imerg_data_from_h5
 from servir.datasets.dataLoader_wa_IR import load_IR_data_from_h5    
 
 
-def load_pred_IR_data_from_h5(pred_IRs_fPath):
-    """Function to load IMERG tiff data from the associate event folder
-
-    Args:
-        data_location (str): string path to the location of the event data
-
-    Returns:
-        precipitation (np.array): np.array of precipitations (sorted by time)
-        times (np.array): np.array of date times
-    """
-
-
-    with h5py.File(pred_IRs_fPath, 'r') as hf:
-        pred_IRs = hf['IRs'][:]
-        IR_metas = hf['timestamps'][:]
-        pred_IR_metas = [x.decode('utf-8').split(',') for x in IR_metas]
-
-
-    return pred_IRs, pred_IR_metas
-
-
 
 class waImergIRDataset(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, pred_IR_fPath, start_date, end_date, in_seq_length, out_seq_length, pred_IR_length, \
@@ -41,7 +20,6 @@ class waImergIRDataset(Dataset):
 
         self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std = load_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
-        self.pred_IRs, self.pred_IR_metas = load_pred_IR_data_from_h5(pred_IR_fPath)
         # convert self.pred_IR_metas to list of datetime
         self.pred_IR_metas = [[datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in y] for y in self.pred_IR_metas]
 
