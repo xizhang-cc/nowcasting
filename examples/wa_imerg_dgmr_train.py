@@ -24,7 +24,7 @@ def main():
     normalize_method ='01range'
     best_model_fname = f'{method_name}-{loss}-{normalize_method}' # no need to add .ckpt extension
 
-    batch_size = 16
+    batch_size = 2
     in_seq_length = 4
     out_seq_length = 12
     img_shape = (352, 512)
@@ -61,7 +61,7 @@ def main():
         accelerator="gpu",
         devices=4, 
         strategy="ddp_find_unused_parameters_true", 
-        num_nodes=4
+        num_nodes=4,
     )
 
     trainer.fit(model, data_module,
