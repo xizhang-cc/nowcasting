@@ -35,6 +35,7 @@ class DGMR(pl.LightningModule, NowcastingModelHubMixin):
         context_channels: int = 384,
         generation_steps: int = 6,
         num_input_frames: int = 4,
+        num_layers: int = 4,
         **kwargs,
     ):
         """
@@ -90,6 +91,7 @@ class DGMR(pl.LightningModule, NowcastingModelHubMixin):
         self.context_channels = context_channels
         self.input_channels = input_channels
         self.generation_steps = generation_steps
+        self.num_layers = num_layers
         self.conditioning_stack = ContextConditioningStack(
             input_channels=input_channels,
             conv_type=conv_type,
@@ -106,7 +108,7 @@ class DGMR(pl.LightningModule, NowcastingModelHubMixin):
             context_channels=self.context_channels,
         )
         self.generator = Generator(self.conditioning_stack, self.latent_stack, self.sampler)
-        self.discriminator = Discriminator(input_channels)
+        self.discriminator = Discriminator(input_channels=input_channels, num_layers = self.num_layers)
         self.save_hyperparameters()
 
         self.global_iteration = 0

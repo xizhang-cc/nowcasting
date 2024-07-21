@@ -1,10 +1,13 @@
 
 import sys
 import datetime
+# from datetime import datetime, timedelta
 import h5py
 import numpy as np
 
 from torch.utils.data import Dataset
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import Dataset, DataLoader
 
 
 
@@ -31,19 +34,16 @@ def load_imerg_data_from_h5(fPath, start_date=None, end_date=None):
         min = hf['min'][()]
 
     if (start_date is not None) and (end_date is not None):
-        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
 
-        ind = (times>=st_dt) & (times<end_dt)
+        ind = (times>=st_dt) & (times<=end_dt)
 
         precipitation = precipitation[ind]
         times = times[ind]
 
     return precipitation, times, mean, std, max, min
 
-def imerg_log_normalize(data, threshold=0.1, zerovalue=-2.0):
-    new = np.where(data < threshold, zerovalue, np.log10(data))
-    return new
 
 class imergDataset_h5(Dataset):
     def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
@@ -58,8 +58,7 @@ class imergDataset_h5(Dataset):
             self.precipitations = (self.precipitations - self.mean) / self.std
         elif normalize_method == '01range':
             self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
-        elif normalize_method == 'log_norm':
-            self.precipitations = imerg_log_normalize(self.precipitations)
+
 
         # validate if the time delta is correct, i.e., the timesteps are continuous
         validation = np.diff(self.datetimes).astype('timedelta64[m]') == time_delta
@@ -73,7 +72,6 @@ class imergDataset_h5(Dataset):
             self.precipitations = np.array([self.precipitations])
             self.datetimes = np.array([self.datetimes]) 
 
-    def __len__(self):
         slen = 0
         ind_list = []
         for s in self.datetimes:
@@ -83,8 +81,11 @@ class imergDataset_h5(Dataset):
             slen += curr_len
 
         self.ind_list = ind_list
+        self.slen = slen
 
-        return slen
+    def __len__(self):
+
+        return self.slen
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
@@ -130,8 +131,7 @@ class imergDataset_h5_withMeta(Dataset):
             self.precipitations = (self.precipitations - self.mean) / self.std
         elif normalize_method == '01range':
             self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
-        elif normalize_method == 'log_norm':
-            self.precipitations = imerg_log_normalize(self.precipitations)
+
 
         # validate if the time delta is correct, i.e., the timesteps are continuous
         validation = np.diff(self.datetimes).astype('timedelta64[m]') == time_delta
@@ -145,7 +145,6 @@ class imergDataset_h5_withMeta(Dataset):
             self.precipitations = np.array([self.precipitations])
             self.datetimes = np.array([self.datetimes]) 
 
-    def __len__(self):
         slen = 0
         ind_list = []
         for s in self.datetimes:
@@ -155,8 +154,20 @@ class imergDataset_h5_withMeta(Dataset):
             slen += curr_len
 
         self.ind_list = ind_list
+        self.slen = slen  
 
-        return slen
+    def __len__(self):
+        # slen = 0
+        # ind_list = []
+        # for s in self.datetimes:
+        #     curr_len = len(s)-self.in_seq_length-self.out_seq_length+1
+        #     ind_list.append(slen + curr_len)
+
+        #     slen += curr_len
+
+        # self.ind_list = ind_list
+
+        return self.slen
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
@@ -204,6 +215,49 @@ class imergDataset_h5_withMeta(Dataset):
         return (X, Y, X_dt_str, Y_dt_str)
 
 
+class ghanaImergDataModule(LightningDataModule):
+   
+
+    def __init__(
+        self,
+        fPath: str = "/home/cc/projects/nowcasting/data/ghana_imerg/ghana_imerg_2011_2020_oct.h5",
+        train_start_date: str = '2011-10-01 00:00:00',
+        train_end_date: str = '2018-11-01 00:00:00',
+        val_start_date: str = '2019-10-01 00:00:00',
+        val_end_date: str = '2019-11-01 00:00:00',
+
+        in_seq_length: int = 4,
+        out_seq_length: int = 12,
+        normalize_method: str = '01range',
+
+
+        batch_size: int = 12,
+        shuffle: bool=False, # shuffle must set to False when using recurrent models
+        pin_memory: bool=False,
+    ):
+        super().__init__()
+
+        self.imergTrain = imergDataset_h5(fPath, train_start_date, train_end_date,\
+                                        in_seq_length, out_seq_length,normalize_method=normalize_method)
+        
+        self.imergVal = imergDataset_h5(fPath, val_start_date, val_end_date,\
+                                        in_seq_length, out_seq_length,normalize_method=normalize_method)
+        
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.pin_memory = pin_memory
+
+
+    def train_dataloader(self):
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
+
+    def val_dataloader(self):
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
+    
+    # def test_dataloader(self):
+    #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
+
+
 
 #===================================================================================================
 #===================================================================================================
@@ -217,8 +271,8 @@ if __name__=='__main__':
     end_date = '2018-11-01' 
     fPath = dataPath+'ghana_imerg_2011_2020_oct.h5'
 
-    a = imergDataset_h5(fPath, start_date, end_date, 12, 12)
-    a.__getitem__(0)
+    a = imergDataset_h5_withMeta(fPath, start_date, end_date, 4, 12)
+    a.__getitem__(11783)
 
     print('stop for debugging')
 
