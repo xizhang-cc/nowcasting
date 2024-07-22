@@ -4,7 +4,7 @@ import datetime
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning import Trainer
 
-from servir.datasets.dataLoader_imerg_from_npy import WAImergNpyDataModule
+from servir.datasets.dataLoader_wa_imerg_npy import WAImergNpyDataModule
 from servir.methods.convlstm.ConvLSTM import ConvLSTM
 from servir.utils import create_folder
 
@@ -58,8 +58,11 @@ def main():
         num_nodes=2
     )
 
-    trainer.fit(model, data_module)
-
+    trainer.fit(model, data_module,
+                ckpt_path='last',
+                )
+    
+    
 if __name__ == "__main__":
     main()
 

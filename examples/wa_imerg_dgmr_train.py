@@ -5,7 +5,7 @@ import datetime
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer
 
-from servir.datasets.dataLoader_imerg_from_npy import WAImergNpyDataRSModule
+from servir.datasets.dataLoader_wa_imerg_npy import WAImergNpyDataRSModule
 from servir.methods.dgmr.dgmr import DGMR
 from servir.utils import create_folder
 
@@ -20,9 +20,9 @@ def main():
     create_folder(result_path, level=3)
 
     # loss to use and normalization method of data
-    loss = 'l1'
+
     normalize_method ='01range'
-    best_model_fname = f'{method_name}-{loss}-{normalize_method}' # no need to add .ckpt extension
+    best_model_fname = f'{method_name}-{normalize_method}' # no need to add .ckpt extension
 
     batch_size = 6
     in_seq_length = 4

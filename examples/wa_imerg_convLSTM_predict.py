@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from servir.datasets.dataLoader_imerg_from_npy import imergDataset_npy_withMeta
+from servir.datasets.dataLoader_wa_imerg_npy import imergDataset_npy_withMeta
 from servir.methods.convlstm.ConvLSTM import ConvLSTM
 
 

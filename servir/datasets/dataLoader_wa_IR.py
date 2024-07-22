@@ -34,10 +34,10 @@ def load_IR_data_from_h5(fPath, start_date=None, end_date=None):
 
     if (start_date is not None) and (end_date is not None):
    
-        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        st_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+        end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
 
-        ind = (times>=st_dt) & (times<end_dt)
+        ind = (times>=st_dt) & (times<=end_dt)
 
         imgs = imgs[ind]
         times = times[ind]

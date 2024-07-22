@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import torch
 
-from servir.datasets.dataLoader_imerg_from_h5 import load_imerg_data_from_h5
+from servir.datasets.dataLoader_ghana_imerg_h5 import load_imerg_data_from_h5
 
 base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"#
 

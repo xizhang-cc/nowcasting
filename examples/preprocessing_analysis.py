@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from pysteps.utils import transformation
 from pysteps.visualization import plot_precip_field
 
-from servir.datasets.dataLoader_imerg_from_h5 import load_imerg_data_from_h5
+from servir.datasets.dataLoader_ghana_imerg_h5 import load_imerg_data_from_h5
 from servir.datasets.dataLoader_wa_IR import load_IR_data_from_h5    
 
 #================Specification=========================#
@@ -29,21 +29,21 @@ f2name = os.path.join(base_path, 'data', dataset2_name, data2_fname)
 imergs, imerg_dts, imerg_mean, imerg_std, imerg_max, imerg_min = load_imerg_data_from_h5(f1name)
 IRs, IR_dts, IR_mean, IR_std, IR_max, IR_min = load_IR_data_from_h5(f2name)
 
-# 01 range normalization of imerg data
-# imergs = (imergs - imerg_min) / (imerg_max - imerg_min)
+IR_threshold = 240
+IRs_threshold = 1 - ((IR_threshold - IR_min) / (IR_max - IR_min))
 
 # 01 range normalization of IR data 
 IRs = 1 - ((IRs - IR_min) / (IR_max - IR_min))
 
-# get the top 12% of the IR data
-IRs_threshold = np.percentile(IRs, 90)
+# # get the top 12% of the IR data
+# IRs_threshold = np.percentile(IRs, 90)
 
 IRs_p = np.where(IRs>=IRs_threshold, IRs, 0) 
 
 
 # plot one sample
 
-sample_dt = datetime.datetime(2020, 10, 9, 16, 0)
+sample_dt = datetime.datetime(2020, 10, 19, 16, 0)
 
 
 imerg_idx = list(imerg_dts).index(sample_dt)
