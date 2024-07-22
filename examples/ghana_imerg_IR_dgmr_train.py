@@ -12,7 +12,7 @@ def main():
     method_name = 'dgmr'
     dataset_name = 'ghana_imerg_IR'
 
-    base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/"
+    base_path = "/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
     # file names
     result_path = os.path.join(base_path, 'results', dataset_name, method_name)
     create_folder(result_path, level=3)
