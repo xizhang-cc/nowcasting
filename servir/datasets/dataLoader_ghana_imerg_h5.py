@@ -1,9 +1,11 @@
 
 import numpy as np
 
+import torch
 from torch.utils.data import Dataset
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
+
 
 from servir.utils import load_imerg_data_from_h5
 
@@ -50,14 +52,7 @@ class imergDataset_h5(Dataset):
 
         return self.slen
 
-    def __getitem__(self, idx):
-        # desire to [T, C, H, W]
-            
-            # T: time steps
-            # C: channels, 1 if grayscale, 3 if RGB
-            # H: height
-            # W: width 
-        
+    def __getitem__(self, idx):        
         # get the index of which sequence the sample belongs to
         for i, ind in enumerate(self.ind_list):
             if idx < ind:
@@ -120,31 +115,15 @@ class imergDataset_h5_withMeta(Dataset):
         self.slen = slen  
 
     def __len__(self):
-        # slen = 0
-        # ind_list = []
-        # for s in self.datetimes:
-        #     curr_len = len(s)-self.in_seq_length-self.out_seq_length+1
-        #     ind_list.append(slen + curr_len)
-
-        #     slen += curr_len
-
-        # self.ind_list = ind_list
 
         return self.slen
 
     def __getitem__(self, idx):
         # desire to [T, C, H, W]
-            
-            # T: time steps
-            # C: channels, 1 if grayscale, 3 if RGB
-            # H: height
-            # W: width 
-        
         # get the index of which sequence the sample belongs to
         for i, ind in enumerate(self.ind_list):
             if idx <= ind:
                 break
-
 
         curr_precipitations = self.precipitations[i]
         curr_datetimes = self.datetimes[i]
@@ -156,7 +135,6 @@ class imergDataset_h5_withMeta(Dataset):
         out_ind = range(new_idx+self.in_seq_length, new_idx+self.in_seq_length+self.out_seq_length)
 
 
-        # input and output images for a sample
         # current shape: [T, H, W]
         in_imgs = curr_precipitations[in_ind]
         out_imgs = curr_precipitations[out_ind]
@@ -220,6 +198,49 @@ class ghanaImergDataModule(LightningDataModule):
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
 
+
+class ghanaImergRSDataModule(LightningDataModule):
+   
+
+    def __init__(
+        self,
+        fPath: str = "/home/cc/projects/nowcasting/data/ghana_imerg/ghana_imerg_2011_2020_oct.h5",
+        train_start_date: str = '2011-10-01 00:00:00',
+        train_end_date: str = '2018-11-01 00:00:00',
+
+        train_val_split: list=[0.9, 0.1],
+
+        in_seq_length: int = 4,
+        out_seq_length: int = 12,
+        normalize_method: str = '01range',
+
+
+        batch_size: int = 12,
+        shuffle: bool=False, # shuffle must set to False when using recurrent models
+        pin_memory: bool=False,
+    ):
+        super().__init__()
+
+        self.imergFull = imergDataset_h5(fPath, train_start_date, train_end_date,\
+                                        in_seq_length, out_seq_length,normalize_method=normalize_method)
+        
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.pin_memory = pin_memory
+        self.train_val_split = train_val_split
+
+    def setup(self, stage=None):
+        imergFull = self.imergFull
+        self.imergTrain, self.imergVal = random_split(
+            imergFull, self.train_val_split, generator=torch.Generator().manual_seed(42)
+        )
+
+
+    def train_dataloader(self):
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle)
+
+    def val_dataloader(self):
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=False, shuffle=self.shuffle)
 
 
 #===================================================================================================

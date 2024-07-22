@@ -1,11 +1,8 @@
-
-
-import datetime
-import h5py
 import numpy as np
+import torch
 
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 
 from servir.utils import load_imerg_data_from_h5
 from servir.utils import load_IR_data_from_h5    
@@ -263,6 +260,56 @@ class ghanaImergIRDataModule(LightningDataModule):
     # def test_dataloader(self):
     #     return DataLoader(self.imergTest, batch_size=self.batch_size, pin_memory=True, shuffle=self.shuffle, num_workers=20)
 
+
+
+
+class ghanaImergIRRSDataModule(LightningDataModule):
+   
+
+    def __init__(
+        self,
+        f1name: str = "/home/cc/projects/nowcasting/data/ghana_imerg/ghana_imerg_2011_2020_oct.h5",
+        f2name: str = "/home/cc/projects/nowcasting/data/ghana_IR/ghana_IR_2011_2020_oct.h5",
+        train_start_date: str = '2011-10-01 00:00:00',
+        train_end_date: str = '2019-10-31 23:30:00',
+
+        in_seq_length: int = 4,
+        out_seq_length: int = 12,
+        imerg_normalize_method: str = '01range',
+        IR_normalize_method: str = '01range',
+        IR_sparse: bool = True,
+        IR_threshold: int = 240,
+        train_val_split: list=[0.9, 0.1],
+
+        batch_size: int = 12,
+        shuffle: bool=False, # shuffle must set to False when using recurrent models
+        pin_memory: bool=False,
+    ):
+        super().__init__()
+
+        self.imergFull = ghanaImergIRDataset(f1name, f2name, train_start_date, train_end_date, \
+                                            in_seq_length, out_seq_length,\
+                                            imerg_normalize_method=imerg_normalize_method, IR_normalize_method=IR_normalize_method,\
+                                            IR_sparse = IR_sparse, IR_threshold=IR_threshold, time_delta = np.timedelta64(30, 'm'))
+
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.pin_memory = pin_memory
+        self.train_val_split = train_val_split
+
+    def setup(self, stage=None):
+        imergFull = self.imergFull
+        self.imergTrain, self.imergVal = random_split(
+            imergFull, self.train_val_split, generator=torch.Generator().manual_seed(42)
+        )
+
+
+    def train_dataloader(self):
+        return DataLoader(self.imergTrain, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
+
+    def val_dataloader(self):
+        return DataLoader(self.imergVal, batch_size=self.batch_size, pin_memory=self.pin_memory, shuffle=self.shuffle)
+    
 
 
 
