@@ -59,6 +59,9 @@ def main():
         callbacks=[checkpoint_callback],
         precision=32,
         accelerator="gpu",
+        devices=4, 
+        strategy="ddp_find_unused_parameters_true", 
+        num_nodes=2,
     )
 
     trainer.fit(model, data_module,
