@@ -289,9 +289,8 @@ if __name__=='__main__':
     val_st = '2020-10-01 00:00:00' 
     val_ed = '2020-10-31 23:30:00'
 
-    a = ghanaImergDataModule(f1name, f2name, train_st, train_ed, val_st, val_ed, 4, 12)
-    b = a.train_dataloader()
-    print('stop for debugging')
+    a = ghanaImergIRDataModule(f1name, f2name, train_st, train_ed, val_st, val_ed, 4, 12)
+
 
 
 
