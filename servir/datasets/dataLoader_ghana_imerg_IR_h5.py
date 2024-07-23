@@ -11,8 +11,8 @@ from servir.utils import load_IR_data_from_h5
 
 class ghanaImergIRDataset(Dataset):
     def __init__(self, imerg_fPath, IR_fPath, start_date, end_date, in_seq_length, out_seq_length, \
-                imerg_normalize_method='01range', IR_normalize_method='01range',\
-                IR_sparse = True, IR_threshold=240, time_delta = np.timedelta64(30, 'm')):
+                imerg_normalize_method='gaussian', IR_normalize_method='gaussian',\
+                IR_sparse = False, IR_threshold=240, time_delta = np.timedelta64(30, 'm')):
 
         self.imergs, self.imerg_dts, self.imerg_mean, self.imerg_std, self.imerg_max, self.imerg_min = load_imerg_data_from_h5(imerg_fPath,start_date= start_date, end_date=end_date)
         self.IRs, self.IR_dts, self.IR_mean, self.IR_std, self.IR_max, self.IR_min = load_IR_data_from_h5(IR_fPath, start_date= start_date, end_date=end_date)
@@ -28,13 +28,13 @@ class ghanaImergIRDataset(Dataset):
 
         if IR_normalize_method == 'gaussian':
             self.IRs = -(self.IRs - self.IR_mean)/self.IR_std
-            self.IR_threshold = -(IR_threshold - self.IR_mean)/self.IR_std
+            # self.IR_threshold = -(IR_threshold - self.IR_mean)/self.IR_std
         elif IR_normalize_method == '01range':
             self.IRs =  1- (self.IRs - self.IR_min) / (self.IR_max - self.IR_min)
-            self.IR_threshold =  1 - (IR_threshold - self.IR_min) / (self.IR_max - self.IR_min)
+            # self.IR_threshold =  1 - (IR_threshold - self.IR_min) / (self.IR_max - self.IR_min)
 
-        if IR_sparse:
-            self.IRs = np.where(self.IRs>=self.IR_threshold, self.IRs, 0) 
+        # if IR_sparse:
+        #     self.IRs = np.where(self.IRs>=self.IR_threshold, self.IRs, 0) 
 
         # validate if the time delta is correct, i.e., the timesteps are continuous
         validation = np.diff(self.imerg_dts).astype('timedelta64[m]') == time_delta
@@ -224,8 +224,8 @@ class ghanaImergIRDataModule(LightningDataModule):
 
         in_seq_length: int = 4,
         out_seq_length: int = 12,
-        imerg_normalize_method: str = '01range',
-        IR_normalize_method: str = '01range',
+        imerg_normalize_method: str = 'gaussian',
+        IR_normalize_method: str = 'gaussian',
         IR_sparse: bool = True,
         IR_threshold: int = 240,
 

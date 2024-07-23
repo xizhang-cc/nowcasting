@@ -20,7 +20,7 @@ def main():
     # loss to use and normalization method of data
     normalize_method ='gaussian'
     IR_sparse = True
-    best_model_fname = f'{method_name}-{normalize_method}-IRsparse' # no need to add .ckpt extension
+    best_model_fname = f'{dataset_name}-{method_name}-{normalize_method}' # no need to add .ckpt extension
 
     batch_size = 12
     in_seq_length = 4
