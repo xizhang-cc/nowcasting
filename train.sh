@@ -19,4 +19,4 @@
 # nvidia-smi
 source activate servir
 
-srun python /home1/zhang2012/nowcasting/examples/ghana_imerg_IR_dgmr_train.py
+srun python /home1/zhang2012/nowcasting/examples/ghana_imerg_dgmr_train.py
