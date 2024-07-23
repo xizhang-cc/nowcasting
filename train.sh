@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name ghana_imerg
+#SBATCH --job-name ghana_IR
 
 #SBATCH --partition=gpu1
 #SBATCH --nodes 2
@@ -19,4 +19,4 @@
 # nvidia-smi
 source activate servir
 
-srun python /home1/zhang2012/nowcasting/examples/ghana_imerg_dgmr_train.py
+srun python /home1/zhang2012/nowcasting/examples/ghana_imerg_IR_dgmr_train.py
