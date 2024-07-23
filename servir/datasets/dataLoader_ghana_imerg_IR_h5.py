@@ -275,8 +275,8 @@ class ghanaImergIRRSDataModule(LightningDataModule):
 
         in_seq_length: int = 4,
         out_seq_length: int = 12,
-        imerg_normalize_method: str = '01range',
-        IR_normalize_method: str = '01range',
+        imerg_normalize_method: str = 'gaussian',
+        IR_normalize_method: str = 'gaussian',
         IR_sparse: bool = True,
         IR_threshold: int = 240,
         train_val_split: list=[0.9, 0.1],

@@ -18,7 +18,7 @@ def main():
     create_folder(result_path, level=3)
 
     # loss to use and normalization method of data
-    normalize_method ='01range'
+    normalize_method ='gaussian'
     best_model_fname = f'{method_name}-{normalize_method}' # no need to add .ckpt extension
 
     batch_size = 12
