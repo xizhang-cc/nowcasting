@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import datetime
+import cv2 
 
 import imageio
 from pysteps.visualization.animations import animate
@@ -29,7 +30,7 @@ def create_precipitation_plots(precipitations,timestamps_obs, timestep_min, path
 
 
 
-def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, path_outputs, title='', gif_dur = 1000,  geodata=None):
+def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, path_outputs, title='', gif_dur = 1000,  geodata=None, denoise=False):
     """create gif file of precipitation. 
     This function contains two steps:
     1. create png files of precipitation using pysteps.visualization.animations.animate.
@@ -57,6 +58,13 @@ def create_precipitation_gif(precipitations,timestamps_obs, timestep_min, path_o
     images = []
     forcast_precip_imgs = sorted(glob.glob(f"{temp_path}/*.png") )
     for img in forcast_precip_imgs:
+        if denoise:
+            # denoise the image
+            image = cv2.imread(img)
+            denoised = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
+            # save the denoised image
+            cv2.imwrite(img, denoised)
+        # open with imageio
         images.append(imageio.imread(img))
 
     kargs = { 'duration': gif_dur }

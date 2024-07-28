@@ -126,7 +126,6 @@ class imergDataset_h5_withMeta(Dataset):
                 break
 
         curr_precipitations = self.precipitations[i]
-        curr_datetimes = self.datetimes[i]
 
         new_idx = idx - self.ind_list[i-1] if i > 0 else idx    
 
@@ -144,6 +143,8 @@ class imergDataset_h5_withMeta(Dataset):
         Y = np.expand_dims(out_imgs, axis=(1))
 
         # metadata for a sample
+        curr_datetimes = self.datetimes[i]
+        
         X_dt = curr_datetimes[in_ind]
         X_str = [x.strftime('%Y-%m-%d %H:%M:%S') for x in X_dt] 
         X_dt_str = ','.join(X_str)

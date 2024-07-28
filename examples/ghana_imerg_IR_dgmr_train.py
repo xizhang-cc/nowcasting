@@ -12,7 +12,7 @@ def main():
     method_name = 'dgmr'
     dataset_name = 'ghana_imerg_IR'
 
-    base_path = "/home1/zhang2012/nowcasting/" #'/home/cc/projects/nowcasting' #
+    base_path = '/home/cc/projects/nowcasting' #"/home1/zhang2012/nowcasting/" #
     # file names
     result_path = os.path.join(base_path, 'results', dataset_name, method_name)
     create_folder(result_path, level=3)
@@ -52,11 +52,13 @@ def main():
     # get the data module
     dataPath1 = os.path.join(base_path, 'data', 'ghana_imerg')
     dataPath2 = os.path.join(base_path, 'data', 'ghana_IR')
-    data_module = ghanaImergIRRSDataModule(os.path.join(dataPath1, 'ghana_imerg_2011_2020_oct.h5'), \
-                                                        os.path.join(dataPath2, 'ghana_IR_2011_2020_oct.h5'), \
-                                                        train_start_date, train_end_date, train_val_split=train_val_split,\
-                                                        in_seq_length=in_seq_length, out_seq_length=out_seq_length, \
-                                                        batch_size=batch_size, IR_sparse=IR_sparse)
+
+    fPath1 = os.path.join(dataPath1, 'ghana_imerg_2011_2020_oct.h5')
+    fPath2 = os.path.join(dataPath2, 'ghana_IR_2011_2020_oct.h5')
+    data_module = ghanaImergIRRSDataModule(fPath1, fPath2,\
+                                        train_start_date, train_end_date, train_val_split=train_val_split,\
+                                        in_seq_length=in_seq_length, out_seq_length=out_seq_length, \
+                                        batch_size=batch_size, IR_sparse=IR_sparse)
 
     trainer = Trainer(
         max_epochs=1000,
