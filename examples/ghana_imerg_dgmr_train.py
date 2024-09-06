@@ -32,7 +32,9 @@ def main():
             output_shape=img_shape,
             latent_channels=384,
             context_channels=192,
-            generation_steps = 6, # number of generation steps
+            generator_train_steps = 5,
+            discriminator_train_steps =1,
+            num_samples = 6,
             num_input_frames = in_seq_length, # number of input frames
             num_layers = 2, # number of layers in the temporal and spatial encoder
         )
