@@ -11,8 +11,8 @@ from servir.gif_creation import create_precipitation_gif
 method_name = 'dgmr'
 
 # data module
-test_st = '2016-10-01 00:00:00' 
-test_ed = '2016-10-31 23:30:00' 
+test_st = '2011-10-01 00:00:00' 
+test_ed = '2020-10-31 23:30:00' 
 in_seq_length = 4
 out_seq_length = 12
 normalize_method = 'gaussian'
@@ -35,14 +35,14 @@ else:
     device = torch.device('cpu')
 
 result_path1 = os.path.join(base_path, 'results', 'ghana_imerg', method_name)
-imerg_checkpoint_fname = os.path.join(result_path1,  f'ghana_imerg_{method_name}-{normalize_method}.ckpt') #os.path.join(result_path1, 'imerg_last.ckpt') #
+imerg_checkpoint_fname = os.path.join(result_path1, 'imerg_last.ckpt') #os.path.join(result_path1,  f'ghana_imerg_{method_name}-{normalize_method}.ckpt') #
 # setup method
 model_imerg_only = DGMR.load_from_checkpoint(imerg_checkpoint_fname)
 # disable randomness, dropout, etc...
 model_imerg_only.eval()
 
 result_path2 = os.path.join(base_path, 'results', 'ghana_imerg_IR', method_name)
-imerg_IR_checkpoint_fname = os.path.join(result_path2,  f'ghana_imerg_IR-{method_name}-{normalize_method}.ckpt') #os.path.join(result_path2,'imerg_withIR_last.ckpt') #
+imerg_IR_checkpoint_fname = os.path.join(result_path2,'imerg_withIR_last.ckpt') #os.path.join(result_path2,  f'ghana_imerg_IR-{method_name}-{normalize_method}.ckpt') #
 # setup method
 model_imerg_withIR = DGMR.load_from_checkpoint(imerg_IR_checkpoint_fname)
 # disable randomness, dropout, etc...
@@ -62,7 +62,7 @@ elif normalize_method == '01range':
     IRs =  1 - (IRs - IR_min) / (IR_max - IR_min)
 
 # plot one sample
-sample_sdt = datetime.datetime(2016, 10, 19, 11, 0)
+sample_sdt = datetime.datetime(2020, 10, 9, 0, 0)
 
 in_dts = [sample_sdt + datetime.timedelta(minutes=30*k) for k in range(in_seq_length)]
 out_dts = [sample_sdt + datetime.timedelta(minutes=30*k) for k in range(in_seq_length, in_seq_length+out_seq_length)]
@@ -121,9 +121,18 @@ elif normalize_method == 'gaussian':
     pred_out_images_imerg_IR = pred_out_images_imerg_IR * imerg_std + imerg_mean
     out_images = out_images * imerg_std + imerg_mean
 
-# # cut the negative values
-# pred_out_images_imerg_only = np.where(pred_out_images_imerg_only>=0, pred_out_images_imerg_only, 0)
-# pred_out_images_imerg_IR = np.where(pred_out_images_imerg_IR>=0, pred_out_images_imerg_IR, 0)
+# cut the negative values
+threshold = 0.5
+pred_out_images_imerg_only = np.where(pred_out_images_imerg_only>=threshold, pred_out_images_imerg_only, 0)
+pred_out_images_imerg_IR = np.where(pred_out_images_imerg_IR>=threshold, pred_out_images_imerg_IR, 0)
+out_images = np.where(out_images>=threshold, out_images, 0)
+
+# from matplotlib import pyplot as plt
+# for id, img in enumerate(pred_out_images_imerg_only):
+#     plt.figure()
+#     plt.imshow(img, cmap='gray')
+#     plt.title(f'imerg_only_pred - {datetime.datetime.strftime(out_dts[id], "%Y-%m-%d %H:%M:%S")}')
+
 
 
 # plot the images

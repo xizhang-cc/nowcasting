@@ -16,5 +16,7 @@ fig = plt.figure(figsize=(10, 5))
 gs = gridspec.GridSpec(1, 1)
 ax = plt.subplot(gs[0])
 
-ax.plot(df['epoch'], df['train/g_loss'], label='train/g_loss')
-# ax.plot(df['epoch'], df['val/d_loss'], label='val/g_loss')
+# ax.plot(df['epoch'], df['train/g_loss'], label='train/g_loss')
+x = df['train/d_loss']
+x = x[~np.isnan(x)]
+ax.plot(x)
