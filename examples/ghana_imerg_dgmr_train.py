@@ -39,7 +39,7 @@ def main():
             num_layers = 2, # number of layers in the temporal and spatial encoder
         )
 
-    checkpoint_callback = ModelCheckpoint(monitor="train/g_loss", dirpath=result_path,\
+    checkpoint_callback = ModelCheckpoint(monitor="val/g_loss", dirpath=result_path,\
                                         filename=best_model_fname, save_last=True)# '{epoch:02d}-{val_loss:.2f}'
 
     # data module
