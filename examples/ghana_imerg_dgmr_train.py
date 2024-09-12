@@ -18,8 +18,8 @@ def main():
     create_folder(result_path, level=3)
 
     # loss to use and normalization method of data
-    normalize_method ='gaussian'
-    best_model_fname = f'{method_name}-{normalize_method}' # no need to add .ckpt extension
+    normalize_method = None
+    best_model_fname = f'{method_name}' # no need to add .ckpt extension
 
     batch_size = 12
     in_seq_length = 4
@@ -32,7 +32,7 @@ def main():
             output_shape=img_shape,
             latent_channels=384,
             context_channels=192,
-            generator_train_steps = 5,
+            generator_train_steps = 2,
             discriminator_train_steps =1,
             num_samples = 6,
             num_input_frames = in_seq_length, # number of input frames
@@ -60,7 +60,7 @@ def main():
         accelerator="gpu",
         devices=4, 
         strategy="ddp_find_unused_parameters_true", 
-        num_nodes=2,
+        num_nodes=1,
     )
 
     trainer.fit(model, data_module,

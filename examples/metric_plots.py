@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 # load the csv file
-csv_file = '/home/cc/projects/nowcasting/lightning_logs/metrics_42720.csv'
+csv_file = "/home1/zhang2012/nowcasting/lightning_logs/version_28/metrics.csv"
+# '/home/cc/projects/nowcasting/lightning_logs/metrics_42720.csv'
 
 df = pd.read_csv(csv_file)
 
@@ -17,6 +18,6 @@ gs = gridspec.GridSpec(1, 1)
 ax = plt.subplot(gs[0])
 
 # ax.plot(df['epoch'], df['train/g_loss'], label='train/g_loss')
-x = df['train/g_loss']
+x = df['val/d_loss']
 x = x[~np.isnan(x)]
 ax.plot(x)

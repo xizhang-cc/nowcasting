@@ -11,7 +11,7 @@ from servir.utils import load_imerg_data_from_h5
 
 
 class imergDataset_h5(Dataset):
-    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method='01range'):
+    def __init__(self, fPath, start_date, end_date, in_seq_length, out_seq_length, time_delta = np.timedelta64(30, 'm'), normalize_method=None):
 
         self.precipitations, self.datetimes, self.mean, self.std, self.max, self.min = load_imerg_data_from_h5(fPath, start_date= start_date, end_date=end_date)
         
@@ -23,6 +23,7 @@ class imergDataset_h5(Dataset):
             self.precipitations = (self.precipitations - self.mean) / self.std
         elif normalize_method == '01range':
             self.precipitations =  (self.precipitations - self.min) / (self.max - self.min)   
+        
 
 
         # validate if the time delta is correct, i.e., the timesteps are continuous
