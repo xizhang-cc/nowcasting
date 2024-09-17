@@ -32,7 +32,7 @@ def main():
             output_shape=img_shape,
             latent_channels=384,
             context_channels=192,
-            generator_train_steps = 2,
+            generator_train_steps = 1,
             discriminator_train_steps =1,
             num_samples = 6,
             num_input_frames = in_seq_length, # number of input frames
@@ -60,7 +60,7 @@ def main():
         accelerator="gpu",
         devices=4, 
         strategy="ddp_find_unused_parameters_true", 
-        num_nodes=1,
+        num_nodes=2,
     )
 
     trainer.fit(model, data_module,
