@@ -32,7 +32,7 @@ class DGMR(pl.LightningModule, NowcastingModelHubMixin):
         beta2: float = 0.999,
         latent_channels: int = 768,
         context_channels: int = 384,
-        generator_train_steps: int = 5,
+        generator_train_steps: int = 1,
         discriminator_train_steps: int=1,
         num_samples: int = 6,
         num_input_frames: int = 4,

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name ghana_dgmr
+#SBATCH --job-name dgmr_ex
 
 #SBATCH --partition=gpu1
-#SBATCH --nodes 2
+#SBATCH --nodes 1
 
 #SBATCH --gres=gpu:4
 #SBATCH --ntasks-per-node=4   # This needs to match Trainer(devices=#) in the code
@@ -19,4 +19,4 @@
 # nvidia-smi
 source activate servir
 
-srun python /home1/zhang2012/nowcasting/examples/ghana_imerg_dgmr_train.py
+srun python /home1/zhang2012/nowcasting/examples/wa_imerg_dgmr_train.py

@@ -20,8 +20,8 @@ def main():
 
     # loss to use and normalization method of data
     loss = 'l1'
-    normalize_method ='01range'
-    batch_size =12
+    normalize_method = None
+    batch_size =6
     best_model_fname = f'{method_name}-{loss}-{normalize_method}' # no need to add .ckpt extension
 
 

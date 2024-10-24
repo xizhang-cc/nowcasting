@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from servir.methods.dgmr.dgmr import DGMR
 
 
-wandb.init(project="dgmr")
+# wandb.init(project="dgmr")
 from pathlib import Path
 
 import numpy as np
@@ -20,89 +20,89 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
 
 
-def get_wandb_logger(trainer: Trainer) -> WandbLogger:
-    if trainer.fast_dev_run:
-        raise Exception(
-            "Cannot use wandb callbacks since pytorch lightning disables loggers in `fast_dev_run=true` mode."
-        )
+# def get_wandb_logger(trainer: Trainer) -> WandbLogger:
+#     if trainer.fast_dev_run:
+#         raise Exception(
+#             "Cannot use wandb callbacks since pytorch lightning disables loggers in `fast_dev_run=true` mode."
+#         )
 
-    if isinstance(trainer.logger, WandbLogger):
-        return trainer.logger
+#     if isinstance(trainer.logger, WandbLogger):
+#         return trainer.logger
 
-    if isinstance(trainer.logger, LoggerCollection):
-        for logger in trainer.logger:
-            if isinstance(logger, WandbLogger):
-                return logger
+#     if isinstance(trainer.logger, LoggerCollection):
+#         for logger in trainer.logger:
+#             if isinstance(logger, WandbLogger):
+#                 return logger
 
-    raise Exception(
-        "You are using wandb related callback, but WandbLogger was not found for some reason..."
-    )
-
-
-class WatchModel(Callback):
-    def __init__(self, log: str = "gradients", log_freq: int = 100):
-        self.log = log
-        self.log_freq = log_freq
-
-    @rank_zero_only
-    def on_train_start(self, trainer, pl_module):
-        logger = get_wandb_logger(trainer=trainer)
-        logger.watch(model=trainer.model, log=self.log, log_freq=self.log_freq, log_graph=True)
+#     raise Exception(
+#         "You are using wandb related callback, but WandbLogger was not found for some reason..."
+#     )
 
 
-class UploadCheckpointsAsArtifact(Callback):
-    def __init__(self, ckpt_dir: str = "checkpoints/", upload_best_only: bool = False):
-        self.ckpt_dir = ckpt_dir
-        self.upload_best_only = upload_best_only
+# class WatchModel(Callback):
+#     def __init__(self, log: str = "gradients", log_freq: int = 100):
+#         self.log = log
+#         self.log_freq = log_freq
 
-    @rank_zero_only
-    def on_keyboard_interrupt(self, trainer, pl_module):
-        self.on_train_end(trainer, pl_module)
+#     @rank_zero_only
+#     def on_train_start(self, trainer, pl_module):
+#         logger = get_wandb_logger(trainer=trainer)
+#         logger.watch(model=trainer.model, log=self.log, log_freq=self.log_freq, log_graph=True)
 
-    @rank_zero_only
-    def on_train_end(self, trainer, pl_module):
-        logger = get_wandb_logger(trainer=trainer)
-        experiment = logger.experiment
 
-        ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
+# class UploadCheckpointsAsArtifact(Callback):
+#     def __init__(self, ckpt_dir: str = "checkpoints/", upload_best_only: bool = False):
+#         self.ckpt_dir = ckpt_dir
+#         self.upload_best_only = upload_best_only
 
-        if self.upload_best_only:
-            ckpts.add_file(trainer.checkpoint_callback.best_model_path)
-        else:
-            for path in Path(self.ckpt_dir).rglob("*.ckpt"):
-                ckpts.add_file(str(path))
+#     @rank_zero_only
+#     def on_keyboard_interrupt(self, trainer, pl_module):
+#         self.on_train_end(trainer, pl_module)
 
-        experiment.log_artifact(ckpts)
+#     @rank_zero_only
+#     def on_train_end(self, trainer, pl_module):
+#         logger = get_wandb_logger(trainer=trainer)
+#         experiment = logger.experiment
 
-    @rank_zero_only
-    def on_validation_epoch_end(self, trainer, pl_module):
-        logger = get_wandb_logger(trainer=trainer)
-        experiment = logger.experiment
+#         ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
 
-        ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
+#         if self.upload_best_only:
+#             ckpts.add_file(trainer.checkpoint_callback.best_model_path)
+#         else:
+#             for path in Path(self.ckpt_dir).rglob("*.ckpt"):
+#                 ckpts.add_file(str(path))
 
-        if self.upload_best_only:
-            ckpts.add_file(trainer.checkpoint_callback.best_model_path)
-        else:
-            for path in Path(self.ckpt_dir).rglob("*.ckpt"):
-                ckpts.add_file(str(path))
+#         experiment.log_artifact(ckpts)
 
-        experiment.log_artifact(ckpts)
+#     @rank_zero_only
+#     def on_validation_epoch_end(self, trainer, pl_module):
+#         logger = get_wandb_logger(trainer=trainer)
+#         experiment = logger.experiment
 
-    @rank_zero_only
-    def on_train_epoch_end(self, trainer, pl_module):
-        logger = get_wandb_logger(trainer=trainer)
-        experiment = logger.experiment
+#         ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
 
-        ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
+#         if self.upload_best_only:
+#             ckpts.add_file(trainer.checkpoint_callback.best_model_path)
+#         else:
+#             for path in Path(self.ckpt_dir).rglob("*.ckpt"):
+#                 ckpts.add_file(str(path))
 
-        if self.upload_best_only:
-            ckpts.add_file(trainer.checkpoint_callback.best_model_path)
-        else:
-            for path in Path(self.ckpt_dir).rglob("*.ckpt"):
-                ckpts.add_file(str(path))
+#         experiment.log_artifact(ckpts)
 
-        experiment.log_artifact(ckpts)
+#     @rank_zero_only
+#     def on_train_epoch_end(self, trainer, pl_module):
+#         logger = get_wandb_logger(trainer=trainer)
+#         experiment = logger.experiment
+
+#         ckpts = wandb.Artifact("experiment-ckpts", type="checkpoints")
+
+#         if self.upload_best_only:
+#             ckpts.add_file(trainer.checkpoint_callback.best_model_path)
+#         else:
+#             for path in Path(self.ckpt_dir).rglob("*.ckpt"):
+#                 ckpts.add_file(str(path))
+
+#         experiment.log_artifact(ckpts)
 
 
 NUM_INPUT_FRAMES = 4
@@ -193,7 +193,7 @@ class DGMRDataModule(LightningDataModule):
         return dataloader
 
 
-wandb_logger = WandbLogger(logger="dgmr")
+# wandb_logger = WandbLogger(logger="dgmr")
 model_checkpoint = ModelCheckpoint(
     monitor="train/g_loss",
     dirpath="./",
@@ -202,11 +202,13 @@ model_checkpoint = ModelCheckpoint(
 
 trainer = Trainer(
     max_epochs=1000,
-    logger=wandb_logger,
+    # logger=wandb_logger,
     callbacks=[model_checkpoint],
-    accelerator="auto",
+    # accelerator="auto",
     precision=32,
-    # accelerator="tpu", devices=8
+    accelerator="gpu", 
+    devices=4, 
+    num_nodes = 1
 )
 model = DGMR()
 datamodule = DGMRDataModule()
